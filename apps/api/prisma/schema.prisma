@@ -1,0 +1,697 @@
+// Nexuva OS — Prisma Schema
+// Tenant-First Architecture
+// PostgreSQL + JSONB
+//
+// PARTIAL UNIQUE INDEXES (managed via migration):
+//   feature_flags:   global key uniqueness enforced in migration SQL (C-2)
+//   system_settings: global key uniqueness enforced in migration SQL (C-2)
+//   pages:           active-slug uniqueness enforced via partial index (H-6)
+//                    @@unique([tenantId, slug, locale]) removed — see migration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum TenantType {
+  HOLDING
+  PRODUCT
+}
+
+enum CompanyType {
+  HOLDING
+  SUBSIDIARY
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  BETA
+  ARCHIVED
+}
+
+enum DomainType {
+  PRIMARY
+  SUBDOMAIN
+  REDIRECT
+  ALIAS
+}
+
+enum BlockType {
+  HERO
+  TEXT
+  IMAGE
+  GALLERY
+  CTA
+  FEATURES
+  TESTIMONIALS
+  FAQ
+  CUSTOM
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  PRODUCT_MANAGER
+  CONTENT_EDITOR
+  VIEWER
+}
+
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  TEXT
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  SYSTEM
+}
+
+// ============================================================
+// TENANT — Primary deployable unit
+// Every domain resolves to a Tenant. Company and Product are
+// organizational overlays on top of Tenant.
+// ============================================================
+
+model Tenant {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  type        TenantType
+  name        String
+  description String?
+  isActive    Boolean    @default(true)
+
+  // Relations
+  company       Company?
+  product       Product?
+  domains       Domain[]
+  pages         Page[]
+  branding      Branding?
+  settings      SystemSetting[]
+  featureFlags  FeatureFlag[]
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+  storageFiles  StorageFile[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([isActive])
+  @@index([type])
+  @@map("tenants")
+}
+
+// ============================================================
+// COMPANY — Legal entity, linked 1:1 to a Tenant
+// ============================================================
+
+model Company {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  name        String
+  type        CompanyType
+  legalName   String?
+  taxId       String?
+  description String?
+
+  parentId     String?
+  parent       Company?  @relation("CompanyHierarchy", fields: [parentId], references: [id])
+  subsidiaries Company[] @relation("CompanyHierarchy")
+
+  products Product[]
+  users    User[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([parentId])
+  @@index([type])
+  @@map("companies")
+}
+
+// ============================================================
+// PRODUCT — Software product, linked 1:1 to a Tenant
+// ============================================================
+
+model Product {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  name        String
+  slug        String        @unique
+  description String?
+  status      ProductStatus @default(DRAFT)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([companyId])
+  @@index([status])
+  @@map("products")
+}
+
+// ============================================================
+// DOMAIN — Maps a domain name to a Tenant
+// ============================================================
+
+model Domain {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  domainName String     @unique
+  type       DomainType @default(PRIMARY)
+  isActive   Boolean    @default(true)
+  redirectTo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("domains")
+}
+
+// ============================================================
+// PAGE — CMS page, scoped to a Tenant
+//
+// Slug uniqueness is enforced via a PARTIAL UNIQUE INDEX in the
+// managed migration (H-6): only active (deletedAt IS NULL) pages
+// are subject to the constraint. Soft-deleted pages release their
+// slug so a new page can reuse it.
+// @@unique([tenantId, slug, locale]) intentionally absent here.
+// ============================================================
+
+model Page {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  slug           String
+  title          String
+  isPublished    Boolean @default(false)
+  locale         String  @default("tr")
+  currentVersion Int     @default(1)
+
+  contentBlocks ContentBlock[]
+  seoSetting    SeoSetting?
+  versions      PageVersion[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId])
+  @@index([tenantId, isPublished])
+  @@index([tenantId, locale])
+  @@map("pages")
+}
+
+// ============================================================
+// CONTENT BLOCK — Ordered block within a Page
+// ============================================================
+
+model ContentBlock {
+  id     String @id @default(cuid())
+  pageId String
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  type      BlockType
+  content   Json
+  position  Int
+  isVisible Boolean   @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([pageId])
+  @@index([pageId, position])
+  @@index([pageId, deletedAt])
+  @@map("content_blocks")
+}
+
+// ============================================================
+// PAGE VERSION — Full content snapshot for rollback
+// ============================================================
+
+model PageVersion {
+  id     String @id @default(cuid())
+  pageId String
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  versionNumber   Int
+  title           String
+  contentSnapshot Json
+  seoSnapshot     Json?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([pageId, versionNumber])
+  @@index([pageId])
+  // Composite descending index for captureVersionInTx hot path (H-4)
+  @@index([pageId, versionNumber(sort: Desc)])
+  @@index([createdById])
+  @@map("page_versions")
+}
+
+// ============================================================
+// SEO SETTING — 1:1 with Page
+// ============================================================
+
+model SeoSetting {
+  id     String @id @default(cuid())
+  pageId String @unique
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  metaTitle       String?
+  metaDescription String?
+  keywords        String[]
+  ogImage         String?
+  ogTitle         String?
+  ogDescription   String?
+  twitterCard     String?
+  canonicalUrl    String?
+  noIndex         Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("seo_settings")
+}
+
+// ============================================================
+// BRANDING — 1:1 with Tenant
+// ============================================================
+
+model Branding {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  logoUrl        String?
+  faviconUrl     String?
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+  fontHeading    String?
+  fontBody       String?
+  themePreset    String?
+  customCss      String?
+  config         Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("branding")
+}
+
+// ============================================================
+// USER — Platform user, optional company scope
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String?
+  lastName     String?
+  role         UserRole @default(VIEWER)
+  isActive     Boolean  @default(true)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  lastLoginAt DateTime?
+
+  pageVersions  PageVersion[]
+  auditLogs     AuditLog[]
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+  refreshTokens RefreshToken[]
+  storageFiles  StorageFile[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([companyId])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================================
+// REFRESH TOKEN — Hashed refresh tokens for secure rotation
+// ============================================================
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, isRevoked])
+  @@map("refresh_tokens")
+}
+
+// ============================================================
+// PERMISSION — Role-based permission matrix
+// ============================================================
+
+model Permission {
+  id       String   @id @default(cuid())
+  role     UserRole
+  resource String
+  actions  Json
+
+  @@unique([role, resource])
+  @@map("permissions")
+}
+
+// ============================================================
+// FEATURE FLAG — Per-tenant or global feature switches
+// Global uniqueness (tenantId IS NULL) enforced via partial index
+// in managed migration (C-2). @@unique([key, tenantId]) covers
+// tenant-scoped records only (NULL != NULL in PostgreSQL).
+// ============================================================
+
+model FeatureFlag {
+  id          String  @id @default(cuid())
+  key         String
+  name        String
+  description String?
+
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  isEnabled Boolean @default(false)
+  config    Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([key, tenantId])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+  @@index([isEnabled])
+  @@map("feature_flags")
+}
+
+// ============================================================
+// SYSTEM SETTING — Key/value store, global or per-tenant
+// Same NULL uniqueness caveat as FeatureFlag — see schema header.
+// ============================================================
+
+model SystemSetting {
+  id          String      @id @default(cuid())
+  key         String
+  value       Json
+  type        SettingType @default(STRING)
+  description String?
+  isPublic    Boolean     @default(false)
+
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([key, tenantId])
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+  @@index([tenantId, isPublic])
+  @@map("system_settings")
+}
+
+// ============================================================
+// STORAGE FILE — Tracked file uploads to Cloudflare R2
+// Every upload creates a DB record for quota tracking, ownership
+// enforcement, and audit logging. Soft-deleted records retain
+// their metadata after the R2 object is removed.
+// ============================================================
+
+model StorageFile {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  key      String  // R2 object key (e.g. "tenant-slug/images/1700000000000-photo.jpg")
+  url      String  // Public CDN URL
+  mimeType String
+  size     Int     // bytes — used for per-tenant quota calculation
+  folder   String  @default("uploads")
+  filename String  // original filename from the upload
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+  @@index([uploadedById])
+  @@map("storage_files")
+}
+
+// ============================================================
+// AUDIT LOG — Security trail (who changed what field)
+// tenantId is stored as a plain string (no FK) so audit records
+// survive tenant deletion without cascade issues.
+// ============================================================
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId String
+  actor   User   @relation(fields: [actorId], references: [id])
+
+  action     String
+  resource   String
+  resourceId String?
+  tenantId   String?  // for multi-tenant audit scoping (H-4)
+
+  before Json?
+  after  Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@index([tenantId])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// ACTIVITY LOG — Human-readable event stream
+// ============================================================
+
+model ActivityLog {
+  id String @id @default(cuid())
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  event       String
+  description String
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([tenantId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// ============================================================
+// MCP / AI EXTENSION LAYER
+// Architecture placeholders — no business logic implemented.
+// These tables are created now so that activating AI features
+// requires zero new migrations.
+// ============================================================
+
+enum McpProviderType {
+  HIGGSFIELD
+  OPENAI
+  ANTHROPIC
+  CUSTOM
+}
+
+enum McpConnectionStatus {
+  PENDING
+  ACTIVE
+  ERROR
+  DISABLED
+}
+
+enum AgentStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model McpProvider {
+  id          String          @id @default(cuid())
+  name        String
+  type        McpProviderType
+  description String?
+  isActive    Boolean         @default(false)
+
+  connections McpConnection[]
+
+  createdAt DateTime @default(now())
+
+  @@map("mcp_providers")
+}
+
+model McpConnection {
+  id         String              @id @default(cuid())
+  providerId String
+  provider   McpProvider         @relation(fields: [providerId], references: [id])
+  tenantId   String
+  status     McpConnectionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([providerId])
+  @@map("mcp_connections")
+}
+
+model AiAgent {
+  id          String      @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  status      AgentStatus @default(DRAFT)
+
+  permissions AgentPermission[]
+  auditLogs   AgentAuditLog[]
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@map("ai_agents")
+}
+
+model AgentPermission {
+  id         String  @id @default(cuid())
+  agentId    String
+  agent      AiAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  permission String
+
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
+  @@map("agent_permissions")
+}
+
+model WorkflowDefinition {
+  id          String         @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  status      WorkflowStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("workflow_definitions")
+}
+
+model AgentAuditLog {
+  id       String   @id @default(cuid())
+  tenantId String
+  agentId  String
+  agent    AiAgent  @relation(fields: [agentId], references: [id])
+  action   String
+  result   Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([agentId])
+  @@index([createdAt])
+  @@map("agent_audit_logs")
+}
+
+// ============================================================
+// NOTIFICATION — In-app notification queue
+// ============================================================
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  type     NotificationType
+  title    String
+  body     String?
+  metadata Json?
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("notifications")
+}

@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-heading: 'Space Grotesk', 'Inter', sans-serif;
+  }
+
+  * {
+    @apply border-zinc-200;
+  }
+
+  body {
+    @apply bg-white text-zinc-900 antialiased;
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}

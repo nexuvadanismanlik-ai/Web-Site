@@ -1,0 +1,42 @@
+<svg viewBox="0 0 220 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lbg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0e4d8a"/>
+      <stop offset="50%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="larrow" x1="6" y1="22" x2="38" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#67e8f9"/>
+    </linearGradient>
+    <filter id="lf"><feGaussianBlur stdDeviation="0.7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Icon background -->
+  <rect width="44" height="44" rx="10" fill="url(#lbg)"/>
+  <rect x="0.5" y="0.5" width="43" height="43" rx="9.5" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none"/>
+
+  <!-- Workflow / ops icon: 3 connected circles with arrows -->
+  <!-- Circle 1 top-left -->
+  <circle cx="11" cy="14" r="5" fill="rgba(125,211,252,0.2)" stroke="#7dd3fc" stroke-width="1.2"/>
+  <line x1="11" y1="12" x2="11" y2="16" stroke="#7dd3fc" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="9" y1="14" x2="13" y2="14" stroke="#7dd3fc" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Circle 2 top-right -->
+  <circle cx="33" cy="14" r="5" fill="rgba(103,232,249,0.2)" stroke="#67e8f9" stroke-width="1.2"/>
+  <rect x="30.5" y="11.5" width="5" height="5" rx="1" fill="none" stroke="#67e8f9" stroke-width="1.2"/>
+
+  <!-- Circle 3 bottom-center -->
+  <circle cx="22" cy="32" r="5" fill="rgba(125,211,252,0.15)" stroke="#7dd3fc" stroke-width="1.2"/>
+  <path d="M20 32 l3-3 l3 3" stroke="#67e8f9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Connecting lines with arrows -->
+  <line x1="16" y1="14" x2="28" y2="14" stroke="url(#larrow)" stroke-width="1.2" stroke-dasharray="2 1.5" filter="url(#lf)"/>
+  <line x1="13" y1="17" x2="19" y2="27" stroke="url(#larrow)" stroke-width="1.2" stroke-dasharray="2 1.5" filter="url(#lf)"/>
+  <line x1="31" y1="17" x2="25" y2="27" stroke="url(#larrow)" stroke-width="1.2" stroke-dasharray="2 1.5" filter="url(#lf)"/>
+
+  <!-- LogiOps text -->
+  <text x="52" y="20" font-family="'Segoe UI','Inter',Arial,sans-serif" font-weight="700" font-size="14" letter-spacing="0.5" fill="#e0f2fe">Logi</text>
+  <text x="79" y="20" font-family="'Segoe UI','Inter',Arial,sans-serif" font-weight="700" font-size="14" letter-spacing="0.5" fill="#67e8f9">Ops</text>
+  <text x="52" y="34" font-family="'Segoe UI','Inter',Arial,sans-serif" font-weight="400" font-size="9" letter-spacing="2" fill="rgba(224,242,254,0.5)">BY NEXUVA</text>
+</svg>

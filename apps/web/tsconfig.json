@@ -1,0 +1,14 @@
+{
+  "extends": "../../tooling/typescript/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@nexuva/types": ["../../packages/types/src/index.ts"],
+      "@nexuva/shared": ["../../packages/shared/src/index.ts"],
+      "@nexuva/ui": ["../../packages/ui/src/index.ts"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

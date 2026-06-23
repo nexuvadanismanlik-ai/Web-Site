@@ -1,0 +1,92 @@
+# Render Infrastructure-as-Code
+# Deploy three services from this monorepo:
+#   1. nexuva-api   — NestJS backend
+#   2. nexuva-web   — Next.js public website
+#   3. nexuva-admin — Next.js admin panel
+#
+# Required: set all envVars marked sync:false in the Render dashboard before first deploy.
+
+services:
+  # ── Backend API (NestJS + Fastify) ─────────────────────────────────────────
+  - type: web
+    name: nexuva-api
+    runtime: node
+    plan: starter
+    buildCommand: >
+      pnpm install &&
+      pnpm --filter @nexuva/shared run build &&
+      pnpm --filter @nexuva/api run build
+    startCommand: pnpm --filter @nexuva/api run start:prod
+    autoDeploy: true
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRY
+        value: 15m
+      - key: JWT_REFRESH_EXPIRY
+        value: 7d
+      - key: CORS_ORIGINS
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: nexuva-os
+      - key: R2_PUBLIC_URL
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Nexuva OS
+      - key: RESEND_API_KEY
+        sync: false
+
+  # ── Public Website (Next.js) ────────────────────────────────────────────────
+  - type: web
+    name: nexuva-web
+    runtime: node
+    plan: starter
+    buildCommand: >
+      pnpm install &&
+      pnpm --filter @nexuva/shared run build &&
+      pnpm --filter @nexuva/web run build
+    startCommand: pnpm --filter @nexuva/web run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+  # ── Admin Panel (Next.js) ───────────────────────────────────────────────────
+  - type: web
+    name: nexuva-admin
+    runtime: node
+    plan: starter
+    buildCommand: >
+      pnpm install &&
+      pnpm --filter @nexuva/shared run build &&
+      pnpm --filter @nexuva/admin run build
+    startCommand: pnpm --filter @nexuva/admin run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true

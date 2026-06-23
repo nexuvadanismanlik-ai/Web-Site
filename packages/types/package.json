@@ -1,0 +1,15 @@
+{
+  "name": "@nexuva/types",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "main": "./src/index.ts",
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

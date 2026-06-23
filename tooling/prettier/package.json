@@ -1,0 +1,12 @@
+{
+  "name": "@nexuva/prettier-config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.js",
+  "dependencies": {
+    "prettier-plugin-tailwindcss": "^0.6.0"
+  },
+  "peerDependencies": {
+    "prettier": "^3.0.0"
+  }
+}

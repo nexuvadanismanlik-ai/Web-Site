@@ -1,0 +1,11 @@
+-- SUPERSEDED — DO NOT RUN MANUALLY
+--
+-- These partial unique indexes are now included in the managed Prisma migration:
+--   migrations/20260623000001_step12_storage_hardening/migration.sql
+--
+-- They will be applied automatically when you run:
+--   pnpm --filter api db:migrate:deploy
+--   (or: prisma migrate deploy inside apps/api)
+--
+-- This file is kept for historical reference only.
+-- Running it manually is SAFE (IF NOT EXISTS guards are in place) but UNNECESSARY.

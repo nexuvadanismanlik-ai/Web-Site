@@ -123,9 +123,9 @@ export class StorageController {
   @ApiQuery({ name: 'offset', required: false, example: 0 })
   async listFiles(
     @Query('tenantId') tenantId: string,
+    @CurrentUser() user: AuthUser,
     @Query('limit') limitStr?: string,
     @Query('offset') offsetStr?: string,
-    @CurrentUser() user: AuthUser,
   ) {
     if (!tenantId) throw new BadRequestException('tenantId query parameter is required');
 

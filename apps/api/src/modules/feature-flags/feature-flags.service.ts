@@ -5,6 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import type { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
@@ -233,7 +234,7 @@ export class FeatureFlagsService {
           description: dto.description,
           tenantId: dto.tenantId ?? null,
           isEnabled: dto.isEnabled ?? false,
-          config: dto.config ?? null,
+          config: dto.config ? (dto.config as Prisma.InputJsonValue) : Prisma.JsonNull,
         },
       });
     } catch (e) {
@@ -279,7 +280,9 @@ export class FeatureFlagsService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.config !== undefined && { config: dto.config }),
+        ...(dto.config !== undefined && {
+          config: dto.config ? (dto.config as Prisma.InputJsonValue) : Prisma.JsonNull,
+        }),
       },
     });
 

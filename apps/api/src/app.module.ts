@@ -28,6 +28,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { ActivityLogModule } from './modules/activity-log/activity-log.module';
 import { HealthModule } from './modules/health/health.module';
 import { McpModule } from './modules/mcp/mcp.module';
+import { WebsiteModule } from './modules/website/website.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { JwtAuthGuard } from './common/guards/jwt.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -61,6 +62,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     ActivityLogModule,
     HealthModule,
     McpModule,
+    WebsiteModule,
   ],
   providers: [
     // JwtAuthGuard runs on every route. Routes that should skip auth

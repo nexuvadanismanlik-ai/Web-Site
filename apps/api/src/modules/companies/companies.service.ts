@@ -67,7 +67,9 @@ export class CompaniesService {
         legalName: dto.legalName ?? null,
         taxId: dto.taxId ?? null,
         description: dto.description ?? null,
-        parentId: dto.parentId ?? null,
+        // Nested tenant creation forces Prisma's checked input variant, where
+        // the parent link must be a relation connect rather than a raw id.
+        ...(dto.parentId ? { parent: { connect: { id: dto.parentId } } } : {}),
         tenant: {
           create: {
             slug: dto.slug,

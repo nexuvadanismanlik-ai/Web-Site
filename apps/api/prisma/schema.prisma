@@ -108,6 +108,17 @@ model Tenant {
   notifications Notification[]
   storageFiles  StorageFile[]
 
+  // Website CMS
+  websiteSections     WebsiteSection[]
+  websiteNavItems     WebsiteNavItem[]
+  websiteLogos        WebsiteLogo[]
+  websiteServices     WebsiteService[]
+  websiteStats        WebsiteStat[]
+  websiteReferences   WebsiteReference[]
+  websiteTestimonials WebsiteTestimonial[]
+  websiteProcessSteps WebsiteProcessStep[]
+  contactMessages     ContactMessage[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -694,4 +705,200 @@ model Notification {
   @@index([tenantId])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// ============================================================
+// WEBSITE CMS — Public marketing site content
+//
+// Serves the statically exported frontend (apps/web). Content is
+// tenant-scoped so the same backend can drive multiple sites and,
+// later, Nexuva Core.
+//
+// Localized text is stored as JSONB in the shape { "tr": "...", "en": "..." }
+// matching the `Localized` type in @nexuva/types.
+// ============================================================
+
+/// Singleton content blocks keyed by section name: brand, hero, about,
+/// cta, contact, footer, servicesMeta, referencesMeta, testimonialsMeta,
+/// processMeta. `data` holds the section's full JSON payload.
+model WebsiteSection {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  key  String
+  data Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+  @@map("website_sections")
+}
+
+model WebsiteNavItem {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  label    Json
+  href     String
+  position Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, position])
+  @@map("website_nav_items")
+}
+
+/// Client logos shown in the marquee strip.
+model WebsiteLogo {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name     String
+  imageUrl String?
+  position Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, position])
+  @@map("website_logos")
+}
+
+model WebsiteService {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  icon        String
+  title       Json
+  description Json
+  /// Array of Localized feature bullets.
+  features    Json
+  position    Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, position])
+  @@index([tenantId, deletedAt])
+  @@map("website_services")
+}
+
+model WebsiteStat {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  value    Int
+  prefix   String?
+  suffix   String  @default("")
+  label    Json
+  position Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, position])
+  @@map("website_stats")
+}
+
+model WebsiteReference {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name     String
+  category Json
+  logoUrl  String?
+  position Int     @default(0)
+  isActive Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, position])
+  @@index([tenantId, deletedAt])
+  @@map("website_references")
+}
+
+model WebsiteTestimonial {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  quote     Json
+  author    String
+  role      Json
+  company   String
+  avatarUrl String?
+  rating    Int     @default(5)
+  position  Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, position])
+  @@index([tenantId, deletedAt])
+  @@map("website_testimonials")
+}
+
+model WebsiteProcessStep {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  title       Json
+  description Json
+  position    Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, position])
+  @@map("website_process_steps")
+}
+
+/// Submissions from the public contact form. Written by an unauthenticated
+/// endpoint, so the service enforces validation and length caps.
+model ContactMessage {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name    String
+  email   String
+  phone   String?
+  subject String?
+  message String
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  /// Request metadata retained for abuse investigation.
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, isRead])
+  @@index([tenantId, deletedAt])
+  @@map("contact_messages")
 }

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { NotificationType } from '@nexuva/types';
 
@@ -29,7 +30,7 @@ export class NotificationsService {
         type: params.type,
         title: params.title,
         body: params.body ?? null,
-        metadata: params.metadata ?? undefined,
+        metadata: params.metadata as Prisma.InputJsonValue | undefined,
       },
     });
   }

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import type { UpsertBrandingDto } from './dto/upsert-branding.dto';
@@ -139,7 +140,7 @@ export class BrandingService {
         fontBody: dto.fontBody ?? null,
         themePreset: dto.themePreset ?? null,
         customCss: dto.customCss ?? null,
-        config: dto.config ?? undefined,
+        config: dto.config as Prisma.InputJsonValue | undefined,
       },
       update: {
         ...(dto.logoUrl !== undefined && { logoUrl: dto.logoUrl }),
@@ -151,7 +152,7 @@ export class BrandingService {
         ...(dto.fontBody !== undefined && { fontBody: dto.fontBody }),
         ...(dto.themePreset !== undefined && { themePreset: dto.themePreset }),
         ...(dto.customCss !== undefined && { customCss: dto.customCss }),
-        ...(dto.config !== undefined && { config: dto.config }),
+        ...(dto.config !== undefined && { config: dto.config as Prisma.InputJsonValue }),
       },
     });
 

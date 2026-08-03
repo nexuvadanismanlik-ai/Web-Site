@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import type { ContentBlock, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { VersioningService } from '../versioning/versioning.service';
@@ -161,7 +162,7 @@ export class ContentBlocksService {
       data: {
         pageId: dto.pageId,
         type: dto.type as never,
-        content: dto.content,
+        content: dto.content as Prisma.InputJsonValue,
         position,
         isVisible: dto.isVisible ?? true,
       },
@@ -200,7 +201,9 @@ export class ContentBlocksService {
       this.assertValidContent(dto.content);
     }
 
-    let updated: typeof before | null = null;
+    // The update returns a bare row (no page/tenant include), so it is typed
+    // against the model rather than the ownership-checked `before` shape.
+    let updated: ContentBlock | null = null;
 
     await this.prisma.$transaction(async (tx) => {
       // Snapshot pre-mutation state so this change is reversible via rollback.
@@ -210,7 +213,7 @@ export class ContentBlocksService {
         where: { id },
         data: {
           ...(dto.type !== undefined && { type: dto.type as never }),
-          ...(dto.content !== undefined && { content: dto.content }),
+          ...(dto.content !== undefined && { content: dto.content as Prisma.InputJsonValue }),
         },
       });
     });
@@ -295,7 +298,9 @@ export class ContentBlocksService {
       return { id, isVisible, changed: false };
     }
 
-    let updated: typeof before | null = null;
+    // The update returns a bare row (no page/tenant include), so it is typed
+    // against the model rather than the ownership-checked `before` shape.
+    let updated: ContentBlock | null = null;
 
     await this.prisma.$transaction(async (tx) => {
       // Snapshot pre-change state so visibility toggles are reversible.

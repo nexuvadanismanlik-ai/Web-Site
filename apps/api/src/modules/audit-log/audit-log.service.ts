@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface CreateAuditLogParams {
@@ -25,8 +26,8 @@ export class AuditLogService {
         resource: params.resource,
         resourceId: params.resourceId ?? null,
         tenantId: params.tenantId ?? null,
-        before: params.before ?? undefined,
-        after: params.after ?? undefined,
+        before: params.before as Prisma.InputJsonValue | undefined,
+        after: params.after as Prisma.InputJsonValue | undefined,
         ipAddress: params.ipAddress ?? null,
         userAgent: params.userAgent ?? null,
       },

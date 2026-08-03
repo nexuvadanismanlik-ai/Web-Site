@@ -1,6 +1,12 @@
 {
   "extends": "../../tooling/typescript/nestjs.json",
   "compilerOptions": {
+    // The shared nestjs preset declares rootDir/outDir relative to its own
+    // location, so they must be restated here to resolve against this package.
+    // rootDir spans the monorepo because @nexuva/types and @nexuva/shared are
+    // consumed from source via the paths mapping below.
+    "rootDir": "../../",
+    "outDir": "./dist",
     "paths": {
       "@nexuva/types": ["../../packages/types/src/index.ts"],
       "@nexuva/shared": ["../../packages/shared/src/index.ts"]

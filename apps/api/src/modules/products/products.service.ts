@@ -71,7 +71,9 @@ export class ProductsService {
         slug: dto.slug,
         description: dto.description ?? null,
         status: dto.status ?? 'DRAFT',
-        companyId: dto.companyId,
+        // Nested tenant creation forces Prisma's checked input variant, so the
+        // company link must be a relation connect rather than a raw id.
+        company: { connect: { id: dto.companyId } },
         tenant: {
           create: {
             slug: dto.slug,

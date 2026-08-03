@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -18,7 +19,7 @@ export class ActivityLogService {
         description: params.description,
         actorId: params.actorId ?? null,
         tenantId: params.tenantId ?? null,
-        metadata: params.metadata ?? undefined,
+        metadata: params.metadata as Prisma.InputJsonValue | undefined,
       },
     });
   }

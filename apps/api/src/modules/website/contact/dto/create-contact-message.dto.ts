@@ -1,0 +1,35 @@
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateContactMessageDto {
+  @ApiProperty({ example: 'Ayşe Yılmaz' })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(120)
+  name!: string;
+
+  @ApiProperty({ example: 'ayse@sirket.com' })
+  @IsEmail()
+  @MaxLength(160)
+  email!: string;
+
+  @ApiPropertyOptional({ example: '+90 555 000 0000' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Kurumsal web sitesi projesi' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  subject?: string;
+
+  @ApiProperty({ example: 'Merhaba, yeni bir proje hakkında görüşmek istiyoruz.' })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(5)
+  @MaxLength(4000)
+  message!: string;
+}

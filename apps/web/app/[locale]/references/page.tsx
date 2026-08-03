@@ -7,8 +7,6 @@ import { LogosMarquee } from '../../../components/sections/logos';
 import { Testimonials } from '../../../components/sections/testimonials';
 import { Cta } from '../../../components/sections/cta';
 
-export const dynamic = 'force-dynamic';
-
 export async function generateMetadata({
   params,
 }: {

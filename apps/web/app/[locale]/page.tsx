@@ -11,8 +11,6 @@ import { Process } from '../../components/sections/process';
 import { Cta } from '../../components/sections/cta';
 import { Contact } from '../../components/sections/contact';
 
-export const dynamic = 'force-dynamic';
-
 export default async function HomePage({ params }: { params: { locale: string } }) {
   const locale = normalizeLocale(params.locale);
   const content = await getSiteContent();

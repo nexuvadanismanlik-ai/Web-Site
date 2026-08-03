@@ -4,8 +4,6 @@ import { normalizeLocale, t } from '../../../lib/i18n';
 import { PageHero } from '../../../components/sections/page-hero';
 import { Contact } from '../../../components/sections/contact';
 
-export const dynamic = 'force-dynamic';
-
 export async function generateMetadata({
   params,
 }: {

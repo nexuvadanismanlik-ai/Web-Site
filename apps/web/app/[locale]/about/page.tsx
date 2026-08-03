@@ -8,8 +8,6 @@ import { Process } from '../../../components/sections/process';
 import { Testimonials } from '../../../components/sections/testimonials';
 import { Cta } from '../../../components/sections/cta';
 
-export const dynamic = 'force-dynamic';
-
 export async function generateMetadata({
   params,
 }: {

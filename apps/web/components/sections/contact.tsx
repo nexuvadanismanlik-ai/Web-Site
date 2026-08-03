@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent } from '@nexuva/types';
 import { t, getUi, type Locale } from '../../lib/i18n';
-import { submitContact } from '../../app/actions/contact';
+import { submitContact } from '../../lib/contact-api';
 
 export function Contact({
   contact,

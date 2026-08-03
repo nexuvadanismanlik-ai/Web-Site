@@ -17,8 +17,6 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
-export const dynamic = 'force-dynamic';
-
 interface LocaleLayoutProps {
   children: ReactNode;
   params: { locale: string };

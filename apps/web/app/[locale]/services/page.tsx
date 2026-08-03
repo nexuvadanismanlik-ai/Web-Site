@@ -6,8 +6,6 @@ import { Services } from '../../../components/sections/services';
 import { Process } from '../../../components/sections/process';
 import { Cta } from '../../../components/sections/cta';
 
-export const dynamic = 'force-dynamic';
-
 export async function generateMetadata({
   params,
 }: {

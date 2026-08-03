@@ -1,16 +1,17 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import type { SiteContent } from '@nexuva/types';
+import rawContent from '../../../content/site.json';
 
 /**
- * Shared content store lives at the repo root (`content/site.json`) so that the
- * admin panel and the public website read/write the exact same data with no
- * database required. When running `next dev`, cwd is the app directory
- * (apps/web), so the repo root is two levels up.
+ * Static-export data source: content/site.json is bundled at BUILD TIME via a
+ * plain JSON import — no fs access, no Node server at runtime. Content changes
+ * ship by rebuilding (git push → Render Static Site redeploy). The admin panel
+ * keeps editing the same file locally; Phase 3+ replaces this with Supabase.
+ *
+ * The async signature is kept so existing call sites (`await getSiteContent()`)
+ * stay untouched.
  */
-const CONTENT_PATH = path.join(process.cwd(), '..', '..', 'content', 'site.json');
+const siteContent = rawContent as unknown as SiteContent;
 
 export async function getSiteContent(): Promise<SiteContent> {
-  const raw = await fs.readFile(CONTENT_PATH, 'utf-8');
-  return JSON.parse(raw) as SiteContent;
+  return siteContent;
 }

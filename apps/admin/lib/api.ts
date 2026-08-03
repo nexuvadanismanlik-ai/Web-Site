@@ -1,5 +1,5 @@
 const API_BASE =
-  process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'http://localhost:4000/api/v1';
+  process.env['NEXT_PUBLIC_ADMIN_API_URL'] ?? 'http://localhost:4000/api/v1';
 
 export async function adminFetch<T>(
   path: string,

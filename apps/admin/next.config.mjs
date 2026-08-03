@@ -1,6 +1,5 @@
-import type { NextConfig } from 'next';
-
-const config: NextConfig = {
+/** @type {import('next').NextConfig} */
+const config = {
   transpilePackages: ['@nexuva/ui', '@nexuva/shared', '@nexuva/types'],
   images: {
     remotePatterns: [
@@ -8,14 +7,7 @@ const config: NextConfig = {
         protocol: 'https',
         hostname: '**.r2.cloudflarestorage.com',
       },
-      {
-        protocol: 'https',
-        hostname: '**.nexuva.com',
-      },
     ],
-  },
-  experimental: {
-    typedRoutes: true,
   },
 };
 

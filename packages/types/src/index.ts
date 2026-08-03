@@ -23,3 +23,28 @@ export type { ApiResponse, ApiError } from './api/response';
 
 // Tenant
 export type { TenantResolutionResult } from './tenant/context';
+
+// Site content (public website / admin-managed)
+export type {
+  Localized,
+  LinkItem,
+  NavItem,
+  SocialLink,
+  BrandConfig,
+  HeroMetric,
+  HeroContent,
+  ServiceItem,
+  StatItem,
+  AboutHighlight,
+  AboutContent,
+  ReferenceItem,
+  TestimonialItem,
+  ProcessStep,
+  CtaContent,
+  ContactContent,
+  FooterColumn,
+  FooterContent,
+  SectionMeta,
+  SiteContent,
+  ContactMessage,
+} from './content';

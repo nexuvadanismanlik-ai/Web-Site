@@ -4,16 +4,80 @@
 
 @layer base {
   :root {
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-heading: 'Space Grotesk', 'Inter', sans-serif;
+    --brand: #6366f1;
+    --brand-2: #818cf8;
+    --accent: #a855f7;
   }
 
   * {
-    @apply border-zinc-200 dark:border-zinc-800;
+    border-color: theme('colors.white / 8%');
   }
 
   body {
-    @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-50;
+    @apply bg-ink-950 text-ink-100 antialiased;
     font-family: var(--font-sans);
+    background-image:
+      radial-gradient(50% 40% at 100% 0%, color-mix(in srgb, var(--brand) 14%, transparent) 0%, transparent 60%),
+      radial-gradient(40% 40% at 0% 100%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 55%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply tracking-tight;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: theme('colors.ink.950');
+  }
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.ink.800');
+    border-radius: 9999px;
+    border: 2px solid theme('colors.ink.950');
+  }
+}
+
+@layer components {
+  .brand-gradient-bg {
+    background-image: linear-gradient(120deg, var(--brand), var(--accent));
+  }
+  .gradient-text {
+    background-image: linear-gradient(120deg, var(--brand-2), var(--accent) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .glass {
+    background: color-mix(in srgb, theme('colors.ink.900') 60%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid theme('colors.white / 8%');
+  }
+  .panel {
+    @apply rounded-2xl border border-white/10 bg-white/[0.03];
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-200;
+    background-image: linear-gradient(120deg, var(--brand), var(--accent));
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+  }
+  .btn-primary:disabled {
+    opacity: 0.6;
+    transform: none;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-ink-100 transition-colors hover:border-white/25 hover:bg-white/10;
+  }
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-400;
+  }
+  .field-input {
+    @apply w-full rounded-xl border border-white/10 bg-ink-950/60 px-3.5 py-2.5 text-sm text-white placeholder:text-ink-600 transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
   }
 }

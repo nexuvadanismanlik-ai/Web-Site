@@ -2,7 +2,9 @@
   "extends": "../../tooling/typescript/nestjs.json",
   "compilerOptions": {
     "declarationMap": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "rootDir": "./src",
+    "outDir": "./dist"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

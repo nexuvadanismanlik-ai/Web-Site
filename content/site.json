@@ -1,0 +1,774 @@
+{
+  "brand": {
+    "siteName": "Nexuva",
+    "logoText": "Nexuva",
+    "tagline": {
+      "tr": "Dijital dönüşümün mimarı",
+      "en": "Architects of digital transformation"
+    },
+    "primaryColor": "#6366f1",
+    "accentColor": "#a855f7",
+    "email": "info@nexuva.com",
+    "phone": "+90 212 555 0100",
+    "address": {
+      "tr": "Levent, 34330 Beşiktaş / İstanbul",
+      "en": "Levent, 34330 Besiktas / Istanbul, Türkiye"
+    },
+    "social": [
+      {
+        "icon": "linkedin",
+        "label": "LinkedIn",
+        "href": "https://linkedin.com"
+      },
+      {
+        "icon": "twitter",
+        "label": "X",
+        "href": "https://x.com"
+      },
+      {
+        "icon": "instagram",
+        "label": "Instagram",
+        "href": "https://instagram.com"
+      },
+      {
+        "icon": "github",
+        "label": "GitHub",
+        "href": "https://github.com"
+      }
+    ],
+    "theme": "light"
+  },
+  "nav": [
+    {
+      "label": {
+        "tr": "Anasayfa",
+        "en": "Home"
+      },
+      "href": "/"
+    },
+    {
+      "label": {
+        "tr": "Hizmetler",
+        "en": "Services"
+      },
+      "href": "/services"
+    },
+    {
+      "label": {
+        "tr": "Hakkımızda",
+        "en": "About"
+      },
+      "href": "/about"
+    },
+    {
+      "label": {
+        "tr": "Referanslar",
+        "en": "References"
+      },
+      "href": "/references"
+    },
+    {
+      "label": {
+        "tr": "İletişim",
+        "en": "Contact"
+      },
+      "href": "/contact"
+    }
+  ],
+  "hero": {
+    "badge": {
+      "tr": "Kurumsal Dijital Dönüşüm Partneriniz",
+      "en": "Your Enterprise Digital Transformation Partner"
+    },
+    "titleLead": {
+      "tr": "Geleceğin işini bugünden",
+      "en": "Build the business of tomorrow,"
+    },
+    "titleHighlight": {
+      "tr": "birlikte inşa edelim",
+      "en": "together, today"
+    },
+    "subtitle": {
+      "tr": "Nexuva; strateji, yazılım ve tasarımı tek çatı altında buluşturarak markaların dijitalde büyümesini sağlar. Fikirden ürüne, veriden karara kadar yanınızdayız.",
+      "en": "Nexuva unites strategy, software and design under one roof to grow brands in the digital world. From idea to product, from data to decision — we are with you."
+    },
+    "primaryCta": {
+      "label": {
+        "tr": "Projenizi Konuşalım",
+        "en": "Start a Project"
+      },
+      "href": "/contact"
+    },
+    "secondaryCta": {
+      "label": {
+        "tr": "Hizmetleri Keşfet",
+        "en": "Explore Services"
+      },
+      "href": "/services"
+    },
+    "metrics": [
+      {
+        "value": "250+",
+        "label": {
+          "tr": "Tamamlanan Proje",
+          "en": "Projects Delivered"
+        }
+      },
+      {
+        "value": "98%",
+        "label": {
+          "tr": "Müşteri Memnuniyeti",
+          "en": "Client Satisfaction"
+        }
+      },
+      {
+        "value": "12",
+        "label": {
+          "tr": "Yıllık Tecrübe",
+          "en": "Years of Experience"
+        }
+      }
+    ]
+  },
+  "logos": [
+    "Vestera",
+    "Aurora Bank",
+    "Metronom",
+    "Helios Enerji",
+    "Quanta",
+    "Northwind",
+    "Lumina",
+    "Orbit Tech",
+    "Zephyr",
+    "Kalder",
+    "Nova Holding",
+    "Prime Retail"
+  ],
+  "servicesMeta": {
+    "badge": {
+      "tr": "Ne Yapıyoruz",
+      "en": "What We Do"
+    },
+    "title": {
+      "tr": "Uçtan uca dijital çözümler",
+      "en": "End-to-end digital solutions"
+    },
+    "subtitle": {
+      "tr": "Markanızı bir sonraki seviyeye taşıyacak stratejik ve teknolojik hizmetler.",
+      "en": "Strategic and technological services to take your brand to the next level."
+    }
+  },
+  "services": [
+    {
+      "id": "svc-strategy",
+      "icon": "compass",
+      "title": {
+        "tr": "Dijital Strateji & Danışmanlık",
+        "en": "Digital Strategy & Consulting"
+      },
+      "description": {
+        "tr": "İş hedeflerinizi dijital yol haritasına dönüştürüyor, sürdürülebilir büyüme için doğru teknolojiyi konumlandırıyoruz.",
+        "en": "We turn your business goals into a digital roadmap and position the right technology for sustainable growth."
+      },
+      "features": [
+        {
+          "tr": "Dijital olgunluk analizi",
+          "en": "Digital maturity assessment"
+        },
+        {
+          "tr": "Yol haritası & KPI tasarımı",
+          "en": "Roadmap & KPI design"
+        },
+        {
+          "tr": "Süreç optimizasyonu",
+          "en": "Process optimization"
+        }
+      ]
+    },
+    {
+      "id": "svc-software",
+      "icon": "code",
+      "title": {
+        "tr": "Yazılım Geliştirme",
+        "en": "Software Development"
+      },
+      "description": {
+        "tr": "Web, mobil ve kurumsal uygulamaları ölçeklenebilir, güvenli ve modern mimarilerle hayata geçiriyoruz.",
+        "en": "We build web, mobile and enterprise applications with scalable, secure and modern architectures."
+      },
+      "features": [
+        {
+          "tr": "Web & mobil uygulamalar",
+          "en": "Web & mobile apps"
+        },
+        {
+          "tr": "API & entegrasyonlar",
+          "en": "APIs & integrations"
+        },
+        {
+          "tr": "Mikroservis mimarisi",
+          "en": "Microservice architecture"
+        }
+      ]
+    },
+    {
+      "id": "svc-cloud",
+      "icon": "cloud",
+      "title": {
+        "tr": "Bulut & DevOps",
+        "en": "Cloud & DevOps"
+      },
+      "description": {
+        "tr": "Altyapınızı buluta taşıyor, otomasyon ve gözlemlenebilirlik ile kesintisiz operasyon sağlıyoruz.",
+        "en": "We migrate your infrastructure to the cloud and ensure seamless operations with automation and observability."
+      },
+      "features": [
+        {
+          "tr": "Bulut migrasyonu",
+          "en": "Cloud migration"
+        },
+        {
+          "tr": "CI/CD otomasyonu",
+          "en": "CI/CD automation"
+        },
+        {
+          "tr": "7/24 izleme",
+          "en": "24/7 monitoring"
+        }
+      ]
+    },
+    {
+      "id": "svc-growth",
+      "icon": "trending-up",
+      "title": {
+        "tr": "Büyüme & Pazarlama",
+        "en": "Growth & Marketing"
+      },
+      "description": {
+        "tr": "Veriye dayalı pazarlama, SEO ve dönüşüm optimizasyonu ile markanızın dijital görünürlüğünü artırıyoruz.",
+        "en": "We boost your brand's digital visibility with data-driven marketing, SEO and conversion optimization."
+      },
+      "features": [
+        {
+          "tr": "Performans pazarlama",
+          "en": "Performance marketing"
+        },
+        {
+          "tr": "SEO & içerik",
+          "en": "SEO & content"
+        },
+        {
+          "tr": "Analitik & raporlama",
+          "en": "Analytics & reporting"
+        }
+      ]
+    },
+    {
+      "id": "svc-security",
+      "icon": "shield",
+      "title": {
+        "tr": "Siber Güvenlik",
+        "en": "Cyber Security"
+      },
+      "description": {
+        "tr": "Sistemlerinizi uçtan uca koruyor, sızma testleri ve uyumluluk denetimleri ile riskleri en aza indiriyoruz.",
+        "en": "We protect your systems end to end, minimizing risk with penetration tests and compliance audits."
+      },
+      "features": [
+        {
+          "tr": "Sızma testleri",
+          "en": "Penetration testing"
+        },
+        {
+          "tr": "KVKK & uyumluluk",
+          "en": "GDPR & compliance"
+        },
+        {
+          "tr": "Güvenlik operasyonları",
+          "en": "Security operations"
+        }
+      ]
+    },
+    {
+      "id": "svc-design",
+      "icon": "palette",
+      "title": {
+        "tr": "UX / UI Tasarım",
+        "en": "UX / UI Design"
+      },
+      "description": {
+        "tr": "Kullanıcı odaklı, estetik ve dönüşüm getiren arayüzler tasarlıyor, marka deneyimini güçlendiriyoruz.",
+        "en": "We design user-centric, aesthetic and high-converting interfaces that strengthen your brand experience."
+      },
+      "features": [
+        {
+          "tr": "Kullanıcı araştırması",
+          "en": "User research"
+        },
+        {
+          "tr": "Tasarım sistemleri",
+          "en": "Design systems"
+        },
+        {
+          "tr": "Prototipleme",
+          "en": "Prototyping"
+        }
+      ]
+    }
+  ],
+  "stats": [
+    {
+      "id": "stat-projects",
+      "value": 250,
+      "suffix": "+",
+      "label": {
+        "tr": "Tamamlanan Proje",
+        "en": "Projects Delivered"
+      }
+    },
+    {
+      "id": "stat-clients",
+      "value": 120,
+      "suffix": "+",
+      "label": {
+        "tr": "Mutlu Müşteri",
+        "en": "Happy Clients"
+      }
+    },
+    {
+      "id": "stat-experts",
+      "value": 45,
+      "suffix": "",
+      "label": {
+        "tr": "Uzman Ekip Üyesi",
+        "en": "Expert Team Members"
+      }
+    },
+    {
+      "id": "stat-satisfaction",
+      "value": 98,
+      "suffix": "%",
+      "label": {
+        "tr": "Memnuniyet Oranı",
+        "en": "Satisfaction Rate"
+      }
+    }
+  ],
+  "about": {
+    "badge": {
+      "tr": "Biz Kimiz",
+      "en": "Who We Are"
+    },
+    "title": {
+      "tr": "Teknolojiyi anlamlı işlere dönüştüren ekip",
+      "en": "A team that turns technology into meaningful work"
+    },
+    "paragraphs": [
+      {
+        "tr": "2013'ten bu yana; girişimlerden kurumsal holdinglere kadar farklı ölçeklerdeki markaların dijital yolculuğuna eşlik ediyoruz. Her projeye stratejik bir ortak gibi yaklaşıyor, sadece kod yazmıyor; iş sonuçları üretiyoruz.",
+        "en": "Since 2013 we have accompanied brands of every scale — from startups to enterprise holdings — on their digital journey. We approach every project as a strategic partner, not just writing code but producing business outcomes."
+      },
+      {
+        "tr": "Strateji, tasarım, mühendislik ve büyüme disiplinlerini tek ekipte birleştiriyoruz. Bu bütünsel yaklaşım, fikirlerin daha hızlı ve daha az riskle ürüne dönüşmesini sağlıyor.",
+        "en": "We unite strategy, design, engineering and growth disciplines in a single team. This holistic approach turns ideas into products faster and with less risk."
+      }
+    ],
+    "highlights": [
+      {
+        "icon": "target",
+        "title": {
+          "tr": "Sonuç Odaklı",
+          "en": "Outcome Driven"
+        },
+        "text": {
+          "tr": "Ölçülebilir iş hedeflerine kilitleniyoruz.",
+          "en": "We lock onto measurable business goals."
+        }
+      },
+      {
+        "icon": "users",
+        "title": {
+          "tr": "Deneyimli Ekip",
+          "en": "Seasoned Team"
+        },
+        "text": {
+          "tr": "Ortalama 8+ yıl sektör tecrübesi.",
+          "en": "8+ years of average industry experience."
+        }
+      },
+      {
+        "icon": "zap",
+        "title": {
+          "tr": "Hızlı Teslim",
+          "en": "Fast Delivery"
+        },
+        "text": {
+          "tr": "Çevik süreçlerle hızlı iterasyon.",
+          "en": "Rapid iteration with agile processes."
+        }
+      },
+      {
+        "icon": "shield",
+        "title": {
+          "tr": "Güvenilir",
+          "en": "Reliable"
+        },
+        "text": {
+          "tr": "Uçtan uca güvenlik ve şeffaflık.",
+          "en": "End-to-end security and transparency."
+        }
+      }
+    ]
+  },
+  "referencesMeta": {
+    "badge": {
+      "tr": "Referanslar",
+      "en": "References"
+    },
+    "title": {
+      "tr": "Türkiye'nin öncü markaları bize güveniyor",
+      "en": "Leading brands trust us"
+    },
+    "subtitle": {
+      "tr": "Farklı sektörlerden 120'den fazla markayla dijital başarı hikâyeleri yazdık.",
+      "en": "We have written digital success stories with 120+ brands across industries."
+    }
+  },
+  "references": [
+    {
+      "id": "ref-1",
+      "name": "Vestera",
+      "category": {
+        "tr": "Perakende",
+        "en": "Retail"
+      }
+    },
+    {
+      "id": "ref-2",
+      "name": "Aurora Bank",
+      "category": {
+        "tr": "Finans",
+        "en": "Finance"
+      }
+    },
+    {
+      "id": "ref-3",
+      "name": "Metronom",
+      "category": {
+        "tr": "Teknoloji",
+        "en": "Technology"
+      }
+    },
+    {
+      "id": "ref-4",
+      "name": "Helios Enerji",
+      "category": {
+        "tr": "Enerji",
+        "en": "Energy"
+      }
+    },
+    {
+      "id": "ref-5",
+      "name": "Quanta",
+      "category": {
+        "tr": "Sağlık",
+        "en": "Healthcare"
+      }
+    },
+    {
+      "id": "ref-6",
+      "name": "Northwind",
+      "category": {
+        "tr": "Lojistik",
+        "en": "Logistics"
+      }
+    },
+    {
+      "id": "ref-7",
+      "name": "Lumina",
+      "category": {
+        "tr": "Medya",
+        "en": "Media"
+      }
+    },
+    {
+      "id": "ref-8",
+      "name": "Orbit Tech",
+      "category": {
+        "tr": "Yazılım",
+        "en": "Software"
+      }
+    },
+    {
+      "id": "ref-9",
+      "name": "Zephyr",
+      "category": {
+        "tr": "Havacılık",
+        "en": "Aviation"
+      }
+    },
+    {
+      "id": "ref-10",
+      "name": "Kalder",
+      "category": {
+        "tr": "Üretim",
+        "en": "Manufacturing"
+      }
+    },
+    {
+      "id": "ref-11",
+      "name": "Nova Holding",
+      "category": {
+        "tr": "Holding",
+        "en": "Holding"
+      }
+    },
+    {
+      "id": "ref-12",
+      "name": "Prime Retail",
+      "category": {
+        "tr": "E-ticaret",
+        "en": "E-commerce"
+      }
+    }
+  ],
+  "testimonialsMeta": {
+    "badge": {
+      "tr": "Görüşler",
+      "en": "Testimonials"
+    },
+    "title": {
+      "tr": "Müşterilerimiz ne diyor?",
+      "en": "What our clients say"
+    },
+    "subtitle": {
+      "tr": "Başarı, birlikte çalıştığımız markaların sözlerinde gizli.",
+      "en": "Success lives in the words of the brands we work with."
+    }
+  },
+  "testimonials": [
+    {
+      "id": "tst-1",
+      "quote": {
+        "tr": "Nexuva ekibi dijital dönüşüm sürecimizde gerçek bir stratejik ortak oldu. Beklentilerimizin ötesinde bir iş çıkardılar.",
+        "en": "The Nexuva team became a true strategic partner in our digital transformation. They delivered beyond our expectations."
+      },
+      "author": "Elif Yıldız",
+      "role": {
+        "tr": "Dijital Direktörü",
+        "en": "Digital Director"
+      },
+      "company": "Aurora Bank",
+      "rating": 5
+    },
+    {
+      "id": "tst-2",
+      "quote": {
+        "tr": "Ürünümüzü rekor sürede pazara çıkardık. Teknik derinlikleri ve iletişimleri kusursuzdu.",
+        "en": "We launched our product to market in record time. Their technical depth and communication were flawless."
+      },
+      "author": "Mert Kaya",
+      "role": {
+        "tr": "Kurucu Ortak",
+        "en": "Co-Founder"
+      },
+      "company": "Orbit Tech",
+      "rating": 5
+    },
+    {
+      "id": "tst-3",
+      "quote": {
+        "tr": "E-ticaret dönüşüm oranımız ilk çeyrekte %40 arttı. Veri odaklı yaklaşımları fark yarattı.",
+        "en": "Our e-commerce conversion rate grew 40% in the first quarter. Their data-driven approach made the difference."
+      },
+      "author": "Selin Demir",
+      "role": {
+        "tr": "Pazarlama Müdürü",
+        "en": "Marketing Manager"
+      },
+      "company": "Prime Retail",
+      "rating": 5
+    },
+    {
+      "id": "tst-4",
+      "quote": {
+        "tr": "Altyapımızı buluta taşıdıktan sonra operasyon maliyetlerimiz belirgin şekilde düştü. Kesintisiz ve güvenli.",
+        "en": "After migrating our infrastructure to the cloud, our operational costs dropped noticeably. Seamless and secure."
+      },
+      "author": "Can Öztürk",
+      "role": {
+        "tr": "CTO",
+        "en": "CTO"
+      },
+      "company": "Helios Enerji",
+      "rating": 5
+    }
+  ],
+  "processMeta": {
+    "badge": {
+      "tr": "Nasıl Çalışıyoruz",
+      "en": "How We Work"
+    },
+    "title": {
+      "tr": "Fikirden ürüne dört adımda",
+      "en": "From idea to product in four steps"
+    },
+    "subtitle": {
+      "tr": "Şeffaf, çevik ve öngörülebilir bir süreçle projelerinizi hayata geçiriyoruz.",
+      "en": "We bring your projects to life with a transparent, agile and predictable process."
+    }
+  },
+  "process": [
+    {
+      "id": "prc-1",
+      "title": {
+        "tr": "Keşif & Strateji",
+        "en": "Discovery & Strategy"
+      },
+      "description": {
+        "tr": "İhtiyaçlarınızı derinlemesine analiz eder, hedefleri ve kapsamı netleştiririz.",
+        "en": "We deeply analyze your needs and clarify goals and scope."
+      }
+    },
+    {
+      "id": "prc-2",
+      "title": {
+        "tr": "Tasarım & Prototip",
+        "en": "Design & Prototype"
+      },
+      "description": {
+        "tr": "Kullanıcı deneyimini kurgular, tıklanabilir prototiplerle fikri doğrularız.",
+        "en": "We craft the user experience and validate the idea with clickable prototypes."
+      }
+    },
+    {
+      "id": "prc-3",
+      "title": {
+        "tr": "Geliştirme & Test",
+        "en": "Build & Test"
+      },
+      "description": {
+        "tr": "Çevik sprintlerle geliştirir, her adımda kalite ve güvenliği test ederiz.",
+        "en": "We build in agile sprints, testing quality and security at every step."
+      }
+    },
+    {
+      "id": "prc-4",
+      "title": {
+        "tr": "Lansman & Büyüme",
+        "en": "Launch & Grow"
+      },
+      "description": {
+        "tr": "Ürünü yayına alır, veriyle optimize eder ve büyümeyi sürdürülebilir kılarız.",
+        "en": "We launch the product, optimize with data and make growth sustainable."
+      }
+    }
+  ],
+  "cta": {
+    "title": {
+      "tr": "Dijital dönüşümünüzü başlatmaya hazır mısınız?",
+      "en": "Ready to start your digital transformation?"
+    },
+    "subtitle": {
+      "tr": "Fikrinizi konuşalım, size özel bir yol haritası çıkaralım. İlk görüşme her zaman bizden.",
+      "en": "Let's talk about your idea and build a roadmap tailored to you. The first consultation is always on us."
+    },
+    "button": {
+      "label": {
+        "tr": "Ücretsiz Görüşme Planla",
+        "en": "Book a Free Consultation"
+      },
+      "href": "/contact"
+    }
+  },
+  "contact": {
+    "badge": {
+      "tr": "İletişim",
+      "en": "Contact"
+    },
+    "title": {
+      "tr": "Bir kahve içelim, projenizi konuşalım",
+      "en": "Let's grab a coffee and talk about your project"
+    },
+    "description": {
+      "tr": "Formu doldurun, 24 saat içinde size dönüş yapalım. Ya da doğrudan bize ulaşın.",
+      "en": "Fill out the form and we'll get back to you within 24 hours. Or reach us directly."
+    },
+    "email": "info@nexuva.com",
+    "phone": "+90 212 555 0100",
+    "address": {
+      "tr": "Levent, 34330 Beşiktaş / İstanbul",
+      "en": "Levent, 34330 Besiktas / Istanbul, Türkiye"
+    }
+  },
+  "footer": {
+    "about": {
+      "tr": "Nexuva, markaların dijitalde büyümesi için strateji, yazılım ve tasarımı bir araya getiren dijital dönüşüm ajansıdır.",
+      "en": "Nexuva is a digital transformation agency uniting strategy, software and design to grow brands in the digital world."
+    },
+    "columns": [
+      {
+        "title": {
+          "tr": "Kurumsal",
+          "en": "Company"
+        },
+        "links": [
+          {
+            "label": {
+              "tr": "Hakkımızda",
+              "en": "About"
+            },
+            "href": "/about"
+          },
+          {
+            "label": {
+              "tr": "Referanslar",
+              "en": "References"
+            },
+            "href": "/references"
+          },
+          {
+            "label": {
+              "tr": "İletişim",
+              "en": "Contact"
+            },
+            "href": "/contact"
+          }
+        ]
+      },
+      {
+        "title": {
+          "tr": "Hizmetler",
+          "en": "Services"
+        },
+        "links": [
+          {
+            "label": {
+              "tr": "Dijital Strateji",
+              "en": "Digital Strategy"
+            },
+            "href": "/services"
+          },
+          {
+            "label": {
+              "tr": "Yazılım Geliştirme",
+              "en": "Software Development"
+            },
+            "href": "/services"
+          },
+          {
+            "label": {
+              "tr": "Bulut & DevOps",
+              "en": "Cloud & DevOps"
+            },
+            "href": "/services"
+          }
+        ]
+      }
+    ],
+    "copyright": {
+      "tr": "Tüm hakları saklıdır.",
+      "en": "All rights reserved."
+    }
+  }
+}

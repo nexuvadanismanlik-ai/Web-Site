@@ -12,6 +12,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { readSiteContent, readMessages } from '../../lib/content';
+import { adminPath } from '../../lib/routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +98,7 @@ export default async function DashboardHome() {
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-lg font-semibold text-white">Son Mesajlar</h2>
-            <Link href="/messages" className="text-sm text-brand-300 hover:text-brand-200">
+            <Link href={adminPath('/messages')} className="text-sm text-brand-300 hover:text-brand-200">
               Tümü
             </Link>
           </div>
@@ -111,7 +112,7 @@ export default async function DashboardHome() {
               messages.slice(0, 5).map((m) => (
                 <Link
                   key={m.id}
-                  href="/messages"
+                  href={adminPath('/messages')}
                   className="flex items-center gap-3 p-4 transition-colors hover:bg-white/[0.03]"
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-xs font-bold text-white">

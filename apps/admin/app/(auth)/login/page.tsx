@@ -4,11 +4,12 @@ import { useState, type FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, Mail, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { adminPath } from '../../../lib/routes';
 
 export default function LoginPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = params.get('callbackUrl') || '/';
+  const callbackUrl = params.get('callbackUrl') || adminPath('/');
   const [email, setEmail] = useState('admin@nexuva.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

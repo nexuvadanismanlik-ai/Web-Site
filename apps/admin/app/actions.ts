@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import type { SiteContent } from '@nexuva/types';
 import { authOptions } from '../lib/auth';
+import { adminPath } from '../lib/routes';
 import {
   readMessages,
   saveSectionViaApi,
@@ -32,7 +33,9 @@ export async function saveSection<K extends keyof SiteContent>(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'save-failed' };
   }
-  revalidatePath('/', 'layout');
+  // Scoped to the admin subtree: once the panel lives inside the public site,
+  // an unqualified '/' would revalidate the marketing pages instead.
+  revalidatePath(adminPath('/'), 'layout');
   return { ok: true };
 }
 
@@ -51,21 +54,23 @@ export async function saveAtPath(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'save-failed' };
   }
-  revalidatePath('/', 'layout');
+  // Scoped to the admin subtree: once the panel lives inside the public site,
+  // an unqualified '/' would revalidate the marketing pages instead.
+  revalidatePath(adminPath('/'), 'layout');
   return { ok: true };
 }
 
 export async function setMessageRead(id: string, read: boolean): Promise<{ ok: boolean }> {
   await requireAuth();
   await setMessageReadViaApi(id, read);
-  revalidatePath('/messages');
+  revalidatePath(adminPath('/messages'));
   return { ok: true };
 }
 
 export async function deleteMessage(id: string): Promise<{ ok: boolean }> {
   await requireAuth();
   await deleteMessageViaApi(id);
-  revalidatePath('/messages');
+  revalidatePath(adminPath('/messages'));
   return { ok: true };
 }
 
@@ -102,6 +107,6 @@ export async function markAllMessagesRead(): Promise<{ ok: boolean }> {
   await Promise.all(
     list.filter((m) => !m.read).map((m) => setMessageReadViaApi(m.id, true)),
   );
-  revalidatePath('/messages');
+  revalidatePath(adminPath('/messages'));
   return { ok: true };
 }

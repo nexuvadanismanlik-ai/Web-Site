@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { adminPath } from './routes';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
 
@@ -22,7 +23,7 @@ interface BackendLoginResponse {
  */
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
-  pages: { signIn: '/login' },
+  pages: { signIn: adminPath('/login') },
   providers: [
     CredentialsProvider({
       name: 'Credentials',

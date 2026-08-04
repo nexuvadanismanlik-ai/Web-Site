@@ -26,6 +26,18 @@ export function generateStaticParams() {
   return SUPPORTED_LOCALES.map((locale) => ({ locale }));
 }
 
+/**
+ * Only the locales above exist. [locale] matches any single segment, and
+ * normalizeLocale falls back to 'tr' rather than rejecting, so without this a
+ * server deployment would answer /web, /pricing and every typo with HTTP 200
+ * and the Turkish homepage — unbounded duplicate content for crawlers.
+ *
+ * Static export never generated those paths, so the hole is only reachable once
+ * the site runs as a server. Set here rather than at that migration, because it
+ * costs nothing today and is easy to forget later.
+ */
+export const dynamicParams = false;
+
 export async function generateMetadata({
   params,
 }: {

@@ -25,6 +25,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { PublishButton } from './publish-button';
+import { adminPath, isAdminRoute } from '../lib/routes';
+
+/** Public site, opened from the sidebar. Falls back to the local dev site. */
+const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 
 interface NavItem {
   label: string;
@@ -69,8 +73,13 @@ export function AdminShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+  // Compared through adminPath so the nav still highlights correctly once the
+  // panel is mounted under a base path.
+  const isActive = (href: string) => {
+    if (href === '/') return isAdminRoute(pathname, '/');
+    const target = adminPath(href);
+    return pathname === target || (pathname?.startsWith(target + '/') ?? false);
+  };
 
   const SidebarInner = (
     <div className="flex h-full flex-col">
@@ -94,7 +103,7 @@ export function AdminShell({
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={adminPath(item.href)}
                     onClick={() => setOpen(false)}
                     className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                       active
@@ -112,7 +121,7 @@ export function AdminShell({
               })}
               {group.section === 'İçerik' && (
                 <Link
-                  href="/messages"
+                  href={adminPath('/messages')}
                   onClick={() => setOpen(false)}
                   className={`group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive('/messages')
@@ -138,7 +147,7 @@ export function AdminShell({
 
       <div className="border-t border-white/10 p-3">
         <a
-          href="http://localhost:3000"
+          href={SITE_URL}
           target="_blank"
           rel="noreferrer"
           className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-300 transition-colors hover:bg-white/5 hover:text-white"
@@ -147,7 +156,7 @@ export function AdminShell({
           Siteyi Görüntüle
         </a>
         <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => signOut({ callbackUrl: adminPath('/login') })}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-300 transition-colors hover:bg-red-500/10 hover:text-red-300"
         >
           <LogOut style={{ width: 18, height: 18 }} />

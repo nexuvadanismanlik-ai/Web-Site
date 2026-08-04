@@ -43,7 +43,7 @@ Worth stating, because it is most of the system:
 Dropping `unoptimized` is optional but recommended: image optimization needs a
 runtime, and now there is one.
 
-### 2. `lib/content.ts` — one field
+### 2. `lib/content.ts` — one field, and drop the build nonce
 
 ```diff
      res = await fetch(url, {
@@ -51,6 +51,12 @@ runtime, and now there is one.
        next: { revalidate: REVALIDATE_SECONDS, tags: [SITE_CONTENT_TAG] },
      });
 ```
+
+Also delete `BUILD_NONCE` and the `?_build=` it appends. It exists only because
+`force-cache` writes into `.next/cache`, which the host restores between builds
+— so a publish-triggered rebuild of the same commit would otherwise reuse the
+response captured by the first build and ship stale content. Under ISR the cache
+is invalidated by tag instead, and a per-build key would defeat that.
 
 `force-cache` exists only because a static export cannot prerender a fetch
 marked dynamic. The `next: { revalidate, tags }` options are already present and

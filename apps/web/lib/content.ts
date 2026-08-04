@@ -36,8 +36,24 @@ export const REVALIDATE_SECONDS = 300;
  */
 let cached: Promise<SiteContent> | null = null;
 
+/**
+ * Makes the request URL unique per build.
+ *
+ * Publishing content triggers a rebuild of the same commit, and `force-cache`
+ * writes the API response into `.next/cache`, which the host restores between
+ * builds. Without this the second and every later build reuses the response
+ * captured by the first, so the site is built successfully and still shows the
+ * content from whenever the cache was first populated — which is exactly what
+ * happened in production. A per-build value gives the fetch a cache key that
+ * cannot survive into the next build.
+ *
+ * The commit hash would not work: a content-only publish rebuilds the same
+ * commit.
+ */
+const BUILD_NONCE = Date.now().toString(36);
+
 async function fetchSiteContent(): Promise<SiteContent> {
-  const url = `${API_BASE}/website/content`;
+  const url = `${API_BASE}/website/content?_build=${BUILD_NONCE}`;
 
   let res: Response;
   try {

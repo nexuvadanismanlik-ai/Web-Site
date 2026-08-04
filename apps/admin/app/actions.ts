@@ -89,6 +89,9 @@ export async function publishSite(): Promise<PublishResult> {
       strategy: 'none',
       at: new Date().toISOString(),
       detail: err instanceof Error ? err.message : 'publish-failed',
+      state: 'FAILED',
+      id: null,
+      actor: null,
     };
   }
 }

@@ -13,9 +13,16 @@ export interface ContactInput {
   message: string;
 }
 
+/**
+ * Why the submission failed, so the form can say something true rather than a
+ * generic apology. `rate-limit` in particular is not a fault the visitor can
+ * fix by retrying immediately.
+ */
+export type ContactError = 'invalid' | 'network' | 'server' | 'rate-limit';
+
 export interface ContactResult {
   ok: boolean;
-  error?: 'invalid' | 'network' | 'server';
+  error?: ContactError;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,7 +37,9 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
   }
 
   try {
-    const res = await fetch(`${API_BASE}/contact`, {
+    // The controller is @Controller('website/contact'). Posting to /contact
+    // returned 404 on every submission and silently lost the lead.
+    const res = await fetch(`${API_BASE}/website/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -42,8 +51,12 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
       }),
     });
 
-    if (!res.ok) return { ok: false, error: 'server' };
-    return { ok: true };
+    if (res.ok) return { ok: true };
+    if (res.status === 429) return { ok: false, error: 'rate-limit' };
+    // 4xx means this submission will not succeed on retry either; only 5xx is
+    // worth presenting as a transient server problem.
+    if (res.status >= 400 && res.status < 500) return { ok: false, error: 'invalid' };
+    return { ok: false, error: 'server' };
   } catch {
     return { ok: false, error: 'network' };
   }

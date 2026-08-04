@@ -183,7 +183,7 @@ export class SiteContentService {
       create: { tenantId, key, data: payload },
       update: { data: payload },
     });
-    this.publish.contentChanged();
+    this.publish.contentChanged(tenantId);
     return saved;
   }
 
@@ -222,7 +222,7 @@ export class SiteContentService {
     }
 
     const created = await this.delegate(slug).create({ data: { ...data, tenantId } });
-    this.publish.contentChanged();
+    this.publish.contentChanged(tenantId);
     return created;
   }
 
@@ -256,23 +256,23 @@ export class SiteContentService {
       }
     });
 
-    this.publish.contentChanged();
+    this.publish.contentChanged(tenantId);
     return this.listItems(slug, tenantSlug);
   }
 
   async updateItem(slug: string, id: string, body: unknown, tenantSlug?: string) {
     const def = this.def(slug);
     const data = this.validate(def.create.partial(), body);
-    await this.assertItemExists(slug, id, tenantSlug);
+    const tenantId = await this.assertItemExists(slug, id, tenantSlug);
     const updated = await this.delegate(slug).update({ where: { id }, data });
-    this.publish.contentChanged();
+    this.publish.contentChanged(tenantId);
     return updated;
   }
 
   /** Soft-deletes when the model supports it; hard-deletes otherwise. */
   async removeItem(slug: string, id: string, tenantSlug?: string) {
     const def = this.def(slug);
-    await this.assertItemExists(slug, id, tenantSlug);
+    const tenantId = await this.assertItemExists(slug, id, tenantSlug);
 
     const removed = def.softDelete
       ? await this.delegate(slug).update({
@@ -281,7 +281,7 @@ export class SiteContentService {
         })
       : await this.delegate(slug).delete({ where: { id } });
 
-    this.publish.contentChanged();
+    this.publish.contentChanged(tenantId);
     return removed;
   }
 
@@ -304,7 +304,7 @@ export class SiteContentService {
         delegate.update({ where: { id }, data: { position: index } }),
       ) as never,
     );
-    this.publish.contentChanged();
+    this.publish.contentChanged(tenantId);
     return this.listItems(slug, tenantSlug);
   }
 
@@ -335,7 +335,12 @@ export class SiteContentService {
     return result.data as AnyRecord;
   }
 
-  private async assertItemExists(slug: string, id: string, tenantSlug?: string) {
+  /** Returns the resolved tenant so callers do not have to look it up again. */
+  private async assertItemExists(
+    slug: string,
+    id: string,
+    tenantSlug?: string,
+  ): Promise<string> {
     const def = this.def(slug);
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
     const found = await this.delegate(slug).findFirst({
@@ -343,6 +348,7 @@ export class SiteContentService {
       select: { id: true },
     });
     if (!found) throw new NotFoundException(`${slug} item "${id}" not found`);
+    return tenantId;
   }
 }
 

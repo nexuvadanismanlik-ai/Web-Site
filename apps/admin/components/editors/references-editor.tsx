@@ -17,7 +17,7 @@ export function ReferencesEditor({
 }) {
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [refs, setRefs] = useState<ReferenceItem[]>(r0);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const patch = (id: string, p: Partial<ReferenceItem>) =>
     setRefs((l) => l.map((r) => (r.id === id ? { ...r, ...p } : r)));
@@ -29,6 +29,7 @@ export function ReferencesEditor({
         subtitle="Akan referans slider'ındaki markalar"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() =>
           run(async () => {
             await saveSection('referencesMeta', meta);

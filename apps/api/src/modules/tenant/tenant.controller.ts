@@ -1,5 +1,6 @@
 import { Controller, Get, Query, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { AnyAuthenticated } from '../../common/decorators/roles.decorator';
 import { TenantService } from './tenant.service';
 
 @ApiTags('tenant')
@@ -8,6 +9,7 @@ export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
   @Get('resolve')
+  @AnyAuthenticated()
   @ApiOperation({ summary: 'Resolve tenant context by domain' })
   async resolve(@Query('domain') domain: string) {
     if (!domain) {

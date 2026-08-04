@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Check, Loader2, Save, Trash2, Plus } from 'lucide-react';
+import { AlertCircle, Check, Loader2, Save, Trash2, Plus } from 'lucide-react';
 import type { Localized, SectionMeta } from '@nexuva/types';
 
 export function TextField({
@@ -219,54 +219,95 @@ export function EditorHeader({
   onSave,
   saving,
   saved,
+  error,
 }: {
   title: string;
   subtitle?: string;
   onSave: () => void;
   saving: boolean;
   saved: boolean;
+  /** Set when the last save failed. Shown in place of any success signal. */
+  error?: string | null;
 }) {
   return (
-    <div className="chrome sticky top-16 z-20 -mx-5 mb-6 flex items-center justify-between gap-4 border-b px-5 py-4 sm:-mx-8 sm:px-8">
-      <div>
-        <h1 className="font-heading text-xl font-bold text-fg sm:text-2xl">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+    <div className="chrome sticky top-16 z-20 -mx-5 mb-6 border-b px-5 py-4 sm:-mx-8 sm:px-8">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-xl font-bold text-fg sm:text-2xl">{title}</h1>
+          {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+        </div>
+        <button onClick={onSave} disabled={saving} className="btn-primary shrink-0">
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Kaydediliyor
+            </>
+          ) : saved ? (
+            <>
+              <Check className="h-4 w-4" /> Kaydedildi
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" /> Kaydet
+            </>
+          )}
+        </button>
       </div>
-      <button onClick={onSave} disabled={saving} className="btn-primary shrink-0">
-        {saving ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Kaydediliyor
-          </>
-        ) : saved ? (
-          <>
-            <Check className="h-4 w-4" /> Kaydedildi
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4" /> Kaydet
-          </>
-        )}
-      </button>
+      {error && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </p>
+      )}
     </div>
   );
 }
 
-/** Small hook wrapper to manage save state for an editor. */
+/**
+ * What every save action in app/actions.ts resolves to. They report failure by
+ * returning rather than throwing, because a server action that throws loses its
+ * message in production — the client would only see a generic render error.
+ */
+export interface SaveResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Save state for an editor.
+ *
+ * This used to call setSaved(true) as soon as the action resolved, without
+ * looking at what it resolved to. Since the actions signal failure in their
+ * return value, a rejected save still reported "Kaydedildi" and the operator
+ * walked away believing the edit had landed.
+ */
 export function useSaver() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function run(fn: () => Promise<unknown>) {
+  async function run(fn: () => Promise<SaveResult | void>) {
     setSaving(true);
     setSaved(false);
+    setError(null);
     try {
-      await fn();
+      const result = await fn();
+      if (result && !result.ok) {
+        setError(result.error?.trim() || 'Kaydedilemedi.');
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      // An expired session throws out of requireAuth() before the action's own
+      // error handling runs, so this path is reachable in normal use.
+      setError(err instanceof Error ? err.message : 'Kaydedilemedi.');
     } finally {
       setSaving(false);
     }
   }
 
-  return { saving, saved, run };
+  return { saving, saved, error, run };
 }

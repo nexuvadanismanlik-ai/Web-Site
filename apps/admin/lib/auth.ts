@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { adminPath } from './routes';
+import { sessionSecret } from './session-secret';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
 
@@ -177,6 +178,5 @@ export const authOptions: NextAuthOptions = {
       return s;
     },
   },
-  secret:
-    process.env.NEXTAUTH_SECRET ?? 'nexuva-admin-dev-secret-please-change-0123456789abcdef',
+  secret: sessionSecret(),
 };

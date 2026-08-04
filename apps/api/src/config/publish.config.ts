@@ -23,6 +23,17 @@ export const publishConfig = registerAs('publish', () => ({
   revalidateSecret: process.env.FRONTEND_REVALIDATE_SECRET ?? '',
 
   /**
+   * Credentials for reading back how a triggered build ended.
+   *
+   * The deploy hook answers the moment the build is queued, so without these
+   * the panel can only report that a rebuild was requested — a build that fails
+   * would leave the site stale with nothing on screen to say so. With them, the
+   * deploy is polled and the publish record settles on SUCCEEDED or FAILED.
+   */
+  renderApiKey: process.env.RENDER_API_KEY ?? '',
+  renderServiceId: process.env.RENDER_FRONTEND_SERVICE_ID ?? '',
+
+  /**
    * Publish automatically after a content change, instead of waiting for the
    * editor to press Publish. Off by default: a rebuild takes minutes and a
    * burst of edits would queue several.

@@ -1,12 +1,27 @@
 import { Injectable, NotFoundException, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
+import { EmailService } from '../../email/email.service';
 import type { CreateContactMessageDto } from './dto/create-contact-message.dto';
 import type { ListMessagesDto } from './dto/list-messages.dto';
 
-/** Submissions allowed from one IP within the rolling window. */
+/**
+ * Submissions allowed from one IP within the rolling window. This only counts
+ * distinct visitors once the app trusts the proxy's forwarded address — see
+ * `resolveTrustProxy` in config/app.config.ts.
+ */
 const MAX_PER_IP = 5;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+/** Everything here goes into an HTML email and is written by the public. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 @Injectable()
 export class ContactService {
@@ -15,6 +30,8 @@ export class ContactService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenants: WebsiteTenantService,
+    private readonly email: EmailService,
+    private readonly config: ConfigService,
   ) {}
 
   // ─── Public submission ────────────────────────────────────────────────────
@@ -62,8 +79,59 @@ export class ContactService {
       select: { id: true, createdAt: true },
     });
 
+    // Announced, not awaited: the enquiry is already safely stored, and the
+    // visitor should not wait on an outbound mail call — or see an error if it
+    // fails. Failures are logged, never propagated.
+    void this.announce(dto).catch((error: unknown) => {
+      this.logger.error(
+        `Contact notification failed for message ${created.id}: ${String(error)}`,
+      );
+    });
+
     // The public caller gets an acknowledgement only — never the stored row.
     return { success: true, id: created.id, createdAt: created.createdAt };
+  }
+
+  /**
+   * Emails the team that a new enquiry arrived. Silently does nothing when no
+   * recipient or no provider key is configured, so an unconfigured environment
+   * still accepts enquiries rather than logging an error on every submission.
+   */
+  private async announce(dto: CreateContactMessageDto): Promise<void> {
+    const to = this.config.get<string[]>('email.contactNotifyTo', []);
+    if (to.length === 0) return;
+    if (!this.config.get<string>('email.resendApiKey')) {
+      this.logger.warn('Contact notification skipped: no email provider key configured');
+      return;
+    }
+
+    const subject = dto.subject?.trim() || 'Konu belirtilmedi';
+    const rows: [string, string][] = [
+      ['Ad Soyad', dto.name.trim()],
+      ['E-posta', dto.email.trim()],
+      ['Telefon', dto.phone?.trim() || '—'],
+      ['Konu', subject],
+    ];
+
+    await this.email.send({
+      to,
+      subject: `Yeni web sitesi talebi: ${subject}`,
+      text: [
+        ...rows.map(([label, value]) => `${label}: ${value}`),
+        '',
+        dto.message.trim(),
+      ].join('\n'),
+      html: [
+        '<h2>Yeni web sitesi talebi</h2>',
+        '<table cellpadding="6" style="border-collapse:collapse">',
+        ...rows.map(
+          ([label, value]) =>
+            `<tr><td style="color:#666">${label}</td><td><strong>${escapeHtml(value)}</strong></td></tr>`,
+        ),
+        '</table>',
+        `<p style="white-space:pre-wrap">${escapeHtml(dto.message.trim())}</p>`,
+      ].join(''),
+    });
   }
 
   // ─── Admin management ─────────────────────────────────────────────────────

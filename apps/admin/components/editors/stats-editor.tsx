@@ -10,7 +10,7 @@ const empty: Localized = { tr: '', en: '' };
 
 export function StatsEditor({ stats: s0 }: { stats: StatItem[] }) {
   const [stats, setStats] = useState<StatItem[]>(s0);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const patch = (id: string, p: Partial<StatItem>) =>
     setStats((l) => l.map((s) => (s.id === id ? { ...s, ...p } : s)));
@@ -22,6 +22,7 @@ export function StatsEditor({ stats: s0 }: { stats: StatItem[] }) {
         subtitle="Sayaçlı rakamlar (scroll ile animasyonlu artar)"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() => run(() => saveSection('stats', stats))}
       />
       <div className="space-y-3">

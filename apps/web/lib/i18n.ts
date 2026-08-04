@@ -37,6 +37,9 @@ export const ui = {
     formSending: 'Gönderiliyor...',
     formSuccess: 'Teşekkürler! Mesajınız alındı, en kısa sürede dönüş yapacağız.',
     formError: 'Bir hata oluştu. Lütfen tekrar deneyin.',
+    formInvalid: 'Lütfen alanları kontrol edip tekrar deneyin.',
+    formRateLimit:
+      'Kısa sürede çok fazla mesaj gönderildi. Lütfen biraz sonra tekrar deneyin veya doğrudan e-posta yazın.',
     namePlaceholder: 'Adınız ve soyadınız',
     emailPlaceholder: 'ornek@sirket.com',
     phonePlaceholder: '+90 5xx xxx xx xx',
@@ -59,6 +62,9 @@ export const ui = {
     formSending: 'Sending...',
     formSuccess: 'Thank you! Your message has been received, we will get back to you shortly.',
     formError: 'Something went wrong. Please try again.',
+    formInvalid: 'Please check the fields and try again.',
+    formRateLimit:
+      'Too many messages sent in a short time. Please try again shortly, or email us directly.',
     namePlaceholder: 'Your full name',
     emailPlaceholder: 'you@company.com',
     phonePlaceholder: '+90 5xx xxx xx xx',

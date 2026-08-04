@@ -31,7 +31,7 @@ export function ServicesEditor({
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [services, setServices] = useState<ServiceItem[]>(s0);
   const [openId, setOpenId] = useState<string | null>(s0[0]?.id ?? null);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const patch = (id: string, p: Partial<ServiceItem>) =>
     setServices((list) => list.map((s) => (s.id === id ? { ...s, ...p } : s)));
@@ -49,6 +49,7 @@ export function ServicesEditor({
         subtitle="Sunulan hizmetleri düzenle"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() =>
           run(async () => {
             await saveSection('servicesMeta', meta);

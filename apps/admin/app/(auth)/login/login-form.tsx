@@ -11,13 +11,18 @@ import { adminPath } from '../../../lib/routes';
  * static rendering; the page wraps this in a Suspense boundary so the rest of
  * the login screen still prerenders.
  */
+/** Why the middleware sent someone back here, in words they can act on. */
+const REDIRECT_REASONS: Record<string, string> = {
+  forbidden: 'Bu hesabın yönetim paneline erişim yetkisi yok.',
+};
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get('callbackUrl') || adminPath('/');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(REDIRECT_REASONS[params.get('error') ?? ''] ?? '');
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {

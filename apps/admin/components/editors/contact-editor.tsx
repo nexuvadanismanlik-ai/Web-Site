@@ -7,7 +7,7 @@ import { TextField, LocalizedField, Panel, EditorHeader, useSaver } from '../fie
 
 export function ContactEditor({ initial }: { initial: ContactContent }) {
   const [contact, setContact] = useState<ContactContent>(initial);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const set = <K extends keyof ContactContent>(k: K, v: ContactContent[K]) =>
     setContact((c) => ({ ...c, [k]: v }));
@@ -19,6 +19,7 @@ export function ContactEditor({ initial }: { initial: ContactContent }) {
         subtitle="İletişim bölümü içeriği ve bilgileri"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() => run(() => saveSection('contact', contact))}
       />
       <div className="space-y-6">

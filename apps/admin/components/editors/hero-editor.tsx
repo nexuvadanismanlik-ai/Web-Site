@@ -17,7 +17,7 @@ import {
 export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaContent }) {
   const [hero, setHero] = useState<HeroContent>(h0);
   const [cta, setCta] = useState<CtaContent>(c0);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const setH = <K extends keyof HeroContent>(k: K, v: HeroContent[K]) =>
     setHero((s) => ({ ...s, [k]: v }));
@@ -31,6 +31,7 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
         subtitle="Ana sayfa üst bölümü ve çağrı bandı"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() =>
           run(async () => {
             await saveSection('hero', hero);

@@ -17,7 +17,7 @@ export function TestimonialsEditor({
 }) {
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [items, setItems] = useState<TestimonialItem[]>(t0);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const patch = (id: string, p: Partial<TestimonialItem>) =>
     setItems((l) => l.map((t) => (t.id === id ? { ...t, ...p } : t)));
@@ -29,6 +29,7 @@ export function TestimonialsEditor({
         subtitle="Testimonials bölümü"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() =>
           run(async () => {
             await saveSection('testimonialsMeta', meta);

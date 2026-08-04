@@ -121,6 +121,8 @@ model Tenant {
   websiteTestimonials WebsiteTestimonial[]
   websiteProcessSteps WebsiteProcessStep[]
   contactMessages     ContactMessage[]
+  publishLogs         PublishLog[]
+  websiteState        WebsiteState?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -371,6 +373,7 @@ model User {
   notifications Notification[]
   refreshTokens RefreshToken[]
   storageFiles  StorageFile[]
+  publishLogs   PublishLog[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -904,4 +907,61 @@ model ContactMessage {
   @@index([tenantId, isRead])
   @@index([tenantId, deletedAt])
   @@map("contact_messages")
+}
+
+/// Outcome of a publish attempt.
+///
+/// A deploy hook returns as soon as the build is queued, so success at the
+/// moment of triggering says nothing about whether the site actually updated.
+/// PENDING records that gap; the build's real result arrives later.
+enum PublishState {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+/// One row per publish attempt: who asked, when, how, and what came of it.
+///
+/// This used to live in a field on the service, which meant every API restart
+/// erased the history — nobody could tell what had been published or by whom,
+/// and a redeploy silently reset the panel to "no publish recorded".
+model PublishLog {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Null for an automatic publish, which no person triggered.
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  strategy String
+  state    PublishState @default(PENDING)
+  detail   String
+
+  /// Identifier returned by the deploy provider, when it gives one. Without it
+  /// the build's outcome cannot be looked up afterwards.
+  deployId String?
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([tenantId, startedAt(sort: Desc)])
+  @@index([tenantId, state])
+  @@map("publish_logs")
+}
+
+/// Per-tenant website facts that are read far more often than they change.
+///
+/// `lastContentChangeAt` is a materialised value: the alternative is an
+/// aggregate across all nine content tables on every status poll, and the panel
+/// polls this on each page view.
+model WebsiteState {
+  tenantId String @id
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  lastContentChangeAt DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("website_state")
 }

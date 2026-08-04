@@ -20,7 +20,7 @@ export function NavigationEditor({
   const [nav, setNav] = useState<NavItem[]>(n0);
   const [logos, setLogos] = useState<string[]>(l0);
   const [footer, setFooter] = useState<FooterContent>(f0);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const patchNav = (i: number, p: Partial<NavItem>) =>
     setNav((l) => l.map((x, idx) => (idx === i ? { ...x, ...p } : x)));
@@ -35,6 +35,7 @@ export function NavigationEditor({
         subtitle="Navigasyon, logo şeridi ve alt bilgi"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() =>
           run(async () => {
             await saveSection('nav', nav);

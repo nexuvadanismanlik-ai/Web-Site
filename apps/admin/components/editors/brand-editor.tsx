@@ -19,7 +19,7 @@ const SOCIAL_ICONS = ['linkedin', 'twitter', 'instagram', 'github', 'globe'];
 
 export function BrandEditor({ initial }: { initial: BrandConfig }) {
   const [brand, setBrand] = useState<BrandConfig>(initial);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const set = <K extends keyof BrandConfig>(key: K, value: BrandConfig[K]) =>
     setBrand((b) => ({ ...b, [key]: value }));
@@ -37,6 +37,7 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
         subtitle="Logo, renkler ve iletişim bilgileri"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() => run(() => saveSection('brand', brand))}
       />
 

@@ -6,11 +6,33 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { resolveTrustProxy } from './config/app.config';
+
+/** Requests per minute per client for the API at large. */
+const MAX_PER_MINUTE = 100;
+/** Requests per minute per client for password sign-in specifically. */
+const SIGN_IN_MAX_PER_MINUTE = 5;
+
+/** Matches the sign-in route under any global prefix or version segment. */
+function isSignInAttempt(url: string | undefined): boolean {
+  if (!url) return false;
+  const path = url.split('?')[0] ?? '';
+  return path.endsWith('/auth/login');
+}
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: process.env['NODE_ENV'] === 'development' }),
+    new FastifyAdapter({
+      logger: process.env['NODE_ENV'] === 'development',
+      // The adapter is built before ConfigModule has loaded .env, so this reads
+      // process.env directly. Only deployed environments need it, and there the
+      // variable is a real one set by the platform.
+      trustProxy: resolveTrustProxy(
+        process.env['TRUST_PROXY'],
+        process.env['NODE_ENV'] ?? 'development',
+      ),
+    }),
   );
 
   // Validate required secrets before the server accepts any traffic. This runs
@@ -33,11 +55,15 @@ async function bootstrap() {
     },
   });
 
-  // Rate limiting — protects login and other public endpoints
+  // Rate limiting. The limiter keys on req.ip, which is only meaningful once
+  // trustProxy is set above — otherwise every visitor shares one bucket.
+  //
+  // Sign-in gets a much tighter allowance than the rest of the API: it is the
+  // one unauthenticated endpoint where a caller is guessing a secret. Argon2
+  // already makes each attempt cost seconds; this caps how many can be queued.
   await app.register(import('@fastify/rate-limit'), {
-    max: 100,
+    max: (req: { url?: string }) => (isSignInAttempt(req.url) ? SIGN_IN_MAX_PER_MINUTE : MAX_PER_MINUTE),
     timeWindow: '1 minute',
-    // Login endpoint has a tighter limit applied via route-level override
   });
 
   const config = app.get(ConfigService);

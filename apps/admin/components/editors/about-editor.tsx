@@ -11,7 +11,7 @@ const HL_ICONS = ['target', 'users', 'zap', 'shield', 'rocket', 'sparkles', 'lay
 
 export function AboutEditor({ initial }: { initial: AboutContent }) {
   const [about, setAbout] = useState<AboutContent>(initial);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const set = <K extends keyof AboutContent>(k: K, v: AboutContent[K]) =>
     setAbout((a) => ({ ...a, [k]: v }));
@@ -25,6 +25,7 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
         subtitle="Kurumsal tanıtım bölümü"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() => run(() => saveSection('about', about))}
       />
       <div className="space-y-6">

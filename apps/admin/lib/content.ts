@@ -239,11 +239,18 @@ export async function deleteMessageViaApi(id: string): Promise<void> {
 
 // ─── Publishing ─────────────────────────────────────────────────────────────
 
+/** PENDING while a triggered rebuild is still running. */
+export type PublishState = 'PENDING' | 'SUCCEEDED' | 'FAILED';
+
 export interface PublishResult {
   ok: boolean;
   strategy: 'deploy-hook' | 'revalidate' | 'none';
   at: string;
   detail: string;
+  state: PublishState;
+  id: string | null;
+  /** Who pressed Publish. Null for an automatic one. */
+  actor: string | null;
 }
 
 export interface PublishStatus {
@@ -253,6 +260,11 @@ export interface PublishStatus {
   pendingChanges: boolean;
   lastChangeAt: string | null;
   lastPublish: PublishResult | null;
+  /** A rebuild is in flight — saying "Yayınlandı" yet would be premature. */
+  publishInProgress: boolean;
+  /** False when deploy outcomes cannot be read back, so results stay unknown. */
+  outcomeTracking: boolean;
+  history: PublishResult[];
 }
 
 export async function publishViaApi(): Promise<PublishResult> {

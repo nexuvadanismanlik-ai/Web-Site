@@ -17,7 +17,7 @@ export function ProcessEditor({
 }) {
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [steps, setSteps] = useState<ProcessStep[]>(p0);
-  const { saving, saved, run } = useSaver();
+  const { saving, saved, error, run } = useSaver();
 
   const patch = (id: string, p: Partial<ProcessStep>) =>
     setSteps((l) => l.map((s) => (s.id === id ? { ...s, ...p } : s)));
@@ -29,6 +29,7 @@ export function ProcessEditor({
         subtitle="Nasıl çalışıyoruz bölümü"
         saving={saving}
         saved={saved}
+        error={error}
         onSave={() =>
           run(async () => {
             await saveSection('processMeta', meta);

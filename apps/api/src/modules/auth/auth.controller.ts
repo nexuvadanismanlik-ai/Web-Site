@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { AnyAuthenticated } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 interface AuthenticatedUser {
@@ -35,6 +36,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @AnyAuthenticated()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke all refresh tokens for the current user' })
@@ -43,6 +45,7 @@ export class AuthController {
   }
 
   @Post('password')
+  @AnyAuthenticated()
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({
@@ -55,6 +58,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @AnyAuthenticated()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current authenticated user' })
   me(@CurrentUser() user: AuthenticatedUser) {

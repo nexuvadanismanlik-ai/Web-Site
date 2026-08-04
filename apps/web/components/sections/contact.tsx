@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent } from '@nexuva/types';
 import { t, getUi, type Locale } from '../../lib/i18n';
-import { submitContact } from '../../lib/contact-api';
+import { submitContact, type ContactError } from '../../lib/contact-api';
 
 export function Contact({
   contact,
@@ -17,6 +17,7 @@ export function Contact({
 }) {
   const ui = getUi(locale);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [failure, setFailure] = useState<ContactError | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,12 +32,22 @@ export function Contact({
       message: String(data.get('message') ?? ''),
     });
     if (res.ok) {
+      setFailure(null);
       setStatus('success');
       form.reset();
     } else {
+      setFailure(res.error ?? 'server');
       setStatus('error');
     }
   }
+
+  /** Being told to wait is different from being told it broke. */
+  const failureMessage =
+    failure === 'rate-limit'
+      ? ui.formRateLimit
+      : failure === 'invalid'
+        ? ui.formInvalid
+        : ui.formError;
 
   const infoItems = [
     { icon: Mail, label: contact.email, href: `mailto:${contact.email}` },
@@ -135,7 +146,9 @@ export function Contact({
                   />
                 </div>
                 {status === 'error' && (
-                  <p className="text-sm text-red-400">{ui.formError}</p>
+                  <p role="alert" className="text-sm text-red-400">
+                    {failureMessage}
+                  </p>
                 )}
                 <button
                   type="submit"

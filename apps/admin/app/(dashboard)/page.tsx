@@ -40,8 +40,8 @@ export default async function DashboardHome() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-8">
-        <h1 className="font-heading text-2xl font-bold text-white sm:text-3xl">Hoş geldin 👋</h1>
-        <p className="mt-1 text-ink-400">
+        <h1 className="font-heading text-2xl font-bold text-fg sm:text-3xl">Hoş geldin 👋</h1>
+        <p className="mt-1 text-muted">
           {content.brand.siteName} web sitesini buradan yönetiyorsun. Her değişiklik anında siteye
           yansır.
         </p>
@@ -55,13 +55,13 @@ export default async function DashboardHome() {
             <div key={s.label} className="panel p-5">
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                  s.highlight ? 'brand-gradient-bg text-white' : 'bg-white/5 text-brand-300'
+                  s.highlight ? 'brand-gradient-bg text-white' : 'bg-overlay/5 text-brand-dyn'
                 }`}
               >
                 <Icon className="h-5 w-5" />
               </span>
-              <div className="mt-4 font-heading text-3xl font-bold text-white">{s.value}</div>
-              <div className="mt-1 text-sm text-ink-400">{s.label}</div>
+              <div className="mt-4 font-heading text-3xl font-bold text-fg">{s.value}</div>
+              <div className="mt-1 text-sm text-muted">{s.label}</div>
             </div>
           );
         })}
@@ -70,7 +70,7 @@ export default async function DashboardHome() {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         {/* Quick links */}
         <div>
-          <h2 className="mb-4 font-heading text-lg font-semibold text-white">Hızlı Erişim</h2>
+          <h2 className="mb-4 font-heading text-lg font-semibold text-fg">Hızlı Erişim</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {quickLinks.map((q) => {
               const Icon = q.icon;
@@ -78,16 +78,16 @@ export default async function DashboardHome() {
                 <Link
                   key={q.href}
                   href={q.href}
-                  className="panel group flex items-center gap-4 p-4 transition-colors hover:border-white/25 hover:bg-white/[0.05]"
+                  className="panel group flex items-center gap-4 p-4 transition-colors hover:border-overlay/25 hover:bg-overlay/[0.05]"
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-brand-300 transition-colors group-hover:brand-gradient-bg group-hover:text-white">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-overlay/5 text-brand-dyn transition-colors group-hover:brand-gradient-bg group-hover:text-white">
                     <Icon className="h-5 w-5" />
                   </span>
                   <span className="flex-1">
-                    <span className="block text-sm font-semibold text-white">{q.label}</span>
-                    <span className="block text-xs text-ink-500">{q.desc}</span>
+                    <span className="block text-sm font-semibold text-fg">{q.label}</span>
+                    <span className="block text-xs text-faint">{q.desc}</span>
                   </span>
-                  <ArrowRight className="h-4 w-4 text-ink-600 transition-transform group-hover:translate-x-1 group-hover:text-white" />
+                  <ArrowRight className="h-4 w-4 text-faint transition-transform group-hover:translate-x-1 group-hover:text-fg" />
                 </Link>
               );
             })}
@@ -97,14 +97,14 @@ export default async function DashboardHome() {
         {/* Recent messages */}
         <div>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-heading text-lg font-semibold text-white">Son Mesajlar</h2>
-            <Link href={adminPath('/messages')} className="text-sm text-brand-300 hover:text-brand-200">
+            <h2 className="font-heading text-lg font-semibold text-fg">Son Mesajlar</h2>
+            <Link href={adminPath('/messages')} className="text-sm text-brand-dyn hover:opacity-80">
               Tümü
             </Link>
           </div>
-          <div className="panel divide-y divide-white/5">
+          <div className="panel divide-y divide-overlay/5">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-ink-500">
+              <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-faint">
                 <Mail className="h-6 w-6" />
                 Henüz mesaj yok.
               </div>
@@ -113,17 +113,17 @@ export default async function DashboardHome() {
                 <Link
                   key={m.id}
                   href={adminPath('/messages')}
-                  className="flex items-center gap-3 p-4 transition-colors hover:bg-white/[0.03]"
+                  className="flex items-center gap-3 p-4 transition-colors hover:bg-overlay/[0.03]"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-xs font-bold text-white">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-overlay/5 text-xs font-bold text-fg">
                     {m.name.charAt(0).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-white">{m.name}</span>
+                      <span className="truncate text-sm font-medium text-fg">{m.name}</span>
                       {!m.read && <span className="h-2 w-2 shrink-0 rounded-full bg-brand-400" />}
                     </span>
-                    <span className="block truncate text-xs text-ink-500">
+                    <span className="block truncate text-xs text-faint">
                       {m.subject || m.message}
                     </span>
                   </span>

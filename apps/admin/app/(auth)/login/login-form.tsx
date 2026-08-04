@@ -40,7 +40,7 @@ export function LoginForm() {
         <div>
           <label className="field-label">E-posta</label>
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
             <input
               type="email"
               value={email}
@@ -55,7 +55,7 @@ export function LoginForm() {
         <div>
           <label className="field-label">Şifre</label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
             <input
               type="password"
               value={password}
@@ -87,8 +87,8 @@ export function LoginForm() {
         )}
       </button>
 
-      <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-3 text-xs text-ink-400">
-        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-400" />
+      <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-overlay/10 bg-overlay/[0.02] px-3.5 py-3 text-xs text-muted">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-dyn" />
         <span>Bu panel yalnızca yetkili kullanıcılar içindir.</span>
       </div>
     </form>

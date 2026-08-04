@@ -48,7 +48,7 @@ export function NavigationEditor({
         <Panel title="Üst Menü">
           <div className="space-y-3">
             {nav.map((item, i) => (
-              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3">
                 <div className="min-w-[14rem] flex-1">
                   <LocalizedField label="Etiket" value={item.label} onChange={(v) => patchNav(i, { label: v })} />
                 </div>
@@ -70,15 +70,15 @@ export function NavigationEditor({
         <Panel title="Logo Şeridi (akan markalar)">
           <div className="flex flex-wrap gap-2">
             {logos.map((logo, i) => (
-              <div key={i} className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] py-1 pl-3 pr-1">
+              <div key={i} className="flex items-center gap-1 rounded-lg border border-overlay/10 bg-overlay/[0.03] py-1 pl-3 pr-1">
                 <input
                   value={logo}
                   onChange={(e) => setLogos((l) => l.map((x, idx) => (idx === i ? e.target.value : x)))}
-                  className="w-32 bg-transparent text-sm text-white focus:outline-none"
+                  className="w-32 bg-transparent text-sm text-fg focus:outline-none"
                 />
                 <button
                   onClick={() => setLogos((l) => l.filter((_, idx) => idx !== i))}
-                  className="flex h-6 w-6 items-center justify-center rounded text-ink-500 hover:text-red-300"
+                  className="flex h-6 w-6 items-center justify-center rounded text-faint hover:text-red-300"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -87,7 +87,7 @@ export function NavigationEditor({
           </div>
           <button
             onClick={() => setLogos((l) => [...l, 'Yeni Marka'])}
-            className="mt-3 rounded-lg border border-dashed border-white/15 px-4 py-2 text-sm text-ink-300 hover:border-brand-400/50 hover:text-white"
+            className="mt-3 rounded-lg border border-dashed border-overlay/15 px-4 py-2 text-sm text-muted hover:border-brand-400/50 hover:text-fg"
           >
             + Logo ekle
           </button>
@@ -100,9 +100,9 @@ export function NavigationEditor({
           </div>
 
           <div className="mt-6 space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Bağlantı Sütunları</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Bağlantı Sütunları</p>
             {footer.columns.map((col, ci) => (
-              <div key={ci} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <div key={ci} className="rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex-1">
                     <LocalizedField label="Sütun Başlığı" value={col.title} onChange={(v) => setCol(ci, { title: v })} />

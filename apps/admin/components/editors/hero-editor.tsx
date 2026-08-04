@@ -51,13 +51,13 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
 
         <Panel title="Butonlar">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <p className="text-xs font-semibold uppercase text-brand-300">Birincil Buton</p>
+            <div className="space-y-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
+              <p className="text-xs font-semibold uppercase text-brand-dyn">Birincil Buton</p>
               <LocalizedField label="Metin" value={hero.primaryCta.label} onChange={(v) => setH('primaryCta', { ...hero.primaryCta, label: v })} />
               <TextField label="Bağlantı" value={hero.primaryCta.href} onChange={(v) => setH('primaryCta', { ...hero.primaryCta, href: v })} />
             </div>
-            <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <p className="text-xs font-semibold uppercase text-ink-400">İkincil Buton</p>
+            <div className="space-y-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
+              <p className="text-xs font-semibold uppercase text-muted">İkincil Buton</p>
               <LocalizedField label="Metin" value={hero.secondaryCta.label} onChange={(v) => setH('secondaryCta', { ...hero.secondaryCta, label: v })} />
               <TextField label="Bağlantı" value={hero.secondaryCta.href} onChange={(v) => setH('secondaryCta', { ...hero.secondaryCta, href: v })} />
             </div>
@@ -67,7 +67,7 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
         <Panel title="Metrikler">
           <div className="space-y-3">
             {hero.metrics.map((m, i) => (
-              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3">
                 <div className="w-28">
                   <label className="field-label">Değer</label>
                   <input value={m.value} onChange={(e) => setMetric(i, { value: e.target.value })} className="field-input" />

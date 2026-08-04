@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
 import { fontVars } from '../lib/fonts';
+import { ThemeProvider, ThemeScript } from './theme-provider';
 import '../app/globals.css';
 
 /**
  * The document shell for the admin as a standalone deployment: the <html> and
- * <body> elements, the font variables and the global stylesheet.
+ * <body> elements, the font variables, the global stylesheet and the theme
+ * bootstrap.
  *
  * All of this belongs to the host application once the panel moves inside the
  * public site — an app may only have one root layout. Keeping it in a single
@@ -14,7 +16,12 @@ import '../app/globals.css';
 export function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="tr" className={fontVars} suppressHydrationWarning>
-      <body>{children}</body>
+      <head>
+        <ThemeScript />
+      </head>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -21,6 +21,7 @@ import {
   LogOut,
   Menu,
   MousePointerClick,
+  Settings,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -59,6 +60,10 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { label: 'Menü & Footer', href: '/navigation', icon: LayoutList },
     ],
   },
+  {
+    section: 'Hesap',
+    items: [{ label: 'Ayarlar', href: '/settings', icon: Settings }],
+  },
 ];
 
 export function AdminShell({
@@ -83,17 +88,17 @@ export function AdminShell({
 
   const SidebarInner = (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-5">
+      <div className="flex h-16 items-center gap-2.5 border-b border-overlay/10 px-5">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg brand-gradient-bg text-sm font-bold text-white">
           N
         </span>
-        <span className="font-heading text-lg font-bold text-white">Nexuva OS</span>
+        <span className="font-heading text-lg font-bold text-fg">Nexuva OS</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {NAV.map((group) => (
           <div key={group.section} className="mb-5">
-            <p className="mb-2 px-3 text-[0.65rem] font-semibold uppercase tracking-widest text-ink-600">
+            <p className="mb-2 px-3 text-[0.65rem] font-semibold uppercase tracking-widest text-faint">
               {group.section}
             </p>
             <div className="space-y-1">
@@ -107,12 +112,12 @@ export function AdminShell({
                     onClick={() => setOpen(false)}
                     className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                       active
-                        ? 'bg-white/10 text-white'
-                        : 'text-ink-400 hover:bg-white/5 hover:text-white'
+                        ? 'bg-overlay/10 text-fg'
+                        : 'text-muted hover:bg-overlay/[0.06] hover:text-fg'
                     }`}
                   >
                     <Icon
-                      className={`h-4.5 w-4.5 ${active ? 'text-brand-300' : 'text-ink-500 group-hover:text-ink-200'}`}
+                      className={`h-4.5 w-4.5 ${active ? 'text-brand-dyn' : 'text-faint group-hover:text-fg'}`}
                       style={{ width: 18, height: 18 }}
                     />
                     {item.label}
@@ -125,12 +130,12 @@ export function AdminShell({
                   onClick={() => setOpen(false)}
                   className={`group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive('/messages')
-                      ? 'bg-white/10 text-white'
-                      : 'text-ink-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-overlay/10 text-fg'
+                      : 'text-muted hover:bg-overlay/[0.06] hover:text-fg'
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Inbox style={{ width: 18, height: 18 }} className="text-ink-500 group-hover:text-ink-200" />
+                    <Inbox style={{ width: 18, height: 18 }} className="text-faint group-hover:text-fg" />
                     Mesajlar
                   </span>
                   {unreadCount > 0 && (
@@ -145,19 +150,19 @@ export function AdminShell({
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-3">
+      <div className="border-t border-overlay/10 p-3">
         <a
           href={SITE_URL}
           target="_blank"
           rel="noreferrer"
-          className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-300 transition-colors hover:bg-white/5 hover:text-white"
+          className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-overlay/[0.06] hover:text-fg"
         >
           <ExternalLink style={{ width: 18, height: 18 }} />
           Siteyi Görüntüle
         </a>
         <button
           onClick={() => signOut({ callbackUrl: adminPath('/login') })}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-300 transition-colors hover:bg-red-500/10 hover:text-red-300"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-red-500/10 hover:text-red-500"
         >
           <LogOut style={{ width: 18, height: 18 }} />
           Çıkış Yap
@@ -169,7 +174,7 @@ export function AdminShell({
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/10 bg-ink-925/70 backdrop-blur-xl lg:block">
+      <aside className="chrome fixed inset-y-0 left-0 z-40 hidden w-64 border-r backdrop-blur-xl lg:block">
         {SidebarInner}
       </aside>
 
@@ -177,7 +182,7 @@ export function AdminShell({
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-64 border-r border-white/10 bg-ink-925">
+          <aside className="chrome absolute inset-y-0 left-0 w-64 border-r">
             {SidebarInner}
           </aside>
         </div>
@@ -185,10 +190,10 @@ export function AdminShell({
 
       <div className="flex min-h-screen flex-1 flex-col lg:pl-64">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-ink-950/70 px-5 backdrop-blur-xl">
+        <header className="chrome sticky top-0 z-30 flex h-16 items-center justify-between border-b px-5 backdrop-blur-xl">
           <button
             onClick={() => setOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-overlay/10 bg-overlay/5 text-fg lg:hidden"
             aria-label="Menü"
           >
             <Menu className="h-5 w-5" />
@@ -196,7 +201,7 @@ export function AdminShell({
           <div className="hidden lg:block" />
           <div className="flex items-center gap-3">
             <PublishButton />
-            <span className="hidden text-sm text-ink-400 sm:inline">{userName}</span>
+            <span className="hidden text-sm text-muted sm:inline">{userName}</span>
             <span className="flex h-9 w-9 items-center justify-center rounded-full brand-gradient-bg text-sm font-bold text-white">
               {userName.charAt(0)}
             </span>

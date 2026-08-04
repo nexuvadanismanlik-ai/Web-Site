@@ -254,3 +254,15 @@ export async function publishViaApi(): Promise<PublishResult> {
 export async function readPublishStatus(): Promise<PublishStatus> {
   return apiFetch<PublishStatus>('/website/publish/status');
 }
+
+// ─── Account ────────────────────────────────────────────────────────────────
+
+export async function changePasswordViaApi(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await apiFetch('/auth/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}

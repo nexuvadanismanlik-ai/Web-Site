@@ -167,11 +167,11 @@ export function VisualEditor({
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="flex items-center gap-2 font-heading text-xl font-bold text-white">
-            <MousePointerClick className="h-5 w-5 text-brand-300" />
+          <h1 className="flex items-center gap-2 font-heading text-xl font-bold text-fg">
+            <MousePointerClick className="h-5 w-5 text-brand-dyn" />
             Canlı Düzenleme
           </h1>
-          <p className="mt-0.5 text-xs text-ink-400">
+          <p className="mt-0.5 text-xs text-muted">
             Sitede düzenlemek istediğin yazıya tıkla, sağda düzenle, kaydet.
           </p>
         </div>
@@ -183,17 +183,17 @@ export function VisualEditor({
             className="field-input !w-auto"
           >
             {PAGES.map((p) => (
-              <option key={p.path} value={p.path} className="bg-ink-900">{p.label}</option>
+              <option key={p.path} value={p.path} className="bg-card">{p.label}</option>
             ))}
           </select>
 
-          <div className="flex overflow-hidden rounded-xl border border-white/10">
+          <div className="flex overflow-hidden rounded-xl border border-overlay/10">
             {(['tr', 'en'] as const).map((loc) => (
               <button
                 key={loc}
                 onClick={() => { setLocale(loc); setFrameReady(false); }}
                 className={`px-3 py-2 text-xs font-bold uppercase transition-colors ${
-                  locale === loc ? 'brand-gradient-bg text-white' : 'bg-white/5 text-ink-400 hover:text-white'
+                  locale === loc ? 'brand-gradient-bg text-white' : 'bg-overlay/5 text-muted hover:text-fg'
                 }`}
               >
                 {loc}
@@ -201,18 +201,18 @@ export function VisualEditor({
             ))}
           </div>
 
-          <div className="flex overflow-hidden rounded-xl border border-white/10">
+          <div className="flex overflow-hidden rounded-xl border border-overlay/10">
             <button
               onClick={() => setMobile(false)}
               title="Masaüstü"
-              className={`px-3 py-2 ${!mobile ? 'bg-white/10 text-white' : 'bg-white/5 text-ink-400'}`}
+              className={`px-3 py-2 ${!mobile ? 'bg-overlay/10 text-fg' : 'bg-overlay/5 text-muted'}`}
             >
               <Monitor className="h-4 w-4" />
             </button>
             <button
               onClick={() => setMobile(true)}
               title="Mobil"
-              className={`px-3 py-2 ${mobile ? 'bg-white/10 text-white' : 'bg-white/5 text-ink-400'}`}
+              className={`px-3 py-2 ${mobile ? 'bg-overlay/10 text-fg' : 'bg-overlay/5 text-muted'}`}
             >
               <Smartphone className="h-4 w-4" />
             </button>
@@ -221,7 +221,7 @@ export function VisualEditor({
           <button
             onClick={() => { setFrameReady(false); setVersion((v) => v + 1); }}
             title="Yenile"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-ink-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-overlay/10 bg-overlay/5 text-muted hover:text-fg"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
@@ -231,7 +231,7 @@ export function VisualEditor({
             target="_blank"
             rel="noreferrer"
             title="Yeni sekmede aç"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-ink-300 hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-overlay/10 bg-overlay/5 text-muted hover:text-fg"
           >
             <ExternalLink className="h-4 w-4" />
           </a>
@@ -247,13 +247,13 @@ export function VisualEditor({
       {/* Workspace */}
       <div className="flex min-h-0 flex-1 gap-4">
         {/* Site preview */}
-        <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-white">
+        <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl border border-overlay/10 bg-white">
           {!frameReady && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink-950/60">
-              <Loader2 className="h-6 w-6 animate-spin text-brand-300" />
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-page/60">
+              <Loader2 className="h-6 w-6 animate-spin text-brand-dyn" />
             </div>
           )}
-          <div className={`h-full ${mobile ? 'mx-auto w-[390px] border-x border-white/10' : 'w-full'}`}>
+          <div className={`h-full ${mobile ? 'mx-auto w-[390px] border-x border-overlay/10' : 'w-full'}`}>
             <iframe
               key={iframeSrc}
               src={iframeSrc}
@@ -265,16 +265,16 @@ export function VisualEditor({
 
         {/* Edit drawer */}
         <aside
-          className={`w-96 shrink-0 overflow-y-auto rounded-2xl border border-white/10 bg-ink-925/80 p-5 transition-opacity ${
+          className={`panel w-96 shrink-0 overflow-y-auto p-5 transition-opacity ${
             selected ? 'opacity-100' : 'opacity-70'
           }`}
         >
           {!selected || draft == null ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5">
-                <MousePointerClick className="h-7 w-7 text-brand-300" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-overlay/5">
+                <MousePointerClick className="h-7 w-7 text-brand-dyn" />
               </div>
-              <p className="max-w-[16rem] text-sm text-ink-400">
+              <p className="max-w-[16rem] text-sm text-muted">
                 Soldaki önizlemede kesikli çerçeveli herhangi bir yazıya tıkla —
                 burada düzenleyip anında kaydet.
               </p>
@@ -283,16 +283,16 @@ export function VisualEditor({
             <div className="flex h-full flex-col">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-brand-300">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-brand-dyn">
                     Seçili alan
                   </p>
-                  <h2 className="mt-1 font-heading text-sm font-semibold text-white">
+                  <h2 className="mt-1 font-heading text-sm font-semibold text-fg">
                     {pathTitle(selected)}
                   </h2>
                 </div>
                 <button
                   onClick={() => setSelected(null)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-ink-400 hover:text-white"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-overlay/10 bg-overlay/5 text-muted hover:text-fg"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -348,7 +348,7 @@ export function VisualEditor({
                 {editorHref && (
                   <a
                     href={editorHref}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-medium text-ink-300 transition-colors hover:text-white"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-overlay/10 bg-overlay/5 px-4 py-2.5 text-xs font-medium text-muted transition-colors hover:text-fg"
                   >
                     <PencilLine className="h-3.5 w-3.5" />
                     Bu bölümün tüm ayarları (ekle/sil/sırala)

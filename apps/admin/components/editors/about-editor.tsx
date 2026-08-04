@@ -62,13 +62,13 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
         <Panel title="Öne Çıkanlar">
           <div className="space-y-3">
             {about.highlights.map((h, i) => (
-              <div key={i} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <div key={i} className="rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="w-40">
                     <label className="field-label">İkon</label>
                     <select value={h.icon} onChange={(e) => patchHl(i, { icon: e.target.value })} className="field-input">
                       {HL_ICONS.map((ic) => (
-                        <option key={ic} value={ic} className="bg-ink-900">{ic}</option>
+                        <option key={ic} value={ic} className="bg-card">{ic}</option>
                       ))}
                     </select>
                   </div>

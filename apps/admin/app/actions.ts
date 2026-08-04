@@ -13,6 +13,7 @@ import {
   deleteMessageViaApi,
   publishViaApi,
   readPublishStatus,
+  changePasswordViaApi,
   type PublishResult,
   type PublishStatus,
 } from '../lib/content';
@@ -98,6 +99,26 @@ export async function getPublishStatus(): Promise<PublishStatus | null> {
     return await readPublishStatus();
   } catch {
     return null;
+  }
+}
+
+/**
+ * Changes the signed-in operator's password. The API re-checks the current one
+ * and revokes every refresh token, so other sessions stop working.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  if (newPassword.length < 8) {
+    return { ok: false, error: 'Yeni şifre en az 8 karakter olmalı.' };
+  }
+  try {
+    await changePasswordViaApi(currentPassword, newPassword);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Şifre değiştirilemedi.' };
   }
 }
 

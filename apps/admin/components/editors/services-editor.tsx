@@ -70,11 +70,11 @@ export function ServicesEditor({
                     onClick={() => setOpenId(open ? null : svc.id)}
                     className="flex flex-1 items-center gap-3 text-left"
                   >
-                    <ChevronDown className={`h-4 w-4 text-ink-500 transition-transform ${open ? 'rotate-180' : ''}`} />
-                    <span className="font-medium text-white">
+                    <ChevronDown className={`h-4 w-4 text-faint transition-transform ${open ? 'rotate-180' : ''}`} />
+                    <span className="font-medium text-fg">
                       {svc.title.tr || 'Yeni hizmet'}
                     </span>
-                    <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-ink-400">{svc.icon}</span>
+                    <span className="rounded bg-overlay/5 px-2 py-0.5 text-xs text-muted">{svc.icon}</span>
                   </button>
                   <IconButton variant="danger" onClick={() => setServices((l) => l.filter((s) => s.id !== svc.id))}>
                     <Trash2 className="h-4 w-4" />
@@ -82,7 +82,7 @@ export function ServicesEditor({
                 </div>
 
                 {open && (
-                  <div className="space-y-4 border-t border-white/10 p-4">
+                  <div className="space-y-4 border-t border-overlay/10 p-4">
                     <div>
                       <label className="field-label">İkon</label>
                       <select
@@ -91,7 +91,7 @@ export function ServicesEditor({
                         className="field-input"
                       >
                         {SERVICE_ICONS.map((ic) => (
-                          <option key={ic} value={ic} className="bg-ink-900">{ic}</option>
+                          <option key={ic} value={ic} className="bg-card">{ic}</option>
                         ))}
                       </select>
                     </div>

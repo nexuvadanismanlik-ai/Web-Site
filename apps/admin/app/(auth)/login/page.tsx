@@ -13,8 +13,8 @@ export default function LoginPage() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl brand-gradient-bg text-xl font-bold text-white shadow-lg">
             N
           </div>
-          <h1 className="mt-5 font-heading text-2xl font-bold text-white">Nexuva OS</h1>
-          <p className="mt-1 text-sm text-ink-400">Yönetim Paneli · Super Admin</p>
+          <h1 className="mt-5 font-heading text-2xl font-bold text-fg">Nexuva OS</h1>
+          <p className="mt-1 text-sm text-muted">Yönetim Paneli · Super Admin</p>
         </div>
 
         {/* The form reads the callbackUrl query param, which cannot be known at

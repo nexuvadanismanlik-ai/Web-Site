@@ -78,7 +78,7 @@ export function LocalizedField({
       <div className="grid gap-2 sm:grid-cols-2">
         {(['tr', 'en'] as const).map((loc) => (
           <div key={loc} className="relative">
-            <span className="absolute left-2.5 top-2.5 rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-ink-300">
+            <span className="absolute left-2.5 top-2.5 rounded bg-overlay/10 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-muted">
               {loc}
             </span>
             {multiline ? (
@@ -119,7 +119,7 @@ export function ColorField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-14 cursor-pointer rounded-lg border border-white/10 bg-transparent"
+          className="h-11 w-14 cursor-pointer rounded-lg border border-overlay/10 bg-transparent"
         />
         <input
           value={value}
@@ -127,7 +127,7 @@ export function ColorField({
           className="field-input font-mono"
         />
         <span
-          className="h-11 w-11 shrink-0 rounded-lg border border-white/10"
+          className="h-11 w-11 shrink-0 rounded-lg border border-overlay/10"
           style={{ background: value }}
         />
       </div>
@@ -139,7 +139,7 @@ export function Panel({ title, children }: { title?: string; children: ReactNode
   return (
     <div className="panel p-5 sm:p-6">
       {title && (
-        <h3 className="mb-5 font-heading text-base font-semibold text-white">{title}</h3>
+        <h3 className="mb-5 font-heading text-base font-semibold text-fg">{title}</h3>
       )}
       {children}
     </div>
@@ -189,7 +189,7 @@ export function IconButton({
       className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${
         variant === 'danger'
           ? 'border-red-500/20 bg-red-500/5 text-red-300 hover:bg-red-500/15'
-          : 'border-white/10 bg-white/5 text-ink-300 hover:bg-white/10 hover:text-white'
+          : 'border-overlay/10 bg-overlay/5 text-muted hover:bg-overlay/10 hover:text-fg'
       }`}
     >
       {children}
@@ -202,7 +202,7 @@ export function AddButton({ onClick, label }: { onClick: () => void; label: stri
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 py-3 text-sm font-medium text-ink-300 transition-colors hover:border-brand-400/50 hover:text-white"
+      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-overlay/15 py-3 text-sm font-medium text-muted transition-colors hover:border-brand-400/50 hover:text-fg"
     >
       <Plus className="h-4 w-4" />
       {label}
@@ -227,10 +227,10 @@ export function EditorHeader({
   saved: boolean;
 }) {
   return (
-    <div className="sticky top-16 z-20 -mx-5 mb-6 flex items-center justify-between gap-4 border-b border-white/10 bg-ink-950/80 px-5 py-4 backdrop-blur-xl sm:-mx-8 sm:px-8">
+    <div className="chrome sticky top-16 z-20 -mx-5 mb-6 flex items-center justify-between gap-4 border-b px-5 py-4 sm:-mx-8 sm:px-8">
       <div>
-        <h1 className="font-heading text-xl font-bold text-white sm:text-2xl">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-ink-400">{subtitle}</p>}
+        <h1 className="font-heading text-xl font-bold text-fg sm:text-2xl">{title}</h1>
+        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
       </div>
       <button onClick={onSave} disabled={saving} className="btn-primary shrink-0">
         {saving ? (

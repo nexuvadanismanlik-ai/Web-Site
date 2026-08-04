@@ -42,8 +42,8 @@ export function ProcessEditor({
           {steps.map((s, i) => (
             <Panel key={s.id}>
               <div className="mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-medium text-white">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg brand-gradient-bg text-xs font-bold">
+                <span className="flex items-center gap-2 text-sm font-medium text-fg">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg brand-gradient-bg text-xs font-bold text-white">
                     {i + 1}
                   </span>
                   {s.title.tr || 'Yeni adım'}

@@ -42,7 +42,7 @@ export function TestimonialsEditor({
           {items.map((t) => (
             <Panel key={t.id}>
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-white">{t.author || 'Yeni görüş'}</span>
+                <span className="text-sm font-medium text-fg">{t.author || 'Yeni görüş'}</span>
                 <IconButton variant="danger" onClick={() => setItems((l) => l.filter((x) => x.id !== t.id))}>
                   <Trash2 className="h-4 w-4" />
                 </IconButton>

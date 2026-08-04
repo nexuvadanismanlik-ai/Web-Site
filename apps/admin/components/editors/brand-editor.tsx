@@ -52,7 +52,7 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
         </Panel>
 
         <Panel title="Görünüm">
-          <p className="mb-4 text-sm text-ink-400">
+          <p className="mb-4 text-sm text-muted">
             Sitenin genel renk şeması. Aydınlık = beyaz arka plan, Koyu = siyah arka plan.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -72,20 +72,20 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
                   className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition-colors ${
                     active
                       ? 'border-brand-400/60 bg-brand-500/10'
-                      : 'border-white/10 bg-white/[0.02] hover:border-white/25'
+                      : 'border-overlay/10 bg-overlay/[0.02] hover:border-overlay/25'
                   }`}
                 >
                   <span
                     className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                       opt.value === 'light'
                         ? 'bg-white text-amber-500'
-                        : 'bg-ink-950 text-brand-300'
+                        : 'bg-ink-950 text-indigo-300'
                     }`}
                   >
                     <OptIcon className="h-5 w-5" />
                   </span>
                   <span>
-                    <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-fg">
                       {opt.label}
                       {active && (
                         <span className="rounded-full brand-gradient-bg px-2 py-0.5 text-[0.6rem] font-bold uppercase text-white">
@@ -93,7 +93,7 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
                         </span>
                       )}
                     </span>
-                    <span className="block text-xs text-ink-500">{opt.desc}</span>
+                    <span className="block text-xs text-faint">{opt.desc}</span>
                   </span>
                 </button>
               );
@@ -102,7 +102,7 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
         </Panel>
 
         <Panel title="Tema Renkleri">
-          <p className="mb-4 text-sm text-ink-400">
+          <p className="mb-4 text-sm text-muted">
             Bu renkler tüm sitedeki gradyanları ve vurguları anında değiştirir.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -128,7 +128,7 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
         <Panel title="Sosyal Medya">
           <div className="space-y-3">
             {brand.social.map((s, i) => (
-              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3">
                 <div className="w-32">
                   <label className="field-label">İkon</label>
                   <select
@@ -137,7 +137,7 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
                     className="field-input"
                   >
                     {SOCIAL_ICONS.map((ic) => (
-                      <option key={ic} value={ic} className="bg-ink-900">
+                      <option key={ic} value={ic} className="bg-card">
                         {ic}
                       </option>
                     ))}

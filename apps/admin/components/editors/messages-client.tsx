@@ -30,8 +30,8 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
     <div className="mx-auto max-w-4xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-white">Mesajlar</h1>
-          <p className="mt-0.5 text-sm text-ink-400">
+          <h1 className="font-heading text-2xl font-bold text-fg">Mesajlar</h1>
+          <p className="mt-0.5 text-sm text-muted">
             {messages.length} mesaj · {unread} okunmamış
           </p>
         </div>
@@ -48,10 +48,10 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
 
       {messages.length === 0 ? (
         <div className="panel flex flex-col items-center gap-3 p-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-ink-400">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-overlay/5 text-muted">
             <Inbox className="h-7 w-7" />
           </div>
-          <p className="text-ink-400">Henüz mesaj yok. İletişim formundan gelen mesajlar burada listelenir.</p>
+          <p className="text-muted">Henüz mesaj yok. İletişim formundan gelen mesajlar burada listelenir.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -65,7 +65,7 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
                 <div className="flex items-start gap-4 p-4">
                   <span
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                      m.read ? 'bg-white/5 text-ink-300' : 'brand-gradient-bg text-white'
+                      m.read ? 'bg-overlay/5 text-muted' : 'brand-gradient-bg text-white'
                     }`}
                   >
                     {m.name.charAt(0).toUpperCase()}
@@ -73,16 +73,16 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
 
                   <button className="min-w-0 flex-1 text-left" onClick={() => setOpenId(open ? null : m.id)}>
                     <div className="flex items-center gap-2">
-                      <span className="truncate font-medium text-white">{m.name}</span>
+                      <span className="truncate font-medium text-fg">{m.name}</span>
                       {!m.read && <span className="h-2 w-2 shrink-0 rounded-full bg-brand-400" />}
                     </div>
-                    <div className="mt-0.5 truncate text-sm text-ink-300">
+                    <div className="mt-0.5 truncate text-sm text-muted">
                       {m.subject || '(konu yok)'}
                     </div>
                     {!open && (
-                      <div className="mt-1 truncate text-xs text-ink-500">{m.message}</div>
+                      <div className="mt-1 truncate text-xs text-faint">{m.message}</div>
                     )}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-ink-500">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-faint">
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" /> {m.email}
                       </span>
@@ -102,7 +102,7 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
                       title={m.read ? 'Okunmadı işaretle' : 'Okundu işaretle'}
                       onClick={() => act(() => setMessageRead(m.id, !m.read))}
                       disabled={pending}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-ink-300 hover:text-white"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-overlay/10 bg-overlay/5 text-muted hover:text-fg"
                     >
                       {m.read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}
                     </button>
@@ -118,8 +118,8 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
                 </div>
 
                 {open && (
-                  <div className="border-t border-white/10 bg-white/[0.02] p-4">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-200">{m.message}</p>
+                  <div className="border-t border-overlay/10 bg-overlay/[0.02] p-4">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-fg">{m.message}</p>
                     <div className="mt-4 flex gap-2">
                       <a href={`mailto:${m.email}`} className="btn-primary !py-2 text-xs">
                         <Check className="h-3.5 w-3.5" /> Yanıtla

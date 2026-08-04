@@ -1,11 +1,22 @@
 import { z } from 'zod';
+import {
+  WEBSITE_COLLECTIONS,
+  WEBSITE_COLLECTION_KEYS,
+  WEBSITE_SECTION_KEYS,
+  isWebsiteCollectionSlug,
+  isWebsiteSectionKey,
+  type WebsiteCollectionKey,
+  type WebsiteCollectionSlug,
+  type WebsiteSectionKey,
+} from '@nexuva/shared';
 
 /**
- * Registry of the website's ordered content collections.
+ * What the API knows about the website's collections that the shared registry
+ * does not: how to validate a write.
  *
- * Each entry binds a public REST slug to its Prisma model and the zod schema
- * that validates writes. Adding a new CMS collection means adding one entry
- * here — the service and controller are generic over this registry.
+ * The names — document key, REST slug, Prisma model — come from
+ * @nexuva/shared, so the panel and the API cannot disagree about them. Only
+ * the schemas live here, because only the server validates.
  */
 
 const localized = z.object({
@@ -69,58 +80,57 @@ const processStep = z.object({
   ...ordering,
 });
 
-export interface CollectionDef {
-  /** Prisma model accessor on PrismaService. */
-  model:
-    | 'websiteNavItem'
-    | 'websiteLogo'
-    | 'websiteService'
-    | 'websiteStat'
-    | 'websiteReference'
-    | 'websiteTestimonial'
-    | 'websiteProcessStep';
+/** Per-collection knowledge that only the server holds. */
+interface CollectionRules {
   /** Whether the model carries a deletedAt column. */
   softDelete: boolean;
-  create: z.ZodTypeAny;
+  /** An object schema specifically, so updates can take `.partial()` of it. */
+  create: z.AnyZodObject;
 }
 
-export const COLLECTION_DEFS = {
-  'nav-items': { model: 'websiteNavItem', softDelete: false, create: navItem },
-  logos: { model: 'websiteLogo', softDelete: false, create: logo },
-  services: { model: 'websiteService', softDelete: true, create: service },
-  stats: { model: 'websiteStat', softDelete: false, create: stat },
-  references: { model: 'websiteReference', softDelete: true, create: reference },
-  testimonials: { model: 'websiteTestimonial', softDelete: true, create: testimonial },
-  'process-steps': { model: 'websiteProcessStep', softDelete: false, create: processStep },
-} as const satisfies Record<string, CollectionDef>;
+/**
+ * Keyed by the document key, so adding a collection is one entry here and one
+ * in the shared registry — and TypeScript requires both.
+ */
+const RULES = {
+  nav: { softDelete: false, create: navItem },
+  logos: { softDelete: false, create: logo },
+  services: { softDelete: true, create: service },
+  stats: { softDelete: false, create: stat },
+  references: { softDelete: true, create: reference },
+  testimonials: { softDelete: true, create: testimonial },
+  process: { softDelete: false, create: processStep },
+} as const satisfies Record<WebsiteCollectionKey, CollectionRules>;
 
-export type CollectionSlug = keyof typeof COLLECTION_DEFS;
+export interface CollectionDef extends CollectionRules {
+  /** Prisma model accessor on PrismaService. */
+  model: (typeof WEBSITE_COLLECTIONS)[WebsiteCollectionKey]['model'];
+}
+
+/** Slug → everything the service needs to serve that collection. */
+export const COLLECTION_DEFS = WEBSITE_COLLECTION_KEYS.reduce(
+  (defs, key) => {
+    defs[WEBSITE_COLLECTIONS[key].slug] = {
+      ...RULES[key],
+      model: WEBSITE_COLLECTIONS[key].model,
+    };
+    return defs;
+  },
+  {} as Record<WebsiteCollectionSlug, CollectionDef>,
+);
+
+export type CollectionSlug = WebsiteCollectionSlug;
 
 export const COLLECTION_SLUGS = Object.keys(COLLECTION_DEFS) as CollectionSlug[];
 
-export function isCollectionSlug(value: string): value is CollectionSlug {
-  return Object.prototype.hasOwnProperty.call(COLLECTION_DEFS, value);
-}
+export const isCollectionSlug = isWebsiteCollectionSlug;
 
 /**
  * Singleton content blocks. Unlike collections these are single JSON documents
  * keyed by name, so they are stored in website_sections.
  */
-export const SECTION_KEYS = [
-  'brand',
-  'hero',
-  'about',
-  'cta',
-  'contact',
-  'footer',
-  'servicesMeta',
-  'referencesMeta',
-  'testimonialsMeta',
-  'processMeta',
-] as const;
+export const SECTION_KEYS = WEBSITE_SECTION_KEYS;
 
-export type SectionKey = (typeof SECTION_KEYS)[number];
+export type SectionKey = WebsiteSectionKey;
 
-export function isSectionKey(value: string): value is SectionKey {
-  return (SECTION_KEYS as readonly string[]).includes(value);
-}
+export const isSectionKey = isWebsiteSectionKey;

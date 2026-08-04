@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { NavItem, FooterContent, FooterColumn, Localized } from '@nexuva/types';
 import { saveSection } from '../../app/actions';
-import { TextField, LocalizedField, Panel, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
+import { LocalizedField, Panel, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
 
 const empty: Localized = { tr: '', en: '' };
 

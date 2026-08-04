@@ -10,11 +10,17 @@
  *
  *   VERIFY_ADMIN_EMAIL=... VERIFY_ADMIN_PASSWORD=... node scripts/verify-versioning.mjs
  *
- * Writes. It edits a section, publishes, rolls back, and restores the original
- * text — but it does publish, which on the deploy-hook strategy triggers a real
- * rebuild. Point it at a local API unless you mean to deploy.
+ * WRITES, AND PUBLISHES FOUR TIMES. It restores the hero text it changes, but
+ * each publish appends a content version and a publish log entry, and on the
+ * deploy-hook strategy triggers a real rebuild.
  *
- *   VERIFY_API_URL  default http://localhost:4000/api/v1
+ * Local development currently points DATABASE_URL at the production Supabase,
+ * so "run it locally" is not the same as "run it somewhere harmless" — running
+ * this fills the real publish history with test entries. Set VERIFY_ALLOW_WRITES
+ * to acknowledge that before it will run.
+ *
+ *   VERIFY_API_URL      default http://localhost:4000/api/v1
+ *   VERIFY_ALLOW_WRITES required — set to 1
  */
 
 const API = (process.env.VERIFY_API_URL ?? 'http://localhost:4000/api/v1').replace(/\/+$/, '');
@@ -23,6 +29,15 @@ const PASSWORD = process.env.VERIFY_ADMIN_PASSWORD ?? '';
 
 if (!EMAIL || !PASSWORD) {
   console.error('VERIFY_ADMIN_EMAIL ve VERIFY_ADMIN_PASSWORD gerekli.');
+  process.exit(2);
+}
+
+if (!process.env.VERIFY_ALLOW_WRITES) {
+  console.error(
+    'Bu betik 4 kez yayın yapar ve yayın geçmişine test kaydı ekler.\n' +
+      'Yerel geliştirme üretim veritabanına bağlı olduğu için bu kayıtlar gerçek\n' +
+      'geçmişe düşer. Kabul ediyorsan VERIFY_ALLOW_WRITES=1 ile çalıştır.',
+  );
   process.exit(2);
 }
 

@@ -6,7 +6,6 @@ import type { ServiceItem, SectionMeta, Localized } from '@nexuva/types';
 import { saveSection } from '../../app/actions';
 import {
   LocalizedField,
-  Panel,
   MetaFields,
   EditorHeader,
   useSaver,

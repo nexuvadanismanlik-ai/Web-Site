@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2, Plus, Sun, Moon } from 'lucide-react';
+import { Trash2, Sun, Moon } from 'lucide-react';
 import type { BrandConfig, SocialLink } from '@nexuva/types';
 import { saveSection } from '../../app/actions';
 import {

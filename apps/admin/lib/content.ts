@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import type { SiteContent, ContactMessage } from '@nexuva/types';
+import { WEBSITE_SLUG_BY_KEY, isWebsiteSectionKey } from '@nexuva/shared';
 import { apiFetch } from './api';
 
 /**
@@ -11,30 +12,12 @@ import { apiFetch } from './api';
  * editor pages did not have to change.
  */
 
-/** Singleton sections stored as one JSON document each. */
-const SECTION_KEYS = new Set([
-  'brand',
-  'hero',
-  'about',
-  'cta',
-  'contact',
-  'footer',
-  'servicesMeta',
-  'referencesMeta',
-  'testimonialsMeta',
-  'processMeta',
-]);
-
-/** SiteContent key → API collection slug. */
-const COLLECTION_SLUGS: Record<string, string> = {
-  nav: 'nav-items',
-  logos: 'logos',
-  services: 'services',
-  stats: 'stats',
-  references: 'references',
-  testimonials: 'testimonials',
-  process: 'process-steps',
-};
+// The CMS vocabulary comes from @nexuva/shared, which the API reads too. Both
+// used to keep their own copy, so adding a section here and forgetting there
+// produced a section that saved to nothing and reported success.
+const isSection = (key: string): boolean => isWebsiteSectionKey(key);
+const slugFor = (key: string): string | undefined =>
+  WEBSITE_SLUG_BY_KEY[key as keyof typeof WEBSITE_SLUG_BY_KEY];
 
 // ─── Reads ──────────────────────────────────────────────────────────────────
 
@@ -146,7 +129,7 @@ function toApiItems(key: string, value: unknown): Record<string, unknown>[] {
  * the editors save.
  */
 export async function saveSectionViaApi(key: string, value: unknown): Promise<void> {
-  if (SECTION_KEYS.has(key)) {
+  if (isSection(key)) {
     await apiFetch(`/website/sections/${key}`, {
       method: 'PUT',
       body: JSON.stringify(value),
@@ -154,7 +137,7 @@ export async function saveSectionViaApi(key: string, value: unknown): Promise<vo
     return;
   }
 
-  const slug = COLLECTION_SLUGS[key];
+  const slug = slugFor(key);
   if (!slug) throw new Error(`Unknown content section "${key}"`);
 
   await apiFetch(`/website/collections/${slug}`, {
@@ -192,7 +175,7 @@ export async function saveLeafViaApi(
   if (!root) return { ok: false, error: 'invalid-path' };
 
   // ── Singleton section ────────────────────────────────────────────────────
-  if (SECTION_KEYS.has(root)) {
+  if (isSection(root)) {
     const section = await apiFetch<{ data: Record<string, unknown> }>(
       `/website/sections/${root}`,
     );
@@ -209,7 +192,7 @@ export async function saveLeafViaApi(
   }
 
   // ── Ordered collection ───────────────────────────────────────────────────
-  const slug = COLLECTION_SLUGS[root];
+  const slug = slugFor(root);
   if (!slug) return { ok: false, error: 'invalid-path' };
 
   const index = Number(segments[1]);

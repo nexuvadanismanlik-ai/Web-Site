@@ -31,6 +31,7 @@ import {
 
 // Loose on purpose: lucide's ForwardRefExoticComponent props clash with a
 // stricter signature under exactOptionalPropertyTypes.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
 type IconComponent = ComponentType<any>;
 
 // Brand/social marks — kept as local SVGs because lucide-react is deprecating

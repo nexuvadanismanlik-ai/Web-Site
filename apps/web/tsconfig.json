@@ -3,7 +3,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
       "@nexuva/types": ["../../packages/types/src/index.ts"],
       "@nexuva/shared": ["../../packages/shared/src/index.ts"],
       "@nexuva/ui": ["../../packages/ui/src/index.ts"]

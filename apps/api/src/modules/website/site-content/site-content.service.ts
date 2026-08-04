@@ -1,12 +1,7 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { fromJson } from '../../../common/json';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { WebsiteStateService } from '../website-state.service';
 import {
@@ -72,7 +67,7 @@ export class SiteContentService {
       return this.getSiteContent(tenantSlug);
     }
 
-    return version.snapshot as unknown as SiteContent;
+    return fromJson<SiteContent>(version.snapshot);
   }
 
   /**

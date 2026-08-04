@@ -2,9 +2,21 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import type { Prisma } from '@prisma/client';
 import type { SiteContent } from '@nexuva/types';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { fromJson, toJson } from '../../../common/json';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { SiteContentService } from '../site-content/site-content.service';
-import { COLLECTION_DEFS, SECTION_KEYS, type CollectionSlug } from '../site-content/collections';
+import { SECTION_KEYS } from '../site-content/collections';
+import {
+  WEBSITE_COLLECTIONS,
+  WEBSITE_COLLECTION_KEYS,
+  type WebsiteCollectionKey,
+} from '@nexuva/shared';
+
+/** Structural view of the delegates a restore writes through. */
+interface RestoreDelegate {
+  deleteMany(args: unknown): Prisma.PrismaPromise<unknown>;
+  create(args: unknown): Prisma.PrismaPromise<unknown>;
+}
 
 /** One entry in the version history, without the snapshot body. */
 export interface VersionSummary {
@@ -22,31 +34,25 @@ export interface VersionSummary {
 const DEFAULT_HISTORY_LIMIT = 20;
 
 /**
- * Which SiteContent key each collection maps to, and how a snapshot row is
- * turned back into a database row.
+ * How a snapshot entry becomes a database row again.
  *
  * Restoring is the inverse of assembling: getSiteContent projects rows into the
  * shape the site consumes, dropping the columns the site does not need, so a
- * restore has to put them back.
+ * restore has to put them back. Which document key belongs to which collection
+ * is not repeated here — it comes from the shared registry.
  */
-const RESTORE_MAP: Record<
-  CollectionSlug,
-  { key: keyof SiteContent; toRow: (item: unknown, index: number) => Record<string, unknown> }
+const TO_ROW: Record<
+  WebsiteCollectionKey,
+  (item: unknown, index: number) => Record<string, unknown>
 > = {
-  'nav-items': {
-    key: 'nav',
-    toRow: (item, i) => ({ ...(item as object), position: i, isActive: true }),
-  },
-  logos: {
-    // Logos are plain strings in the document.
-    key: 'logos',
-    toRow: (item, i) => ({ name: String(item), position: i, isActive: true }),
-  },
-  services: { key: 'services', toRow: (item, i) => stripId(item, i) },
-  stats: { key: 'stats', toRow: (item, i) => stripId(item, i) },
-  references: { key: 'references', toRow: (item, i) => stripId(item, i) },
-  testimonials: { key: 'testimonials', toRow: (item, i) => stripId(item, i) },
-  'process-steps': { key: 'process', toRow: (item, i) => stripId(item, i) },
+  nav: (item, i) => ({ ...(item as object), position: i, isActive: true }),
+  // Logos are plain strings in the document.
+  logos: (item, i) => ({ name: String(item), position: i, isActive: true }),
+  services: stripId,
+  stats: stripId,
+  references: stripId,
+  testimonials: stripId,
+  process: stripId,
 };
 
 /**
@@ -126,7 +132,7 @@ export class ContentVersionService {
       select: { snapshot: true },
     });
     if (!version) throw new NotFoundException(`Version ${number} not found`);
-    return version.snapshot as unknown as SiteContent;
+    return fromJson<SiteContent>(version.snapshot);
   }
 
   /**
@@ -149,7 +155,7 @@ export class ContentVersionService {
     });
     if (!source) throw new NotFoundException(`Version ${number} not found`);
 
-    const snapshot = source.snapshot as unknown as SiteContent;
+    const snapshot = fromJson<SiteContent>(source.snapshot);
     if (!snapshot || typeof snapshot !== 'object') {
       throw new BadRequestException(`Version ${number} holds no usable content`);
     }
@@ -167,10 +173,12 @@ export class ContentVersionService {
 
   /** Writes a snapshot over the working tables. */
   private async writeDraft(tenantId: string, snapshot: SiteContent): Promise<void> {
-    const document = snapshot as unknown as Record<string, unknown>;
+    // The document is indexed by key here rather than by property, so it is
+    // read as a plain record. Every key comes from the shared registry.
+    const document: Record<string, unknown> = { ...snapshot };
 
     const sectionOps = SECTION_KEYS.filter((key) => document[key] !== undefined).map((key) => {
-      const data = document[key] as Prisma.InputJsonValue;
+      const data = toJson(document[key]);
       return this.prisma.websiteSection.upsert({
         where: { tenantId_key: { tenantId, key } },
         create: { tenantId, key, data },
@@ -179,22 +187,22 @@ export class ContentVersionService {
     });
 
     const collectionOps: Prisma.PrismaPromise<unknown>[] = [];
-    for (const slug of Object.keys(COLLECTION_DEFS) as CollectionSlug[]) {
-      const map = RESTORE_MAP[slug];
-      const items = document[map.key as string];
+    for (const key of WEBSITE_COLLECTION_KEYS) {
+      const items = document[key];
       if (!Array.isArray(items)) continue;
 
-      const delegate = this.prisma[COLLECTION_DEFS[slug].model] as unknown as {
-        deleteMany(args: unknown): Prisma.PrismaPromise<unknown>;
-        create(args: unknown): Prisma.PrismaPromise<unknown>;
-      };
+      // The generated delegates have model-specific argument types, so the
+      // registry lookup is cast once to the structural subset used here.
+      // eslint-disable-next-line no-restricted-syntax -- one cast per registry lookup, not per call
+      const delegate = this.prisma[WEBSITE_COLLECTIONS[key].model] as unknown as RestoreDelegate;
+      const toRow = TO_ROW[key];
 
       // A restore replaces the collection wholesale, so unlike an ordinary save
       // there is nothing to reconcile against — the incoming rows carry the ids
       // of a past state, not of the rows standing now.
       collectionOps.push(delegate.deleteMany({ where: { tenantId } }));
       items.forEach((item, index) => {
-        collectionOps.push(delegate.create({ data: { ...map.toRow(item, index), tenantId } }));
+        collectionOps.push(delegate.create({ data: { ...toRow(item, index), tenantId } }));
       });
     }
 
@@ -224,7 +232,7 @@ export class ContentVersionService {
         data: {
           tenantId,
           number,
-          snapshot: snapshot as unknown as Prisma.InputJsonValue,
+          snapshot: toJson(snapshot),
           isPublished: true,
           publishedAt: now,
           createdById: meta.actorId,

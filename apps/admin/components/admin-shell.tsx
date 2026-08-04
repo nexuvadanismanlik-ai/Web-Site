@@ -22,7 +22,6 @@ import {
   Menu,
   MousePointerClick,
   Settings,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import { PublishButton } from './publish-button';

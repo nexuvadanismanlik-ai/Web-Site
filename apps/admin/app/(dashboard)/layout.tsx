@@ -13,8 +13,16 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const session = await getServerSession(authOptions);
   if (!session) redirect(adminPath('/login'));
 
-  const messages = await readMessages();
-  const unread = messages.filter((m) => !m.read).length;
+  // The unread badge is decoration; it must not be able to take the whole panel
+  // down with it if the API is briefly unreachable. The page inside this layout
+  // still surfaces a real failure through error.tsx.
+  let unread = 0;
+  try {
+    const messages = await readMessages();
+    unread = messages.filter((m) => !m.read).length;
+  } catch {
+    unread = 0;
+  }
 
   return (
     <RootShell>

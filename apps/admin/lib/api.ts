@@ -13,6 +13,37 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The API may be on a plan that suspends it when idle, in which case the first
+ * request after a quiet spell pays the wake-up cost — around a minute. A short
+ * default timeout would turn that into a failed page load, so requests are given
+ * room and retried once: a cold start looks exactly like a network error, and
+ * by the second attempt the service is usually up.
+ */
+const REQUEST_TIMEOUT_MS = 75_000;
+
+async function fetchWithWakeRetry(url: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      return await fetch(url, { ...init, signal: controller.signal });
+    } catch (err) {
+      lastError = err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  throw new ApiError(
+    `API'ye ulaşılamadı (${url}). Servis uyanıyor olabilir, birkaç saniye sonra tekrar deneyin. ` +
+      `(${lastError instanceof Error ? lastError.message : String(lastError)})`,
+    503,
+  );
+}
+
 /** Access token issued by the backend at login, carried on the NextAuth JWT. */
 async function getAccessToken(): Promise<string> {
   const session = (await getServerSession(authOptions)) as
@@ -48,7 +79,7 @@ export async function apiFetch<T>(
 
   if (auth) headers['Authorization'] = `Bearer ${await getAccessToken()}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithWakeRetry(`${API_BASE}${path}`, {
     ...rest,
     headers,
     // Admin views must always reflect the current database state.

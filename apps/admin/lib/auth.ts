@@ -34,15 +34,34 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
 
+        // The API may suspend when idle; the first sign-in after a quiet spell
+        // pays a wake-up of roughly a minute. Given room and one retry, so a
+        // cold service reads as a slow login rather than a wrong password.
+        const attempt = async () => {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 75_000);
+          try {
+            return await fetch(`${API_BASE}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: credentials.email.trim().toLowerCase(),
+                password: credentials.password,
+              }),
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timer);
+          }
+        };
+
         try {
-          const res = await fetch(`${API_BASE}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: credentials.email.trim().toLowerCase(),
-              password: credentials.password,
-            }),
-          });
+          let res: Response;
+          try {
+            res = await attempt();
+          } catch {
+            res = await attempt();
+          }
 
           if (!res.ok) return null;
 

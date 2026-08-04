@@ -53,20 +53,23 @@ services:
       - key: RESEND_API_KEY
         sync: false
 
-  # ── Public Website (Next.js) ────────────────────────────────────────────────
+  # ── Public Website (Next.js static export) ──────────────────────────────────
+  # Served as static files: no Node runtime, no start command. Content is
+  # fetched from nexuva-api during the build and baked into the HTML, so the
+  # API must be deployed and reachable before this builds.
+  # To move to a server deployment with ISR, see apps/web/MIGRATION.md.
   - type: web
     name: nexuva-web
-    runtime: node
-    plan: starter
+    runtime: static
     buildCommand: >
-      pnpm install &&
+      pnpm install --frozen-lockfile &&
       pnpm --filter @nexuva/shared run build &&
       pnpm --filter @nexuva/web run build
-    startCommand: pnpm --filter @nexuva/web run start
+    staticPublishPath: apps/web/out
     autoDeploy: true
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: NODE_VERSION
+        value: '20'
       - key: NEXT_PUBLIC_API_URL
         sync: false
 

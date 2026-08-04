@@ -36,9 +36,15 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { auth = true, ...rest } = init;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...((rest.headers as Record<string, string>) ?? {}),
   };
+
+  // Only declare a JSON body when there is one. Fastify rejects a request that
+  // announces application/json and then sends nothing, which surfaced as a 500
+  // on the bodyless POST /website/publish.
+  if (rest.body !== undefined && rest.body !== null) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (auth) headers['Authorization'] = `Bearer ${await getAccessToken()}`;
 

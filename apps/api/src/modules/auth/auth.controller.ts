@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -39,6 +40,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoke all refresh tokens for the current user' })
   async logout(@CurrentUser() user: AuthenticatedUser) {
     await this.authService.logout(user.id);
+  }
+
+  @Post('password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Change the signed-in user password. Requires the current password and ' +
+      'revokes all refresh tokens on success.',
+  })
+  changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 
   @Get('me')

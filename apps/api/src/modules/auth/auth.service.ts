@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
@@ -101,6 +101,40 @@ export class AuthService {
     const tokens = await this.signTokenPair(newPayload, user.id);
 
     return tokens;
+  }
+
+  /**
+   * Changes the signed-in user's password after re-verifying the current one,
+   * then revokes every refresh token so other sessions cannot keep acting as
+   * them with credentials that no longer exist.
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive || user.deletedAt) {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    const valid = await argon2.verify(user.passwordHash, currentPassword);
+    if (!valid) {
+      throw new UnauthorizedException('Mevcut şifre hatalı');
+    }
+
+    if (await argon2.verify(user.passwordHash, newPassword)) {
+      throw new BadRequestException('Yeni şifre mevcut şifreyle aynı olamaz');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: await argon2.hash(newPassword) },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId, isRevoked: false },
+        data: { isRevoked: true },
+      }),
+    ]);
+
+    return { success: true };
   }
 
   async logout(userId: string): Promise<void> {

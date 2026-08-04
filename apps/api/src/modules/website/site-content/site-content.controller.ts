@@ -28,11 +28,19 @@ export class SiteContentController {
   @ApiOperation({
     summary:
       'Full site content document consumed by the public website at build time. ' +
-      'No auth required; returns only active, non-deleted content.',
+      'No auth required; returns only active, non-deleted content. Serves the ' +
+      'published snapshot by default — pass state=draft for unpublished edits, ' +
+      'which is what the admin preview reads.',
   })
   @ApiQuery({ name: 'tenant', required: false, description: 'Tenant slug (defaults to WEBSITE_TENANT_SLUG)' })
-  getContent(@Query('tenant') tenant?: string) {
-    return this.siteContent.getSiteContent(tenant);
+  @ApiQuery({ name: 'state', required: false, enum: ['published', 'draft'] })
+  getContent(@Query('tenant') tenant?: string, @Query('state') state?: string) {
+    // Defaults to published: a visitor must never be shown work in progress,
+    // and defaulting the other way would make forgetting the parameter a leak
+    // rather than a visible error.
+    return state === 'draft'
+      ? this.siteContent.getSiteContent(tenant)
+      : this.siteContent.getPublishedContent(tenant);
   }
 
   // ─── Sections (singleton JSON blocks) ─────────────────────────────────────

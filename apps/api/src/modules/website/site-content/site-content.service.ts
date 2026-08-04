@@ -8,7 +8,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
-import { PublishService } from '../publish/publish.service';
+import { WebsiteStateService } from '../website-state.service';
 import {
   COLLECTION_DEFS,
   SECTION_KEYS,
@@ -43,15 +43,44 @@ export class SiteContentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenants: WebsiteTenantService,
-    private readonly publish: PublishService,
+    private readonly state: WebsiteStateService,
   ) {}
 
   // ─── Assembly ─────────────────────────────────────────────────────────────
 
   /**
-   * Builds the complete SiteContent document consumed by the public site at
-   * build time. Ordered collections come back sorted by `position`; inactive
-   * and soft-deleted rows are excluded.
+   * The document the public site is served from: the snapshot of the version
+   * currently marked published.
+   *
+   * Draft and published are deliberately different reads. An editor saving a
+   * headline changes the draft; visitors keep seeing the last published
+   * version until someone publishes.
+   */
+  async getPublishedContent(tenantSlug?: string): Promise<SiteContent> {
+    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+    const version = await this.prisma.contentVersion.findFirst({
+      where: { tenantId, isPublished: true },
+      orderBy: { number: 'desc' },
+      select: { snapshot: true },
+    });
+
+    if (!version) {
+      // Nothing published yet. Serving the draft keeps a site that predates
+      // versioning working, and makes the first publish an ordinary step
+      // instead of a migration.
+      this.logger.log(`No published version for tenant ${tenantId}; serving the draft.`);
+      return this.getSiteContent(tenantSlug);
+    }
+
+    return version.snapshot as unknown as SiteContent;
+  }
+
+  /**
+   * Builds the complete SiteContent document from the working tables.
+   *
+   * This is the DRAFT: it reflects every saved edit, published or not.
+   * Ordered collections come back sorted by `position`; inactive and
+   * soft-deleted rows are excluded.
    */
   async getSiteContent(tenantSlug?: string): Promise<SiteContent> {
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
@@ -88,15 +117,18 @@ export class SiteContentService {
     const sections = new Map(sectionRows.map((row) => [row.key, row.data]));
     const missing = SECTION_KEYS.filter((key) => !sections.has(key));
     if (missing.length > 0) {
-      // Shipping a half-populated document would silently break the built site,
-      // so surface the misconfiguration instead.
-      this.logger.error(`Website sections missing for tenant ${tenantId}: ${missing.join(', ')}`);
-      throw new InternalServerErrorException(
-        `Website content is not fully configured. Missing sections: ${missing.join(', ')}`,
+      // Loud, but not fatal. Throwing here took down the public site and the
+      // admin panel together — the panel reads this document on nearly every
+      // page, so the one screen an operator would use to add the missing
+      // section was the screen that stopped loading. A section that is absent
+      // renders as empty, and the sections that do exist keep working.
+      this.logger.error(
+        `Website sections missing for tenant ${tenantId}: ${missing.join(', ')}. ` +
+          'These render empty until they are created.',
       );
     }
 
-    const section = <T>(key: SectionKey): T => sections.get(key) as T;
+    const section = <T>(key: SectionKey): T => (sections.get(key) ?? {}) as T;
 
     return {
       brand: section('brand'),
@@ -185,7 +217,7 @@ export class SiteContentService {
       create: { tenantId, key, data: payload },
       update: { data: payload },
     });
-    this.publish.contentChanged(tenantId);
+    this.state.contentChanged(tenantId);
     return saved;
   }
 
@@ -224,7 +256,7 @@ export class SiteContentService {
     }
 
     const created = await this.delegate(slug).create({ data: { ...data, tenantId } });
-    this.publish.contentChanged(tenantId);
+    this.state.contentChanged(tenantId);
     return created;
   }
 
@@ -322,7 +354,7 @@ export class SiteContentService {
 
     await this.prisma.$transaction(operations as never);
 
-    this.publish.contentChanged(tenantId);
+    this.state.contentChanged(tenantId);
     return this.listItems(slug, tenantSlug);
   }
 
@@ -331,7 +363,7 @@ export class SiteContentService {
     const data = this.validate(def.create.partial(), body);
     const tenantId = await this.assertItemExists(slug, id, tenantSlug);
     const updated = await this.delegate(slug).update({ where: { id }, data });
-    this.publish.contentChanged(tenantId);
+    this.state.contentChanged(tenantId);
     return updated;
   }
 
@@ -347,7 +379,7 @@ export class SiteContentService {
         })
       : await this.delegate(slug).delete({ where: { id } });
 
-    this.publish.contentChanged(tenantId);
+    this.state.contentChanged(tenantId);
     return removed;
   }
 
@@ -370,7 +402,7 @@ export class SiteContentService {
         delegate.update({ where: { id }, data: { position: index } }),
       ) as never,
     );
-    this.publish.contentChanged(tenantId);
+    this.state.contentChanged(tenantId);
     return this.listItems(slug, tenantSlug);
   }
 

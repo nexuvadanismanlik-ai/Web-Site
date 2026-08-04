@@ -135,9 +135,18 @@ export function ColorField({
   );
 }
 
-export function Panel({ title, children }: { title?: string; children: ReactNode }) {
+export function Panel({
+  title,
+  children,
+  className,
+}: {
+  title?: string;
+  children: ReactNode;
+  /** Replaces the default padding when a panel needs its own layout. */
+  className?: string;
+}) {
   return (
-    <div className="panel p-5 sm:p-6">
+    <div className={className ? `panel ${className}` : 'panel p-5 sm:p-6'}>
       {title && (
         <h3 className="mb-5 font-heading text-base font-semibold text-fg">{title}</h3>
       )}

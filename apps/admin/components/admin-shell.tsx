@@ -11,6 +11,7 @@ import {
   Briefcase,
   BarChart3,
   Building2,
+  CloudUpload,
   Star,
   Quote,
   ListChecks,
@@ -38,6 +39,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: 'Genel',
     items: [
       { label: 'Genel Bakış', href: '/', icon: LayoutDashboard },
+      { label: 'Yayın Merkezi', href: '/publish', icon: CloudUpload },
       { label: 'Canlı Düzenleme', href: '/visual', icon: MousePointerClick },
       { label: 'Marka & Tema', href: '/brand', icon: Palette },
     ],

@@ -33,16 +33,8 @@ export const publishConfig = registerAs('publish', () => ({
   renderApiKey: process.env.RENDER_API_KEY ?? '',
   renderServiceId: process.env.RENDER_FRONTEND_SERVICE_ID ?? '',
 
-  /**
-   * Publish automatically after a content change, instead of waiting for the
-   * editor to press Publish. Off by default: a rebuild takes minutes and a
-   * burst of edits would queue several.
-   */
-  auto: process.env.PUBLISH_AUTO === 'true',
-
-  /**
-   * Window to coalesce a burst of edits into one publish. Only used when
-   * auto-publishing.
-   */
-  debounceMs: parseInt(process.env.PUBLISH_DEBOUNCE_MS ?? '60000', 10),
+  // PUBLISH_AUTO and PUBLISH_DEBOUNCE_MS are gone. Publishing now freezes a
+  // content version, so an automatic publish would mint a version and trigger a
+  // build on every save — and the point of the draft/published split is that
+  // saving and publishing are different acts.
 }));

@@ -1,7 +1,9 @@
-import { Injectable, Logger, BadRequestException, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
+import { WebsiteStateService } from '../website-state.service';
+import { ContentVersionService } from '../versions/content-version.service';
 
 export type PublishStrategy = 'deploy-hook' | 'revalidate' | 'none';
 
@@ -17,12 +19,13 @@ export interface PublishResult {
   state: PublishState;
   id: string | null;
   actor: string | null;
+  /** Content version this publish carried, once one was frozen. */
+  version: number | null;
 }
 
 export interface PublishStatus {
   strategy: PublishStrategy;
   configured: boolean;
-  autoPublish: boolean;
   /** True when edits have been made that no publish has carried to the site. */
   pendingChanges: boolean;
   lastChangeAt: string | null;
@@ -72,60 +75,55 @@ const RENDER_FAILURE = new Set([
  * through getStatus() rather than thrown into the editor's save.
  */
 @Injectable()
-export class PublishService implements OnModuleDestroy {
+export class PublishService {
   private readonly logger = new Logger(PublishService.name);
-
-  private timer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly tenants: WebsiteTenantService,
+    private readonly state: WebsiteStateService,
+    private readonly versions: ContentVersionService,
   ) {}
-
-  onModuleDestroy() {
-    if (this.timer) clearTimeout(this.timer);
-  }
 
   // ─── Public surface ───────────────────────────────────────────────────────
 
-  /**
-   * Records that content changed. Schedules a publish when auto-publish is on;
-   * otherwise the change simply shows as pending until someone publishes.
-   *
-   * Deliberately not awaited by callers: a save must not fail because the
-   * bookkeeping write did.
-   */
-  contentChanged(tenantId: string): void {
-    void this.prisma.websiteState
-      .upsert({
-        where: { tenantId },
-        create: { tenantId, lastContentChangeAt: new Date() },
-        update: { lastContentChangeAt: new Date() },
-      })
-      .catch((err: unknown) => {
-        this.logger.error(`Could not record content change: ${String(err)}`);
-      });
-
-    if (!this.autoPublish) return;
-
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      void this.publish(null).catch(() => undefined);
-    }, this.debounceMs);
-  }
-
   /** Publishes immediately. Used by the admin's Publish action. */
-  async publish(actorId: string | null, tenantSlug?: string): Promise<PublishResult> {
+  async publish(
+    actorId: string | null,
+    tenantSlug?: string,
+    note?: string | null,
+  ): Promise<PublishResult> {
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
     const strategy = this.strategy;
 
+    // Freeze first, whatever the strategy. The version is what "published"
+    // means — it is the document the API serves from that moment on. The deploy
+    // is only how a statically built site finds out. Refusing to freeze because
+    // no deploy hook is configured would conflate the two, and would leave the
+    // API with nothing to serve.
+    let version: number;
+    try {
+      const committed = await this.versions.publishDraft(actorId, note ?? null, tenantSlug);
+      version = committed.number;
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Could not freeze a content version: ${detail}`);
+      return this.write(tenantId, actorId, strategy, {
+        state: 'FAILED',
+        detail: `İçerik sürümü alınamadı, yayın durduruldu: ${detail}`,
+      });
+    }
+
     if (strategy === 'none') {
+      // The content is published; the site cannot be told. Recorded as a
+      // failure so the panel says so instead of implying visitors will see it.
       return this.write(tenantId, actorId, strategy, {
         state: 'FAILED',
         detail:
-          'No publish strategy configured. Set PUBLISH_STRATEGY to deploy-hook or revalidate.',
+          `Sürüm ${version} yayınlandı, ancak site yeniden derlenemedi: ` +
+          'PUBLISH_STRATEGY tanımlı değil.',
+        version,
       });
     }
 
@@ -133,7 +131,11 @@ export class PublishService implements OnModuleDestroy {
       if (strategy === 'revalidate') {
         const detail = await this.triggerRevalidate();
         // Revalidation is synchronous: if the call returned, the site is updated.
-        return this.write(tenantId, actorId, strategy, { state: 'SUCCEEDED', detail });
+        return this.write(tenantId, actorId, strategy, {
+          state: 'SUCCEEDED',
+          detail: `Sürüm ${version} yayınlandı. ${detail}`,
+          version,
+        });
       }
 
       const { deployId, detail } = await this.triggerDeployHook();
@@ -141,13 +143,14 @@ export class PublishService implements OnModuleDestroy {
       // record stays PENDING until the deploy is read back.
       return this.write(tenantId, actorId, strategy, {
         state: this.canTrackOutcome && deployId ? 'PENDING' : 'SUCCEEDED',
-        detail,
+        detail: `Sürüm ${version} alındı. ${detail}`,
         deployId,
+        version,
       });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       this.logger.error(`Publish failed (${strategy}): ${detail}`);
-      return this.write(tenantId, actorId, strategy, { state: 'FAILED', detail });
+      return this.write(tenantId, actorId, strategy, { state: 'FAILED', detail, version });
     }
   }
 
@@ -158,8 +161,8 @@ export class PublishService implements OnModuleDestroy {
     // shows "yayınlanıyor" for a build that finished long ago.
     await this.settlePending(tenantId);
 
-    const [state, rows, lastSuccess] = await Promise.all([
-      this.prisma.websiteState.findUnique({ where: { tenantId } }),
+    const [lastChangeAt, rows, lastSuccess] = await Promise.all([
+      this.state.lastContentChangeAt(tenantId),
       this.prisma.publishLog.findMany({
         where: { tenantId },
         orderBy: { startedAt: 'desc' },
@@ -174,13 +177,11 @@ export class PublishService implements OnModuleDestroy {
     ]);
 
     const history = rows.map((row) => this.toResult(row));
-    const lastChangeAt = state?.lastContentChangeAt ?? null;
     const publishedAt = lastSuccess?.finishedAt ?? lastSuccess?.startedAt ?? null;
 
     return {
       strategy: this.strategy,
       configured: this.isConfigured(),
-      autoPublish: this.autoPublish,
       pendingChanges:
         lastChangeAt !== null && (publishedAt === null || lastChangeAt > publishedAt),
       lastChangeAt: lastChangeAt?.toISOString() ?? null,
@@ -342,15 +343,6 @@ export class PublishService implements OnModuleDestroy {
     return raw === 'deploy-hook' || raw === 'revalidate' ? raw : 'none';
   }
 
-  private get autoPublish(): boolean {
-    return this.config.get<boolean>('publish.auto') === true;
-  }
-
-  private get debounceMs(): number {
-    const value = this.config.get<number>('publish.debounceMs');
-    return typeof value === 'number' && value > 0 ? value : 60_000;
-  }
-
   /** Whether a triggered build's result can be read back afterwards. */
   private get canTrackOutcome(): boolean {
     return (
@@ -375,7 +367,12 @@ export class PublishService implements OnModuleDestroy {
     tenantId: string,
     actorId: string | null,
     strategy: PublishStrategy,
-    fields: { state: PublishState; detail: string; deployId?: string | null },
+    fields: {
+      state: PublishState;
+      detail: string;
+      deployId?: string | null;
+      version?: number | null;
+    },
   ): Promise<PublishResult> {
     const settled = fields.state !== 'PENDING';
     const row = await this.prisma.publishLog.create({
@@ -386,6 +383,7 @@ export class PublishService implements OnModuleDestroy {
         state: fields.state,
         detail: fields.detail,
         deployId: fields.deployId ?? null,
+        version: fields.version ?? null,
         finishedAt: settled ? new Date() : null,
       },
       include: { actor: { select: { firstName: true, lastName: true, email: true } } },
@@ -405,6 +403,7 @@ export class PublishService implements OnModuleDestroy {
     strategy: string;
     state: string;
     detail: string;
+    version?: number | null;
     startedAt: Date;
     finishedAt: Date | null;
     actor?: { firstName: string | null; lastName: string | null; email: string } | null;
@@ -426,6 +425,7 @@ export class PublishService implements OnModuleDestroy {
       state,
       id: row.id,
       actor: name,
+      version: row.version ?? null,
     };
   }
 }

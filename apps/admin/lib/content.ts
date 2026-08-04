@@ -45,9 +45,13 @@ const COLLECTION_SLUGS: Record<string, string> = {
  * minutes.
  */
 export const readSiteContent = cache(async (): Promise<SiteContent> => {
+  // The panel edits the draft, so it must read the draft. Without state=draft
+  // this returns the published snapshot and an editor would be looking at the
+  // last publish rather than their own unsaved-to-the-site work.
+  //
   // The assembled document is public, so this read needs no bearer token and
   // still works on the login page.
-  return apiFetch<SiteContent>('/website/content', { auth: false });
+  return apiFetch<SiteContent>('/website/content?state=draft', { auth: false });
 });
 
 interface ApiContactMessage {
@@ -260,12 +264,13 @@ export interface PublishResult {
   id: string | null;
   /** Who pressed Publish. Null for an automatic one. */
   actor: string | null;
+  /** Content version this publish carried, once one was frozen. */
+  version: number | null;
 }
 
 export interface PublishStatus {
   strategy: 'deploy-hook' | 'revalidate' | 'none';
   configured: boolean;
-  autoPublish: boolean;
   pendingChanges: boolean;
   lastChangeAt: string | null;
   lastPublish: PublishResult | null;
@@ -274,6 +279,27 @@ export interface PublishStatus {
   /** False when deploy outcomes cannot be read back, so results stay unknown. */
   outcomeTracking: boolean;
   history: PublishResult[];
+}
+
+/** One entry in the content history. Snapshots are not carried in the list. */
+export interface ContentVersion {
+  id: string;
+  number: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  note: string | null;
+  /** Set when this version was produced by restoring an earlier one. */
+  restoredFrom: number | null;
+}
+
+export async function readVersions(limit = 20): Promise<ContentVersion[]> {
+  return apiFetch<ContentVersion[]>(`/website/versions?limit=${limit}`);
+}
+
+export async function restoreVersionViaApi(number: number): Promise<ContentVersion> {
+  return apiFetch<ContentVersion>(`/website/versions/${number}/restore`, { method: 'POST' });
 }
 
 export async function publishViaApi(): Promise<PublishResult> {

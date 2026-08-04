@@ -14,8 +14,11 @@ import {
   publishViaApi,
   readPublishStatus,
   changePasswordViaApi,
+  readVersions,
+  restoreVersionViaApi,
   type PublishResult,
   type PublishStatus,
+  type ContentVersion,
 } from '../lib/content';
 
 async function requireAuth() {
@@ -92,7 +95,36 @@ export async function publishSite(): Promise<PublishResult> {
       state: 'FAILED',
       id: null,
       actor: null,
+      version: null,
     };
+  }
+}
+
+/** Publish history: every version, who froze it, and which one is live. */
+export async function getVersions(): Promise<ContentVersion[]> {
+  await requireAuth();
+  try {
+    return await readVersions();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Restores a version. The snapshot is written back over the draft and published
+ * as a new version, so the history stays append-only and the rollback itself
+ * can be rolled back.
+ */
+export async function restoreVersion(
+  number: number,
+): Promise<{ ok: boolean; error?: string; version?: number }> {
+  await requireAuth();
+  try {
+    const restored = await restoreVersionViaApi(number);
+    revalidatePath(adminPath('/'), 'layout');
+    return { ok: true, version: restored.number };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'restore-failed' };
   }
 }
 

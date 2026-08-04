@@ -31,7 +31,9 @@ interface CollectionDelegate {
   findFirst(args?: AnyRecord): Promise<AnyRecord | null>;
   create(args: AnyRecord): Promise<AnyRecord>;
   update(args: AnyRecord): Promise<AnyRecord>;
+  updateMany(args: AnyRecord): Promise<AnyRecord>;
   delete(args: AnyRecord): Promise<AnyRecord>;
+  deleteMany(args: AnyRecord): Promise<AnyRecord>;
 }
 
 @Injectable()
@@ -227,12 +229,21 @@ export class SiteContentService {
   }
 
   /**
-   * Replaces an entire collection in one call. The admin editors work on whole
-   * arrays, so this maps to a single save instead of a diff of create/update/
-   * delete calls. Positions follow array order.
+   * Saves a whole collection in one call. The admin editors work on entire
+   * arrays, so a save maps to one request rather than a diff of create, update
+   * and delete calls. Positions follow array order.
    *
-   * Rows are removed outright rather than soft-deleted: this is a content
-   * replacement, and leaving tombstones would grow the table on every save.
+   * Rows are reconciled by id rather than dropped and rebuilt. The previous
+   * implementation deleted every row and recreated it, which meant every id in
+   * the collection changed on every save — reordering two services rewrote the
+   * identity of all six. Nothing can reference a row that is reissued on each
+   * edit: not a version history, not a rollback, not a permalink, not an
+   * uploaded image attached to a specific item.
+   *
+   * An item arriving without a known id is new. An existing row missing from
+   * the payload has been removed, and follows the model's own convention —
+   * soft-deleted where the column exists, matching removeItem, so a deletion
+   * made here is as recoverable as one made through the item endpoint.
    */
   async replaceCollection(slug: string, body: unknown, tenantSlug?: string) {
     const def = this.def(slug);
@@ -240,21 +251,76 @@ export class SiteContentService {
       throw new BadRequestException('Body must be an array of collection items');
     }
 
-    const rows = body.map((item, index) => {
-      const data = this.validate(def.create, item);
-      return { ...data, position: index };
+    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+    const delegate = this.delegate(slug);
+
+    // `id` is not part of the write schema — zod strips it — so it is read off
+    // the raw item before validation.
+    const incoming = body.map((item, index) => {
+      const raw = (item ?? {}) as AnyRecord;
+      const id = typeof raw['id'] === 'string' && raw['id'] ? raw['id'] : null;
+      return { id, data: { ...this.validate(def.create, item), position: index } };
     });
 
-    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+    const live = await delegate.findMany({
+      where: def.softDelete ? { tenantId, deletedAt: null } : { tenantId },
+      orderBy: { position: 'asc' },
+      select: { id: true },
+    });
+    const liveIds = live.map((row) => String(row['id']));
+    const available = new Set(liveIds);
 
-    await this.prisma.$transaction(async (tx) => {
-      const txDelegate = (tx as unknown as Record<string, ReplaceDelegate>)[def.model];
-      if (!txDelegate) throw new InternalServerErrorException(`Unknown model ${def.model}`);
-      await txDelegate.deleteMany({ where: { tenantId } });
-      for (const row of rows) {
-        await txDelegate.create({ data: { ...row, tenantId } });
+    // Claim by explicit id first, so a reorder cannot make two items compete
+    // for the same row.
+    const target = new Map<number, string>();
+    incoming.forEach((item, index) => {
+      if (item.id !== null && available.has(item.id)) {
+        target.set(index, item.id);
+        available.delete(item.id);
       }
     });
+
+    // Then pair anything id-less with the next unclaimed row, in position
+    // order. Logos have no id in the site's content model — they are plain
+    // strings — so without this they would be recreated on every save, which
+    // is the problem this method exists to stop.
+    const unclaimed = liveIds.filter((id) => available.has(id));
+    let next = 0;
+    incoming.forEach((item, index) => {
+      if (target.has(index)) return;
+      const candidate = unclaimed[next];
+      if (candidate !== undefined) {
+        target.set(index, candidate);
+        available.delete(candidate);
+        next++;
+      }
+    });
+
+    const dropped = liveIds.filter((id) => available.has(id));
+
+    // Built as a list of operations rather than an interactive transaction: the
+    // previous version awaited one INSERT per row inside an open transaction,
+    // holding it for the length of the round trips. Prisma sends this as a
+    // single batch.
+    const operations = incoming.map((item, index) => {
+      const id = target.get(index);
+      return id !== undefined
+        ? delegate.update({ where: { id }, data: item.data })
+        : delegate.create({ data: { ...item.data, tenantId } });
+    });
+
+    if (dropped.length > 0) {
+      operations.push(
+        def.softDelete
+          ? delegate.updateMany({
+              where: { id: { in: dropped } },
+              data: { deletedAt: new Date(), isActive: false },
+            })
+          : delegate.deleteMany({ where: { id: { in: dropped } } }),
+      );
+    }
+
+    await this.prisma.$transaction(operations as never);
 
     this.publish.contentChanged(tenantId);
     return this.listItems(slug, tenantSlug);
@@ -356,10 +422,4 @@ interface SafeParseLike {
   success: boolean;
   data?: unknown;
   error?: { issues: { path: (string | number)[]; message: string }[] };
-}
-
-/** Delegate subset used inside the replace transaction. */
-interface ReplaceDelegate {
-  deleteMany(args: AnyRecord): Promise<unknown>;
-  create(args: AnyRecord): Promise<unknown>;
 }

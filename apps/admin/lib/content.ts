@@ -88,18 +88,27 @@ export const readMessages = cache(async (): Promise<ContactMessage[]> => {
 
 // ─── Writes ─────────────────────────────────────────────────────────────────
 
-/** Strips fields the API assigns itself before sending a collection item. */
+/**
+ * Prepares a collection for the API.
+ *
+ * The id is kept, and it matters: the API reconciles rows by id, so sending
+ * the list without one made every save look like a set of brand-new rows.
+ * Position is dropped because array order defines it.
+ *
+ * An item with no id is new, which is exactly what the editors produce when
+ * someone adds a row.
+ */
 function toApiItems(key: string, value: unknown): Record<string, unknown>[] {
   const list = Array.isArray(value) ? value : [];
 
   if (key === 'logos') {
     // Logos are plain strings in SiteContent but rows with a name in the API.
+    // With no id to carry, the API matches them positionally on save.
     return list.map((name) => ({ name: String(name) }));
   }
 
   return list.map((raw) => {
     const item = { ...(raw as Record<string, unknown>) };
-    delete item['id'];
     delete item['position'];
     return item;
   });

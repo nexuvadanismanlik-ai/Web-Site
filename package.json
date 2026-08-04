@@ -9,6 +9,7 @@
     "typecheck": "turbo run typecheck",
     "verify:chain": "node scripts/verify-chain.mjs",
     "verify:api": "node scripts/verify-api-contract.mjs",
+    "verify:identity": "node scripts/verify-collection-identity.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
     "db:generate": "turbo run db:generate",

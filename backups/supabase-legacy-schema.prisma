@@ -1,0 +1,1533 @@
+﻿generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Company {
+  id                     String                   @id @default(cuid()) @db.Uuid
+  company_name           String
+  tax_number             String                   @unique
+  tax_office             String?
+  country                String
+  city                   String
+  address                String?
+  phone                  String
+  email                  String
+  website                String?
+  logo                   String?
+  status                 CompanyStatus            @default(PASSIVE)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  created_by             String?                  @db.Uuid
+  updated_at             DateTime                 @db.Timestamptz(6)
+  updated_by             String?                  @db.Uuid
+  deleted_at             DateTime?                @db.Timestamptz(6)
+  deleted_by             String?                  @db.Uuid
+  accounts               accounts?
+  customer_contacts      customer_contacts[]
+  customer_health_scores customer_health_scores[]
+  customer_products      customer_products[]
+  customers              customers?
+  feature_requests       feature_requests[]
+  invoices               invoices[]
+  licenses               licenses[]
+  payments               payments[]
+  revenues               revenues[]
+  subscriptions          subscriptions[]
+  tickets                tickets[]
+  users                  User[]
+
+  @@map("companies")
+}
+
+model Product {
+  id                                                                        String                 @id @default(cuid()) @db.Uuid
+  product_code                                                              String                 @unique
+  name                                                                      String
+  description                                                               String?
+  category                                                                  ProductCategory
+  current_version                                                           String?
+  release_date                                                              DateTime?              @db.Timestamptz(6)
+  status                                                                    ProductStatus          @default(PLANNING)
+  owner_team                                                                String?
+  repository                                                                String?
+  documentation_url                                                         String?
+  support_email                                                             String?
+  created_at                                                                DateTime               @default(now()) @db.Timestamptz(6)
+  created_by                                                                String?                @db.Uuid
+  updated_at                                                                DateTime               @db.Timestamptz(6)
+  updated_by                                                                String?                @db.Uuid
+  deleted_at                                                                DateTime?              @db.Timestamptz(6)
+  deleted_by                                                                String?                @db.Uuid
+  customer_products                                                         customer_products[]
+  feature_requests                                                          feature_requests[]
+  licenses                                                                  licenses[]
+  product_apis                                                              product_apis[]
+  product_dependencies_product_dependencies_depends_on_product_idToproducts product_dependencies[] @relation("product_dependencies_depends_on_product_idToproducts")
+  product_dependencies_product_dependencies_product_idToproducts            product_dependencies[] @relation("product_dependencies_product_idToproducts")
+  product_domains                                                           product_domains[]
+  product_health                                                            product_health[]
+  product_versions                                                          product_versions[]
+  tickets                                                                   tickets[]
+
+  @@map("products")
+}
+
+model Domain {
+  id              String            @id @default(cuid()) @db.Uuid
+  domain          String            @unique
+  provider        String?
+  ssl_status      String?
+  dns_provider    String?
+  cloudflare_zone String?
+  renewal_date    DateTime?         @db.Timestamptz(6)
+  status          String?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  created_by      String?           @db.Uuid
+  updated_at      DateTime          @db.Timestamptz(6)
+  updated_by      String?           @db.Uuid
+  deleted_at      DateTime?         @db.Timestamptz(6)
+  deleted_by      String?           @db.Uuid
+  product_domains product_domains[]
+
+  @@map("domains")
+}
+
+model Page {
+  id              String            @id @default(cuid()) @db.Uuid
+  title           String
+  slug            String            @unique
+  content         Json?
+  status          ContentStatus     @default(DRAFT)
+  published_at    DateTime?         @db.Timestamptz(6)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  created_by      String?           @db.Uuid
+  updated_at      DateTime          @db.Timestamptz(6)
+  updated_by      String?           @db.Uuid
+  deleted_at      DateTime?         @db.Timestamptz(6)
+  deleted_by      String?           @db.Uuid
+  hero_sections   hero_sections[]
+  page_components page_components[]
+
+  @@map("pages")
+}
+
+model SeoSetting {
+  id          String    @id @default(cuid()) @db.Uuid
+  entity_type String
+  entity_id   String    @db.Uuid
+  title       String?
+  description String?
+  keywords    String?
+  canonical   String?
+  robots      String?
+  og          Json?
+  twitter     Json?
+  schema      Json?
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  created_by  String?   @db.Uuid
+  updated_at  DateTime  @db.Timestamptz(6)
+  updated_by  String?   @db.Uuid
+  deleted_at  DateTime? @db.Timestamptz(6)
+  deleted_by  String?   @db.Uuid
+
+  @@index([entity_type, entity_id])
+  @@map("seo_settings")
+}
+
+model User {
+  id                       String                     @id @default(cuid()) @db.Uuid
+  identity_type            IdentityType
+  company_id               String?                    @db.Uuid
+  full_name                String
+  email                    String                     @unique
+  password_hash            String?
+  status                   UserStatus                 @default(INVITED)
+  last_login               DateTime?                  @db.Timestamptz(6)
+  mfa_enabled              Boolean                    @default(false)
+  mfa_secret               String?
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  created_by               String?                    @db.Uuid
+  updated_at               DateTime                   @db.Timestamptz(6)
+  updated_by               String?                    @db.Uuid
+  deleted_at               DateTime?                  @db.Timestamptz(6)
+  deleted_by               String?                    @db.Uuid
+  api_tokens               api_tokens[]
+  in_app_notifications     in_app_notifications[]
+  notification_preferences notification_preferences[]
+  password_history         password_history[]
+  sessions                 sessions[]
+  user_roles               user_roles[]
+  user_teams               user_teams[]
+  companies                Company?                   @relation(fields: [company_id], references: [id])
+
+  @@index([company_id])
+  @@index([identity_type])
+  @@map("users")
+}
+
+model Permission {
+  id               String             @id @default(cuid()) @db.Uuid
+  code             String             @unique
+  description      String?
+  resource         String
+  action           String
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       String?            @db.Uuid
+  updated_at       DateTime           @db.Timestamptz(6)
+  updated_by       String?            @db.Uuid
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  deleted_by       String?            @db.Uuid
+  role_permissions role_permissions[]
+
+  @@map("permissions")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid()) @db.Uuid
+  user_id     String?  @db.Uuid
+  entity_type String
+  entity_id   String   @db.Uuid
+  field       String
+  old_value   String?
+  new_value   String?
+  ip_address  String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid()) @db.Uuid
+  user_id     String?  @db.Uuid
+  domain      String?
+  action      String
+  description String?
+  entity_type String?
+  entity_id   String?  @db.Uuid
+  ip_address  String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at])
+  @@index([user_id])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id                String               @id @default(cuid()) @db.Uuid
+  recipient         String
+  channel           NotificationChannel
+  template_code     String?
+  subject           String?
+  body              String?
+  priority          NotificationPriority @default(MEDIUM)
+  status            DeliveryStatus       @default(QUEUED)
+  retry_count       Int                  @default(0)
+  scheduled_at      DateTime?            @db.Timestamptz(6)
+  delivered_at      DateTime?            @db.Timestamptz(6)
+  created_at        DateTime             @default(now()) @db.Timestamptz(6)
+  created_by        String?              @db.Uuid
+  updated_at        DateTime             @db.Timestamptz(6)
+  updated_by        String?              @db.Uuid
+  deleted_at        DateTime?            @db.Timestamptz(6)
+  deleted_by        String?              @db.Uuid
+  notification_logs notification_logs[]
+
+  @@index([status, scheduled_at])
+  @@map("notifications")
+}
+
+model accounts {
+  id                  String    @id @db.Uuid
+  company_id          String    @unique @db.Uuid
+  debit               Decimal   @default(0) @db.Decimal(14, 2)
+  credit              Decimal   @default(0) @db.Decimal(14, 2)
+  balance             Decimal   @default(0) @db.Decimal(14, 2)
+  last_payment_at     DateTime? @db.Timestamptz(6)
+  last_transaction_at DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  created_by          String?   @db.Uuid
+  updated_at          DateTime  @db.Timestamptz(6)
+  updated_by          String?   @db.Uuid
+  deleted_at          DateTime? @db.Timestamptz(6)
+  deleted_by          String?   @db.Uuid
+  companies           Company   @relation(fields: [company_id], references: [id])
+}
+
+model api_tokens {
+  id           String         @id @db.Uuid
+  name         String
+  token_hash   String
+  scopes       String[]
+  expires_at   DateTime?      @db.Timestamptz(6)
+  last_used_at DateTime?      @db.Timestamptz(6)
+  status       ApiTokenStatus @default(ACTIVE)
+  user_id      String?        @db.Uuid
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  created_by   String?        @db.Uuid
+  users        User?          @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+}
+
+model automation_rules {
+  id            String    @id @db.Uuid
+  name          String
+  trigger_event String
+  conditions    Json?
+  actions       Json?
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  created_by    String?   @db.Uuid
+  updated_at    DateTime  @db.Timestamptz(6)
+  updated_by    String?   @db.Uuid
+  deleted_at    DateTime? @db.Timestamptz(6)
+  deleted_by    String?   @db.Uuid
+
+  @@index([trigger_event])
+}
+
+model blogs {
+  id              String        @id @db.Uuid
+  title           String
+  slug            String        @unique
+  excerpt         String?
+  cover_image     String?
+  content         String?
+  category        String?
+  tags            String[]
+  author_id       String?       @db.Uuid
+  seo_title       String?
+  seo_description String?
+  og_image        String?
+  canonical_url   String?
+  status          ContentStatus @default(DRAFT)
+  published_at    DateTime?     @db.Timestamptz(6)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  created_by      String?       @db.Uuid
+  updated_at      DateTime      @db.Timestamptz(6)
+  updated_by      String?       @db.Uuid
+  deleted_at      DateTime?     @db.Timestamptz(6)
+  deleted_by      String?       @db.Uuid
+
+  @@index([status])
+}
+
+model customer_contacts {
+  id         String    @id @db.Uuid
+  company_id String    @db.Uuid
+  full_name  String
+  title      String?
+  email      String?
+  phone      String?
+  is_primary Boolean   @default(false)
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_at DateTime  @db.Timestamptz(6)
+  updated_by String?   @db.Uuid
+  deleted_at DateTime? @db.Timestamptz(6)
+  deleted_by String?   @db.Uuid
+  companies  Company   @relation(fields: [company_id], references: [id])
+
+  @@index([company_id])
+}
+
+model customer_health_scores {
+  id            String   @id @db.Uuid
+  company_id    String   @db.Uuid
+  score         Int
+  risk_level    String?
+  calculated_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  companies     Company  @relation(fields: [company_id], references: [id])
+
+  @@index([company_id])
+}
+
+model customer_notes {
+  id          String    @id @db.Uuid
+  customer_id String    @db.Uuid
+  note_type   String
+  note        String
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  created_by  String?   @db.Uuid
+  updated_at  DateTime  @db.Timestamptz(6)
+  updated_by  String?   @db.Uuid
+  deleted_at  DateTime? @db.Timestamptz(6)
+  deleted_by  String?   @db.Uuid
+  customers   customers @relation(fields: [customer_id], references: [id])
+
+  @@index([customer_id])
+}
+
+model customer_products {
+  id          String    @id @db.Uuid
+  company_id  String    @db.Uuid
+  product_id  String    @db.Uuid
+  assigned_at DateTime  @default(now()) @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  created_by  String?   @db.Uuid
+  updated_at  DateTime  @db.Timestamptz(6)
+  updated_by  String?   @db.Uuid
+  deleted_at  DateTime? @db.Timestamptz(6)
+  deleted_by  String?   @db.Uuid
+  companies   Company   @relation(fields: [company_id], references: [id])
+  products    Product   @relation(fields: [product_id], references: [id])
+
+  @@unique([company_id, product_id])
+  @@index([product_id])
+}
+
+model customer_tags {
+  customer_id String    @db.Uuid
+  tag_id      String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  customers   customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  tags        tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([customer_id, tag_id])
+  @@index([tag_id])
+}
+
+model customers {
+  id               String           @id @db.Uuid
+  company_id       String           @unique @db.Uuid
+  assigned_user_id String?          @db.Uuid
+  customer_status  CustomerStatus   @default(LEAD)
+  lead_source      String?
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  created_by       String?          @db.Uuid
+  updated_at       DateTime         @db.Timestamptz(6)
+  updated_by       String?          @db.Uuid
+  deleted_at       DateTime?        @db.Timestamptz(6)
+  deleted_by       String?          @db.Uuid
+  customer_notes   customer_notes[]
+  customer_tags    customer_tags[]
+  companies        Company          @relation(fields: [company_id], references: [id])
+
+  @@index([assigned_user_id])
+  @@index([customer_status])
+}
+
+model dashboard_widgets {
+  id           String     @id @db.Uuid
+  dashboard_id String     @db.Uuid
+  widget_id    String     @db.Uuid
+  order        Int        @default(0)
+  position_x   Int        @default(0)
+  position_y   Int        @default(0)
+  width        Int?
+  height       Int?
+  settings     Json?
+  created_at   DateTime   @default(now()) @db.Timestamptz(6)
+  created_by   String?    @db.Uuid
+  updated_at   DateTime   @db.Timestamptz(6)
+  updated_by   String?    @db.Uuid
+  deleted_at   DateTime?  @db.Timestamptz(6)
+  deleted_by   String?    @db.Uuid
+  dashboards   dashboards @relation(fields: [dashboard_id], references: [id], onDelete: Cascade)
+  widgets      widgets    @relation(fields: [widget_id], references: [id])
+
+  @@index([dashboard_id])
+  @@index([widget_id])
+}
+
+model dashboards {
+  id                String              @id @db.Uuid
+  name              String
+  type              String?
+  owner_user_id     String?             @db.Uuid
+  is_default        Boolean             @default(false)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  created_by        String?             @db.Uuid
+  updated_at        DateTime            @db.Timestamptz(6)
+  updated_by        String?             @db.Uuid
+  deleted_at        DateTime?           @db.Timestamptz(6)
+  deleted_by        String?             @db.Uuid
+  dashboard_widgets dashboard_widgets[]
+
+  @@index([owner_user_id])
+}
+
+model departments {
+  id                String        @id @db.Uuid
+  name              String
+  parent_id         String?       @db.Uuid
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  created_by        String?       @db.Uuid
+  updated_at        DateTime      @db.Timestamptz(6)
+  updated_by        String?       @db.Uuid
+  deleted_at        DateTime?     @db.Timestamptz(6)
+  deleted_by        String?       @db.Uuid
+  departments       departments?  @relation("departmentsTodepartments", fields: [parent_id], references: [id])
+  other_departments departments[] @relation("departmentsTodepartments")
+  teams             teams[]
+
+  @@index([parent_id])
+}
+
+model domain_events {
+  id             String       @id @db.Uuid
+  event_name     String
+  aggregate_type String
+  aggregate_id   String       @db.Uuid
+  payload        Json
+  status         OutboxStatus @default(PENDING)
+  published_at   DateTime?    @db.Timestamptz(6)
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+
+  @@index([aggregate_type, aggregate_id])
+  @@index([status])
+}
+
+model email_templates {
+  id              String         @id @db.Uuid
+  name            String
+  code            String         @unique
+  subject         String
+  html_body       String
+  plain_text_body String?
+  variables       Json?
+  language        String         @default("tr")
+  status          TemplateStatus @default(ACTIVE)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  created_by      String?        @db.Uuid
+  updated_at      DateTime       @db.Timestamptz(6)
+  updated_by      String?        @db.Uuid
+  deleted_at      DateTime?      @db.Timestamptz(6)
+  deleted_by      String?        @db.Uuid
+}
+
+model expenses {
+  id           String    @id @db.Uuid
+  expense_type String
+  vendor       String?
+  amount       Decimal   @db.Decimal(14, 2)
+  currency     String    @db.VarChar(3)
+  expense_date DateTime  @db.Timestamptz(6)
+  is_recurring Boolean   @default(false)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  created_by   String?   @db.Uuid
+  updated_at   DateTime  @db.Timestamptz(6)
+  updated_by   String?   @db.Uuid
+  deleted_at   DateTime? @db.Timestamptz(6)
+  deleted_by   String?   @db.Uuid
+}
+
+model faqs {
+  id         String    @id @db.Uuid
+  question   String
+  answer     String
+  category   String?
+  sort_order Int       @default(0)
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_at DateTime  @db.Timestamptz(6)
+  updated_by String?   @db.Uuid
+  deleted_at DateTime? @db.Timestamptz(6)
+  deleted_by String?   @db.Uuid
+}
+
+model feature_requests {
+  id          String               @id @db.Uuid
+  company_id  String?              @db.Uuid
+  product_id  String?              @db.Uuid
+  title       String
+  description String?
+  status      FeatureRequestStatus @default(EVALUATING)
+  votes       Int                  @default(0)
+  created_at  DateTime             @default(now()) @db.Timestamptz(6)
+  created_by  String?              @db.Uuid
+  updated_at  DateTime             @db.Timestamptz(6)
+  updated_by  String?              @db.Uuid
+  deleted_at  DateTime?            @db.Timestamptz(6)
+  deleted_by  String?              @db.Uuid
+  companies   Company?             @relation(fields: [company_id], references: [id])
+  products    Product?             @relation(fields: [product_id], references: [id])
+
+  @@index([company_id])
+  @@index([product_id])
+}
+
+model form_submissions {
+  id           String   @id @db.Uuid
+  form_id      String   @db.Uuid
+  data         Json
+  ip_address   String?
+  lead_created Boolean  @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  forms        forms    @relation(fields: [form_id], references: [id])
+
+  @@index([form_id])
+}
+
+model forms {
+  id               String             @id @db.Uuid
+  code             String             @unique
+  name             String
+  fields           Json?
+  is_active        Boolean            @default(true)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       String?            @db.Uuid
+  updated_at       DateTime           @db.Timestamptz(6)
+  updated_by       String?            @db.Uuid
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  deleted_by       String?            @db.Uuid
+  form_submissions form_submissions[]
+}
+
+model hero_sections {
+  id               String        @id @db.Uuid
+  page_id          String?       @db.Uuid
+  title            String
+  subtitle         String?
+  description      String?
+  primary_button   String?
+  secondary_button String?
+  background_image String?
+  video            String?
+  status           ContentStatus @default(DRAFT)
+  published_at     DateTime?     @db.Timestamptz(6)
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  created_by       String?       @db.Uuid
+  updated_at       DateTime      @db.Timestamptz(6)
+  updated_by       String?       @db.Uuid
+  deleted_at       DateTime?     @db.Timestamptz(6)
+  deleted_by       String?       @db.Uuid
+  pages            Page?         @relation(fields: [page_id], references: [id])
+
+  @@index([page_id])
+}
+
+model in_app_notifications {
+  id          String               @id @db.Uuid
+  user_id     String               @db.Uuid
+  title       String
+  description String?
+  type        String?
+  priority    NotificationPriority @default(MEDIUM)
+  is_read     Boolean              @default(false)
+  created_at  DateTime             @default(now()) @db.Timestamptz(6)
+  users       User                 @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+}
+
+model incident_tickets {
+  incident_id String    @db.Uuid
+  ticket_id   String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  incidents   incidents @relation(fields: [incident_id], references: [id], onDelete: Cascade)
+  tickets     tickets   @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+
+  @@id([incident_id, ticket_id])
+  @@index([ticket_id])
+}
+
+model incidents {
+  id               String             @id @db.Uuid
+  title            String
+  description      String?
+  severity         IncidentSeverity   @default(MEDIUM)
+  status           IncidentStatus     @default(OPEN)
+  started_at       DateTime?          @db.Timestamptz(6)
+  resolved_at      DateTime?          @db.Timestamptz(6)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       String?            @db.Uuid
+  updated_at       DateTime           @db.Timestamptz(6)
+  updated_by       String?            @db.Uuid
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  deleted_by       String?            @db.Uuid
+  incident_tickets incident_tickets[]
+}
+
+model invoices {
+  id                 String         @id @db.Uuid
+  company_id         String         @db.Uuid
+  subscription_id    String?        @db.Uuid
+  invoice_number     String
+  amount             Decimal        @db.Decimal(14, 2)
+  currency           String         @db.VarChar(3)
+  tax_amount         Decimal?       @db.Decimal(14, 2)
+  status             InvoiceStatus  @default(DRAFT)
+  due_date           DateTime?      @db.Timestamptz(6)
+  paid_date          DateTime?      @db.Timestamptz(6)
+  external_reference String?
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  created_by         String?        @db.Uuid
+  updated_at         DateTime       @db.Timestamptz(6)
+  updated_by         String?        @db.Uuid
+  deleted_at         DateTime?      @db.Timestamptz(6)
+  deleted_by         String?        @db.Uuid
+  companies          Company        @relation(fields: [company_id], references: [id])
+  subscriptions      subscriptions? @relation(fields: [subscription_id], references: [id])
+  payments           payments[]
+
+  @@index([company_id])
+  @@index([subscription_id])
+}
+
+model job_runs {
+  id            String       @id @db.Uuid
+  job_id        String       @db.Uuid
+  status        JobRunStatus @default(RUNNING)
+  started_at    DateTime?    @db.Timestamptz(6)
+  completed_at  DateTime?    @db.Timestamptz(6)
+  error_message String?
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  jobs          jobs         @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@index([job_id])
+}
+
+model jobs {
+  id          String     @id @db.Uuid
+  name        String     @unique
+  schedule    String
+  last_run_at DateTime?  @db.Timestamptz(6)
+  next_run_at DateTime?  @db.Timestamptz(6)
+  status      JobStatus  @default(ACTIVE)
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+  created_by  String?    @db.Uuid
+  updated_at  DateTime   @db.Timestamptz(6)
+  updated_by  String?    @db.Uuid
+  deleted_at  DateTime?  @db.Timestamptz(6)
+  deleted_by  String?    @db.Uuid
+  job_runs    job_runs[]
+}
+
+model knowledge_articles {
+  id           String    @id @db.Uuid
+  title        String
+  slug         String    @unique
+  content      String
+  category     String?
+  tags         String[]
+  product_id   String?   @db.Uuid
+  author_id    String?   @db.Uuid
+  version      String?
+  published_at DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  created_by   String?   @db.Uuid
+  updated_at   DateTime  @db.Timestamptz(6)
+  updated_by   String?   @db.Uuid
+  deleted_at   DateTime? @db.Timestamptz(6)
+  deleted_by   String?   @db.Uuid
+
+  @@index([product_id])
+}
+
+model license_history {
+  id         String   @id @db.Uuid
+  license_id String   @db.Uuid
+  field      String
+  old_value  String?
+  new_value  String?
+  changed_by String?  @db.Uuid
+  changed_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  licenses   licenses @relation(fields: [license_id], references: [id])
+
+  @@index([license_id])
+}
+
+model licenses {
+  id                String            @id @db.Uuid
+  company_id        String            @db.Uuid
+  product_id        String            @db.Uuid
+  license_type      LicenseType
+  status            LicenseStatus     @default(DRAFT)
+  license_key       String            @unique
+  user_limit        Int?
+  storage_limit     BigInt?
+  start_date        DateTime?         @db.Timestamptz(6)
+  expire_date       DateTime?         @db.Timestamptz(6)
+  renew_date        DateTime?         @db.Timestamptz(6)
+  next_invoice_date DateTime?         @db.Timestamptz(6)
+  is_trial          Boolean           @default(false)
+  auto_renew        Boolean           @default(false)
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  created_by        String?           @db.Uuid
+  updated_at        DateTime          @db.Timestamptz(6)
+  updated_by        String?           @db.Uuid
+  deleted_at        DateTime?         @db.Timestamptz(6)
+  deleted_by        String?           @db.Uuid
+  license_history   license_history[]
+  companies         Company           @relation(fields: [company_id], references: [id])
+  products          Product           @relation(fields: [product_id], references: [id])
+  payments          payments[]
+  subscriptions     subscriptions?
+
+  @@index([company_id, product_id])
+  @@index([product_id])
+  @@index([status])
+}
+
+model media {
+  id            String    @id @db.Uuid
+  file_name     String
+  original_name String?
+  path          String
+  mime_type     String?
+  size          BigInt?
+  alt_text      String?
+  tags          String[]
+  uploaded_by   String?   @db.Uuid
+  uploaded_at   DateTime  @default(now()) @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  created_by    String?   @db.Uuid
+  updated_at    DateTime  @db.Timestamptz(6)
+  updated_by    String?   @db.Uuid
+  deleted_at    DateTime? @db.Timestamptz(6)
+  deleted_by    String?   @db.Uuid
+}
+
+model menu_items {
+  id               String       @id @db.Uuid
+  menu_id          String       @db.Uuid
+  parent_id        String?      @db.Uuid
+  title            String
+  url              String?
+  icon             String?
+  target           String?
+  order            Int          @default(0)
+  is_active        Boolean      @default(true)
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  created_by       String?      @db.Uuid
+  updated_at       DateTime     @db.Timestamptz(6)
+  updated_by       String?      @db.Uuid
+  deleted_at       DateTime?    @db.Timestamptz(6)
+  deleted_by       String?      @db.Uuid
+  menus            menus        @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+  menu_items       menu_items?  @relation("menu_itemsTomenu_items", fields: [parent_id], references: [id])
+  other_menu_items menu_items[] @relation("menu_itemsTomenu_items")
+
+  @@index([menu_id])
+  @@index([parent_id])
+}
+
+model menus {
+  id         String       @id @db.Uuid
+  location   MenuLocation
+  name       String
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  created_by String?      @db.Uuid
+  updated_at DateTime     @db.Timestamptz(6)
+  updated_by String?      @db.Uuid
+  deleted_at DateTime?    @db.Timestamptz(6)
+  deleted_by String?      @db.Uuid
+  menu_items menu_items[]
+}
+
+model notification_logs {
+  id                String         @id @db.Uuid
+  notification_id   String         @db.Uuid
+  attempt           Int
+  status            DeliveryStatus
+  provider_response String?
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+  notifications     Notification   @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+
+  @@index([notification_id])
+}
+
+model notification_preferences {
+  id         String              @id @db.Uuid
+  user_id    String              @db.Uuid
+  channel    NotificationChannel
+  category   String
+  is_enabled Boolean             @default(true)
+  created_at DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at DateTime            @db.Timestamptz(6)
+  users      User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, channel, category])
+}
+
+model page_components {
+  id         String    @id @db.Uuid
+  page_id    String    @db.Uuid
+  type       String
+  props      Json?
+  order      Int       @default(0)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_at DateTime  @db.Timestamptz(6)
+  updated_by String?   @db.Uuid
+  deleted_at DateTime? @db.Timestamptz(6)
+  deleted_by String?   @db.Uuid
+  pages      Page      @relation(fields: [page_id], references: [id], onDelete: Cascade)
+
+  @@index([page_id])
+}
+
+model password_history {
+  id            String   @id @db.Uuid
+  user_id       String   @db.Uuid
+  password_hash String
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  users         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model payments {
+  id               String        @id @db.Uuid
+  company_id       String        @db.Uuid
+  license_id       String?       @db.Uuid
+  invoice_id       String?       @db.Uuid
+  currency         String        @db.VarChar(3)
+  amount           Decimal       @db.Decimal(14, 2)
+  payment_method   String?
+  reference_number String?
+  status           PaymentStatus @default(PENDING)
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  created_by       String?       @db.Uuid
+  updated_at       DateTime      @db.Timestamptz(6)
+  updated_by       String?       @db.Uuid
+  deleted_at       DateTime?     @db.Timestamptz(6)
+  deleted_by       String?       @db.Uuid
+  companies        Company       @relation(fields: [company_id], references: [id])
+  invoices         invoices?     @relation(fields: [invoice_id], references: [id])
+  licenses         licenses?     @relation(fields: [license_id], references: [id])
+  revenues         revenues[]
+
+  @@index([company_id])
+  @@index([invoice_id])
+  @@index([license_id])
+}
+
+model policies {
+  id                   String    @id @db.Uuid
+  name                 String    @unique
+  permission_code      String
+  condition_expression String
+  is_active            Boolean   @default(true)
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  created_by           String?   @db.Uuid
+  updated_at           DateTime  @db.Timestamptz(6)
+  updated_by           String?   @db.Uuid
+  deleted_at           DateTime? @db.Timestamptz(6)
+  deleted_by           String?   @db.Uuid
+
+  @@index([permission_code])
+}
+
+model product_apis {
+  id              String    @id @db.Uuid
+  product_id      String    @db.Uuid
+  base_url        String
+  api_version     String?
+  swagger_url     String?
+  health_endpoint String?
+  auth_type       String?
+  timeout         Int?
+  rate_limit      Int?
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  created_by      String?   @db.Uuid
+  updated_at      DateTime  @db.Timestamptz(6)
+  updated_by      String?   @db.Uuid
+  deleted_at      DateTime? @db.Timestamptz(6)
+  deleted_by      String?   @db.Uuid
+  products        Product   @relation(fields: [product_id], references: [id])
+
+  @@index([product_id])
+}
+
+model product_dependencies {
+  product_id                                                    String   @db.Uuid
+  depends_on_product_id                                         String   @db.Uuid
+  created_at                                                    DateTime @default(now()) @db.Timestamptz(6)
+  products_product_dependencies_depends_on_product_idToproducts Product  @relation("product_dependencies_depends_on_product_idToproducts", fields: [depends_on_product_id], references: [id], onDelete: Cascade)
+  products_product_dependencies_product_idToproducts            Product  @relation("product_dependencies_product_idToproducts", fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, depends_on_product_id])
+  @@index([depends_on_product_id])
+}
+
+model product_domains {
+  product_id String   @db.Uuid
+  domain_id  String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  domains    Domain   @relation(fields: [domain_id], references: [id], onDelete: Cascade)
+  products   Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, domain_id])
+  @@index([domain_id])
+}
+
+model product_health {
+  id            String       @id @db.Uuid
+  product_id    String       @db.Uuid
+  status        HealthStatus
+  response_time Int?
+  message       String?
+  checked_at    DateTime     @default(now()) @db.Timestamptz(6)
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  products      Product      @relation(fields: [product_id], references: [id])
+
+  @@index([product_id])
+}
+
+model product_versions {
+  id               String    @id @db.Uuid
+  product_id       String    @db.Uuid
+  version          String
+  release_date     DateTime? @db.Timestamptz(6)
+  release_type     String?
+  description      String?
+  breaking_changes String?
+  migration_notes  String?
+  rollback_version String?
+  status           String?
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  created_by       String?   @db.Uuid
+  updated_at       DateTime  @db.Timestamptz(6)
+  updated_by       String?   @db.Uuid
+  deleted_at       DateTime? @db.Timestamptz(6)
+  deleted_by       String?   @db.Uuid
+  products         Product   @relation(fields: [product_id], references: [id])
+
+  @@unique([product_id, version])
+  @@index([product_id])
+}
+
+model references {
+  id           String        @id @db.Uuid
+  company_name String
+  logo         String?
+  category     String?
+  website      String?
+  description  String?
+  sort_order   Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  created_by   String?       @db.Uuid
+  updated_at   DateTime      @db.Timestamptz(6)
+  updated_by   String?       @db.Uuid
+  deleted_at   DateTime?     @db.Timestamptz(6)
+  deleted_by   String?       @db.Uuid
+}
+
+model revenues {
+  id           String    @id @db.Uuid
+  company_id   String    @db.Uuid
+  payment_id   String?   @db.Uuid
+  revenue_type String
+  amount       Decimal   @db.Decimal(14, 2)
+  currency     String    @db.VarChar(3)
+  recorded_at  DateTime  @default(now()) @db.Timestamptz(6)
+  approved_by  String?   @db.Uuid
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  created_by   String?   @db.Uuid
+  updated_at   DateTime  @db.Timestamptz(6)
+  updated_by   String?   @db.Uuid
+  deleted_at   DateTime? @db.Timestamptz(6)
+  deleted_by   String?   @db.Uuid
+  companies    Company   @relation(fields: [company_id], references: [id])
+  payments     payments? @relation(fields: [payment_id], references: [id])
+
+  @@index([company_id])
+  @@index([payment_id])
+}
+
+model role_permissions {
+  role_id       String     @db.Uuid
+  permission_id String     @db.Uuid
+  created_at    DateTime   @default(now()) @db.Timestamptz(6)
+  permissions   Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  roles         roles      @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission_id])
+  @@index([permission_id])
+}
+
+model roles {
+  id               String             @id @db.Uuid
+  name             String             @unique
+  description      String?
+  is_system        Boolean            @default(false)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       String?            @db.Uuid
+  updated_at       DateTime           @db.Timestamptz(6)
+  updated_by       String?            @db.Uuid
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  deleted_by       String?            @db.Uuid
+  role_permissions role_permissions[]
+  user_roles       user_roles[]
+}
+
+model security_events {
+  id         String   @id @db.Uuid
+  type       String
+  user_id    String?  @db.Uuid
+  ip_address String?
+  details    Json?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([type])
+  @@index([user_id])
+}
+
+model sessions {
+  id            String    @id @db.Uuid
+  user_id       String    @db.Uuid
+  device        String?
+  browser       String?
+  os            String?
+  country       String?
+  ip_address    String?
+  last_activity DateTime? @db.Timestamptz(6)
+  expired_at    DateTime? @db.Timestamptz(6)
+  revoked       Boolean   @default(false)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  users         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model settings {
+  id           String    @id @db.Uuid
+  key          String    @unique
+  value        String?
+  group        String?
+  is_encrypted Boolean   @default(false)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  created_by   String?   @db.Uuid
+  updated_at   DateTime  @db.Timestamptz(6)
+  updated_by   String?   @db.Uuid
+  deleted_at   DateTime? @db.Timestamptz(6)
+  deleted_by   String?   @db.Uuid
+}
+
+model sliders {
+  id           String        @id @db.Uuid
+  title        String
+  subtitle     String?
+  description  String?
+  image        String?
+  mobile_image String?
+  button_text  String?
+  button_url   String?
+  sort_order   Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  start_date   DateTime?     @db.Timestamptz(6)
+  end_date     DateTime?     @db.Timestamptz(6)
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  created_by   String?       @db.Uuid
+  updated_at   DateTime      @db.Timestamptz(6)
+  updated_by   String?       @db.Uuid
+  deleted_at   DateTime?     @db.Timestamptz(6)
+  deleted_by   String?       @db.Uuid
+}
+
+model social_links {
+  id         String    @id @db.Uuid
+  platform   String
+  url        String
+  icon       String?
+  is_active  Boolean   @default(true)
+  sort_order Int       @default(0)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_at DateTime  @db.Timestamptz(6)
+  updated_by String?   @db.Uuid
+  deleted_at DateTime? @db.Timestamptz(6)
+  deleted_by String?   @db.Uuid
+}
+
+model subscriptions {
+  id            String             @id @db.Uuid
+  company_id    String             @db.Uuid
+  license_id    String             @unique @db.Uuid
+  billing_cycle BillingCycle
+  renew_date    DateTime?          @db.Timestamptz(6)
+  next_payment  DateTime?          @db.Timestamptz(6)
+  auto_renew    Boolean            @default(false)
+  status        SubscriptionStatus @default(ACTIVE)
+  created_at    DateTime           @default(now()) @db.Timestamptz(6)
+  created_by    String?            @db.Uuid
+  updated_at    DateTime           @db.Timestamptz(6)
+  updated_by    String?            @db.Uuid
+  deleted_at    DateTime?          @db.Timestamptz(6)
+  deleted_by    String?            @db.Uuid
+  invoices      invoices[]
+  companies     Company            @relation(fields: [company_id], references: [id])
+  licenses      licenses           @relation(fields: [license_id], references: [id])
+
+  @@index([company_id])
+}
+
+model tags {
+  id            String          @id @db.Uuid
+  name          String          @unique
+  color         String?
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  created_by    String?         @db.Uuid
+  updated_at    DateTime        @db.Timestamptz(6)
+  updated_by    String?         @db.Uuid
+  deleted_at    DateTime?       @db.Timestamptz(6)
+  deleted_by    String?         @db.Uuid
+  customer_tags customer_tags[]
+}
+
+model teams {
+  id            String       @id @db.Uuid
+  department_id String       @db.Uuid
+  name          String
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  created_by    String?      @db.Uuid
+  updated_at    DateTime     @db.Timestamptz(6)
+  updated_by    String?      @db.Uuid
+  deleted_at    DateTime?    @db.Timestamptz(6)
+  deleted_by    String?      @db.Uuid
+  departments   departments  @relation(fields: [department_id], references: [id])
+  user_teams    user_teams[]
+
+  @@index([department_id])
+}
+
+model ticket_messages {
+  id          String   @id @db.Uuid
+  ticket_id   String   @db.Uuid
+  sender_id   String?  @db.Uuid
+  message     String
+  is_internal Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  tickets     tickets  @relation(fields: [ticket_id], references: [id])
+
+  @@index([ticket_id])
+}
+
+model tickets {
+  id               String             @id @db.Uuid
+  company_id       String             @db.Uuid
+  product_id       String?            @db.Uuid
+  reporter_id      String?            @db.Uuid
+  assigned_to      String?            @db.Uuid
+  category         TicketCategory
+  priority         TicketPriority     @default(MEDIUM)
+  status           TicketStatus       @default(NEW)
+  subject          String
+  description      String?
+  sla_due_at       DateTime?          @db.Timestamptz(6)
+  closed_at        DateTime?          @db.Timestamptz(6)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       String?            @db.Uuid
+  updated_at       DateTime           @db.Timestamptz(6)
+  updated_by       String?            @db.Uuid
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  deleted_by       String?            @db.Uuid
+  incident_tickets incident_tickets[]
+  ticket_messages  ticket_messages[]
+  companies        Company            @relation(fields: [company_id], references: [id])
+  products         Product?           @relation(fields: [product_id], references: [id])
+
+  @@index([assigned_to])
+  @@index([company_id])
+  @@index([product_id])
+  @@index([status])
+}
+
+model user_roles {
+  user_id    String   @db.Uuid
+  role_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  roles      roles    @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, role_id])
+  @@index([role_id])
+}
+
+model user_teams {
+  user_id    String   @db.Uuid
+  team_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  teams      teams    @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, team_id])
+  @@index([team_id])
+}
+
+model widgets {
+  id                String              @id @db.Uuid
+  widget_name       String
+  category          String?
+  icon              String?
+  permission_code   String?
+  refresh_interval  Int?
+  data_source       String?
+  status            WidgetStatus        @default(ACTIVE)
+  default_width     Int?
+  default_height    Int?
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  created_by        String?             @db.Uuid
+  updated_at        DateTime            @db.Timestamptz(6)
+  updated_by        String?             @db.Uuid
+  deleted_at        DateTime?           @db.Timestamptz(6)
+  deleted_by        String?             @db.Uuid
+  dashboard_widgets dashboard_widgets[]
+}
+
+enum ProductStatus {
+  PLANNING
+  DEVELOPMENT
+  TESTING
+  PRODUCTION
+  MAINTENANCE
+  DEPRECATED
+  ARCHIVED
+}
+
+enum ApiTokenStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+  CUSTOM
+}
+
+enum CompanyStatus {
+  ACTIVE
+  PASSIVE
+  BLOCKED
+  DELETED
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CustomerStatus {
+  LEAD
+  CONTACTED
+  DEMO
+  PROPOSAL
+  NEGOTIATION
+  WON
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  ARCHIVED
+}
+
+enum DeliveryStatus {
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum FeatureRequestStatus {
+  EVALUATING
+  PLANNED
+  ROADMAP
+  DEVELOPMENT
+  RELEASED
+  REJECTED
+}
+
+enum HealthStatus {
+  HEALTHY
+  WARNING
+  CRITICAL
+  OFFLINE
+  MAINTENANCE
+}
+
+enum IdentityType {
+  SYSTEM
+  EMPLOYEE
+  COMPANY
+  END_USER
+  SERVICE
+}
+
+enum IncidentSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum JobRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum LicenseStatus {
+  DRAFT
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRING
+  SUSPENDED
+  EXPIRED
+  ARCHIVED
+}
+
+enum LicenseType {
+  TRIAL
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+}
+
+enum MenuLocation {
+  HEADER
+  FOOTER
+}
+
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+  SMS
+  WHATSAPP
+  PUSH
+  WEBHOOK
+  SLACK
+  DISCORD
+  MICROSOFT_TEAMS
+}
+
+enum NotificationPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  BACKGROUND
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  WAITING_APPROVAL
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+  OVERDUE
+  PARTIALLY_PAID
+}
+
+enum ProductCategory {
+  SAAS
+  INTERNAL_TOOL
+  AUTOMATION
+  AI
+  INFRASTRUCTURE
+  INTEGRATION
+  WEBSITE
+  MICROSERVICE
+  LIBRARY
+  EXPERIMENTAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum TemplateStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TicketCategory {
+  BUG
+  FEATURE_REQUEST
+  QUESTION
+  SUPPORT
+  INCIDENT
+  INTEGRATION
+  BILLING
+  ACCOUNT
+  OTHER
+}
+
+enum TicketPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFORMATION
+}
+
+enum TicketStatus {
+  NEW
+  ASSIGNED
+  WAITING_CUSTOMER
+  WAITING_INTERNAL
+  IN_PROGRESS
+  TESTING
+  RESOLVED
+  CLOSED
+  CANCELLED
+  ARCHIVED
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  ARCHIVED
+}
+
+enum WidgetStatus {
+  ACTIVE
+  INACTIVE
+}
+
+

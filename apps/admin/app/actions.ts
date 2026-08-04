@@ -10,6 +10,10 @@ import {
   saveLeafViaApi,
   setMessageReadViaApi,
   deleteMessageViaApi,
+  publishViaApi,
+  readPublishStatus,
+  type PublishResult,
+  type PublishStatus,
 } from '../lib/content';
 
 async function requireAuth() {
@@ -63,6 +67,33 @@ export async function deleteMessage(id: string): Promise<{ ok: boolean }> {
   await deleteMessageViaApi(id);
   revalidatePath('/messages');
   return { ok: true };
+}
+
+/**
+ * Pushes saved content to the public website. Edits are stored immediately when
+ * saved; this is the separate step that makes them visible to visitors.
+ */
+export async function publishSite(): Promise<PublishResult> {
+  await requireAuth();
+  try {
+    return await publishViaApi();
+  } catch (err) {
+    return {
+      ok: false,
+      strategy: 'none',
+      at: new Date().toISOString(),
+      detail: err instanceof Error ? err.message : 'publish-failed',
+    };
+  }
+}
+
+export async function getPublishStatus(): Promise<PublishStatus | null> {
+  await requireAuth();
+  try {
+    return await readPublishStatus();
+  } catch {
+    return null;
+  }
 }
 
 export async function markAllMessagesRead(): Promise<{ ok: boolean }> {

@@ -228,3 +228,29 @@ export async function setMessageReadViaApi(id: string, read: boolean): Promise<v
 export async function deleteMessageViaApi(id: string): Promise<void> {
   await apiFetch(`/website/contact/${id}`, { method: 'DELETE' });
 }
+
+// ─── Publishing ─────────────────────────────────────────────────────────────
+
+export interface PublishResult {
+  ok: boolean;
+  strategy: 'deploy-hook' | 'revalidate' | 'none';
+  at: string;
+  detail: string;
+}
+
+export interface PublishStatus {
+  strategy: 'deploy-hook' | 'revalidate' | 'none';
+  configured: boolean;
+  autoPublish: boolean;
+  pendingChanges: boolean;
+  lastChangeAt: string | null;
+  lastPublish: PublishResult | null;
+}
+
+export async function publishViaApi(): Promise<PublishResult> {
+  return apiFetch<PublishResult>('/website/publish', { method: 'POST' });
+}
+
+export async function readPublishStatus(): Promise<PublishStatus> {
+  return apiFetch<PublishStatus>('/website/publish/status');
+}

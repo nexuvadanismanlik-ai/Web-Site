@@ -7,6 +7,7 @@ import { databaseConfig } from './config/database.config';
 import { jwtConfig } from './config/jwt.config';
 import { storageConfig } from './config/storage.config';
 import { emailConfig } from './config/email.config';
+import { publishConfig } from './config/publish.config';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -38,7 +39,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['../../.env', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig, storageConfig, emailConfig],
+      load: [appConfig, databaseConfig, jwtConfig, storageConfig, emailConfig, publishConfig],
     }),
     PrismaModule,
     TenantModule,

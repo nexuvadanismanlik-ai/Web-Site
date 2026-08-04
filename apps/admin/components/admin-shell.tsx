@@ -24,6 +24,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { PublishButton } from './publish-button';
 
 interface NavItem {
   label: string;
@@ -185,7 +186,8 @@ export function AdminShell({
           </button>
           <div className="hidden lg:block" />
           <div className="flex items-center gap-3">
-            <span className="text-sm text-ink-400">{userName}</span>
+            <PublishButton />
+            <span className="hidden text-sm text-ink-400 sm:inline">{userName}</span>
             <span className="flex h-9 w-9 items-center justify-center rounded-full brand-gradient-bg text-sm font-bold text-white">
               {userName.charAt(0)}
             </span>

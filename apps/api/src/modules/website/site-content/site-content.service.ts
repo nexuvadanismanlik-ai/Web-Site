@@ -8,6 +8,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
+import { PublishService } from '../publish/publish.service';
 import {
   COLLECTION_DEFS,
   SECTION_KEYS,
@@ -40,6 +41,7 @@ export class SiteContentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenants: WebsiteTenantService,
+    private readonly publish: PublishService,
   ) {}
 
   // ─── Assembly ─────────────────────────────────────────────────────────────
@@ -176,11 +178,13 @@ export class SiteContentService {
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
     const payload = data as Prisma.InputJsonValue;
 
-    return this.prisma.websiteSection.upsert({
+    const saved = await this.prisma.websiteSection.upsert({
       where: { tenantId_key: { tenantId, key } },
       create: { tenantId, key, data: payload },
       update: { data: payload },
     });
+    this.publish.contentChanged();
+    return saved;
   }
 
   private assertSectionKey(key: string): asserts key is SectionKey {
@@ -217,7 +221,9 @@ export class SiteContentService {
       data['position'] = lastPosition + 1;
     }
 
-    return this.delegate(slug).create({ data: { ...data, tenantId } });
+    const created = await this.delegate(slug).create({ data: { ...data, tenantId } });
+    this.publish.contentChanged();
+    return created;
   }
 
   /**
@@ -250,6 +256,7 @@ export class SiteContentService {
       }
     });
 
+    this.publish.contentChanged();
     return this.listItems(slug, tenantSlug);
   }
 
@@ -257,7 +264,9 @@ export class SiteContentService {
     const def = this.def(slug);
     const data = this.validate(def.create.partial(), body);
     await this.assertItemExists(slug, id, tenantSlug);
-    return this.delegate(slug).update({ where: { id }, data });
+    const updated = await this.delegate(slug).update({ where: { id }, data });
+    this.publish.contentChanged();
+    return updated;
   }
 
   /** Soft-deletes when the model supports it; hard-deletes otherwise. */
@@ -265,13 +274,15 @@ export class SiteContentService {
     const def = this.def(slug);
     await this.assertItemExists(slug, id, tenantSlug);
 
-    if (def.softDelete) {
-      return this.delegate(slug).update({
-        where: { id },
-        data: { deletedAt: new Date(), isActive: false },
-      });
-    }
-    return this.delegate(slug).delete({ where: { id } });
+    const removed = def.softDelete
+      ? await this.delegate(slug).update({
+          where: { id },
+          data: { deletedAt: new Date(), isActive: false },
+        })
+      : await this.delegate(slug).delete({ where: { id } });
+
+    this.publish.contentChanged();
+    return removed;
   }
 
   /** Applies a new ordering; ids not listed keep their current position. */
@@ -293,6 +304,7 @@ export class SiteContentService {
         delegate.update({ where: { id }, data: { position: index } }),
       ) as never,
     );
+    this.publish.contentChanged();
     return this.listItems(slug, tenantSlug);
   }
 

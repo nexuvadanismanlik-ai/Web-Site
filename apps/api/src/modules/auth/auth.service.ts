@@ -153,7 +153,9 @@ export class AuthService {
       }),
     ]);
 
-    return { success: true };
+    // The envelope's `success` is added by TransformInterceptor; the caller
+    // needs nothing back beyond a 2xx.
+    return {};
   }
 
   async logout(userId: string): Promise<void> {

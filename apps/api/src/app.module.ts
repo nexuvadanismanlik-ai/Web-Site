@@ -1,5 +1,6 @@
 import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { appConfig } from './config/app.config';
@@ -69,9 +70,13 @@ import { RolesGuard } from './common/guards/roles.guard';
     // JwtAuthGuard runs on every route. Routes that should skip auth
     // must be decorated with @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    // RolesGuard runs after JwtAuthGuard. Routes with @Roles() enforce
-    // the minimum required role; undecorated routes pass through.
+    // RolesGuard runs after JwtAuthGuard. Every route must declare its access
+    // level with @Roles(), @AnyAuthenticated() or @Public(); the guard refuses
+    // anything that declares none.
     { provide: APP_GUARD, useClass: RolesGuard },
+    // Puts every successful response in the standard envelope. Opt out with
+    // @NoEnvelope() for the few that cannot carry one.
+    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
   ],
 })
 export class AppModule implements NestModule {

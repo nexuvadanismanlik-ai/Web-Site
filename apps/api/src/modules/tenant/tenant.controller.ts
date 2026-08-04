@@ -22,6 +22,6 @@ export class TenantController {
       throw new NotFoundException(`No tenant for domain: ${domain}`);
     }
 
-    return { success: true, data: result.context };
+    return result.context;
   }
 }

@@ -6,6 +6,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { AnyAuthenticated } from '../../common/decorators/roles.decorator';
+import { NoEnvelope } from '../../common/decorators/response.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 interface AuthenticatedUser {
@@ -38,6 +39,8 @@ export class AuthController {
   @Post('logout')
   @AnyAuthenticated()
   @HttpCode(HttpStatus.NO_CONTENT)
+  // 204 carries no body, so there is nothing to wrap.
+  @NoEnvelope()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke all refresh tokens for the current user' })
   async logout(@CurrentUser() user: AuthenticatedUser) {
@@ -62,6 +65,6 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current authenticated user' })
   me(@CurrentUser() user: AuthenticatedUser) {
-    return { success: true, data: user };
+    return user;
   }
 }

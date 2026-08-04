@@ -2,6 +2,7 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { adminPath } from './routes';
 import { sessionSecret } from './session-secret';
+import { unwrap } from './envelope';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
 
@@ -59,7 +60,7 @@ async function refreshAccessToken(token: Record<string, unknown>): Promise<Recor
 
     if (!res.ok) return { ...token, error: 'RefreshFailed' };
 
-    const data = (await res.json()) as { accessToken: string; refreshToken: string };
+    const data = unwrap<{ accessToken: string; refreshToken: string }>(await res.json());
     return {
       ...token,
       accessToken: data.accessToken,
@@ -123,7 +124,7 @@ export const authOptions: NextAuthOptions = {
 
           if (!res.ok) return null;
 
-          const data = (await res.json()) as BackendLoginResponse;
+          const data = unwrap<BackendLoginResponse>(await res.json());
           const name = [data.user.firstName, data.user.lastName].filter(Boolean).join(' ');
 
           return {

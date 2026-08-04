@@ -76,7 +76,18 @@ async function fetchSiteContent(): Promise<SiteContent> {
     throw new Error(`Site content request to ${url} failed with HTTP ${res.status}.`);
   }
 
-  return (await res.json()) as SiteContent;
+  // The API answers in the standard envelope: {success, message, data}.
+  const body = (await res.json()) as { data?: SiteContent } | SiteContent;
+  const content =
+    body !== null && typeof body === 'object' && 'success' in body && 'data' in body
+      ? (body as { data: SiteContent }).data
+      : (body as SiteContent);
+
+  if (!content || typeof content !== 'object') {
+    throw new Error(`Site content request to ${url} returned an unexpected body.`);
+  }
+
+  return content;
 }
 
 export async function getSiteContent(): Promise<SiteContent> {

@@ -89,7 +89,8 @@ export class ContactService {
     });
 
     // The public caller gets an acknowledgement only — never the stored row.
-    return { success: true, id: created.id, createdAt: created.createdAt };
+    // The envelope's `success` is added by TransformInterceptor.
+    return { id: created.id, createdAt: created.createdAt };
   }
 
   /**

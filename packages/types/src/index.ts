@@ -19,7 +19,7 @@ export type { AuditLog, ActivityLog } from './entities/audit-log';
 
 // API shapes
 export type { PaginationQuery, PaginatedResponse } from './api/pagination';
-export type { ApiResponse, ApiError } from './api/response';
+export type { ApiResponse, ApiError, ApiErrorCode } from './api/response';
 
 // Tenant
 export type { TenantResolutionResult } from './tenant/context';

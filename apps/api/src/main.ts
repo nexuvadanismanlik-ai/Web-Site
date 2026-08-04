@@ -61,8 +61,17 @@ async function bootstrap() {
   // Sign-in gets a much tighter allowance than the rest of the API: it is the
   // one unauthenticated endpoint where a caller is guessing a secret. Argon2
   // already makes each attempt cost seconds; this caps how many can be queued.
+  //
+  // It needs its own counter, not just its own threshold. The plugin keeps one
+  // running count per key, so a shared bucket would measure sign-ins against
+  // every other call from the same address — and the admin panel calls this API
+  // server-side, meaning all of its traffic arrives from one address. A tight
+  // threshold over a shared count locks the panel out of its own login.
   await app.register(import('@fastify/rate-limit'), {
-    max: (req: { url?: string }) => (isSignInAttempt(req.url) ? SIGN_IN_MAX_PER_MINUTE : MAX_PER_MINUTE),
+    keyGenerator: (req: { url?: string; ip?: string }) =>
+      isSignInAttempt(req.url) ? `signin:${req.ip ?? 'unknown'}` : (req.ip ?? 'unknown'),
+    max: (req: { url?: string }) =>
+      isSignInAttempt(req.url) ? SIGN_IN_MAX_PER_MINUTE : MAX_PER_MINUTE,
     timeWindow: '1 minute',
   });
 

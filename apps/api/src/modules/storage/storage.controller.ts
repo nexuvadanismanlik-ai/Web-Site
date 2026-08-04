@@ -13,6 +13,7 @@ import type { FastifyRequest } from 'fastify';
 import { StorageService } from './storage.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ResponseMessage } from '../../common/decorators/response.decorator';
 import type { UserRole } from '@nexuva/types';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -107,7 +108,7 @@ export class StorageController {
       filename,
     });
 
-    return { success: true, data: file };
+    return file;
   }
 
   /**
@@ -141,14 +142,11 @@ export class StorageController {
     });
 
     return {
-      success: true,
-      data: {
-        files: result.files,
-        pagination: { total: result.total, limit, offset },
-        usage: {
-          totalBytes: result.usage,
-          totalMB: Math.round((result.usage / 1024 / 1024) * 100) / 100,
-        },
+      files: result.files,
+      pagination: { total: result.total, limit, offset },
+      usage: {
+        totalBytes: result.usage,
+        totalMB: Math.round((result.usage / 1024 / 1024) * 100) / 100,
       },
     };
   }
@@ -159,6 +157,7 @@ export class StorageController {
    */
   @Delete('files/:id')
   @Roles('ADMIN')
+  @ResponseMessage('File deleted')
   @ApiOperation({ summary: 'Soft-delete a file and remove it from R2' })
   async deleteFile(
     @Param('id') fileId: string,
@@ -171,6 +170,6 @@ export class StorageController {
       actorCompanyId: user.companyId,
     });
 
-    return { success: true, message: 'File deleted' };
+    return { id: fileId };
   }
 }

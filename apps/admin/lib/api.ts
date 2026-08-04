@@ -1,5 +1,7 @@
 import { getServerSession } from 'next-auth';
+import type { ApiErrorCode } from '@nexuva/types';
 import { authOptions } from './auth';
+import { unwrap } from './envelope';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
 
@@ -7,6 +9,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** Stable reason from the API. Branch on this, not on the message text. */
+    readonly code?: ApiErrorCode,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -88,17 +92,22 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     let detail = res.statusText;
+    let code: ApiErrorCode | undefined;
     try {
-      const body = (await res.json()) as { message?: string | string[] };
+      const body = (await res.json()) as {
+        message?: string | string[];
+        errorCode?: ApiErrorCode;
+      };
       if (body?.message) {
         detail = Array.isArray(body.message) ? body.message.join(', ') : body.message;
       }
+      code = body?.errorCode;
     } catch {
       // Response had no JSON body; the status text is the best available detail.
     }
-    throw new ApiError(detail, res.status);
+    throw new ApiError(detail, res.status, code);
   }
 
   if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  return unwrap<T>(await res.json());
 }

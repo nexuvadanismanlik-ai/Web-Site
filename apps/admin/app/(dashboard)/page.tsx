@@ -21,8 +21,9 @@ export const dynamic = 'force-dynamic';
 const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 
 export default async function DashboardHome() {
-  const content = await readSiteContent();
-  const messages = await readMessages();
+  // In parallel: two sequential round trips are two cold starts back to back
+  // when the API has been idle.
+  const [content, messages] = await Promise.all([readSiteContent(), readMessages()]);
   const unread = messages.filter((m) => !m.read).length;
 
   const stats = [

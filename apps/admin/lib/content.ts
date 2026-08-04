@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { SiteContent, ContactMessage } from '@nexuva/types';
 import { apiFetch } from './api';
 
@@ -37,11 +38,17 @@ const COLLECTION_SLUGS: Record<string, string> = {
 
 // ─── Reads ──────────────────────────────────────────────────────────────────
 
-export async function readSiteContent(): Promise<SiteContent> {
+/**
+ * Wrapped in React's cache so a layout and the page it renders share one
+ * request instead of each making their own. It matters most when the API is
+ * waking from idle: three sequential cold calls were turning one page load into
+ * minutes.
+ */
+export const readSiteContent = cache(async (): Promise<SiteContent> => {
   // The assembled document is public, so this read needs no bearer token and
   // still works on the login page.
   return apiFetch<SiteContent>('/website/content', { auth: false });
-}
+});
 
 interface ApiContactMessage {
   id: string;
@@ -73,10 +80,11 @@ function toContactMessage(m: ApiContactMessage): ContactMessage {
   };
 }
 
-export async function readMessages(): Promise<ContactMessage[]> {
+/** Cached for the same reason as readSiteContent — the shell and the page both want it. */
+export const readMessages = cache(async (): Promise<ContactMessage[]> => {
   const res = await apiFetch<ApiMessageList>('/website/contact?limit=100');
   return res.items.map(toContactMessage);
-}
+});
 
 // ─── Writes ─────────────────────────────────────────────────────────────────
 

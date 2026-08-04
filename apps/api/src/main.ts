@@ -8,21 +8,22 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  // Validate required secrets before touching anything else.
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ logger: process.env['NODE_ENV'] === 'development' }),
+  );
+
+  // Validate required secrets before the server accepts any traffic. This runs
+  // after module init so values from .env (loaded by ConfigModule) count —
+  // reading process.env earlier would only see variables exported by the shell.
   // A missing JWT secret would produce unsigned tokens that any server accepts.
-  const accessSecret = process.env['JWT_ACCESS_SECRET'];
-  const refreshSecret = process.env['JWT_REFRESH_SECRET'];
-  if (!accessSecret || !refreshSecret) {
+  const secrets = app.get(ConfigService);
+  if (!secrets.get<string>('jwt.accessSecret') || !secrets.get<string>('jwt.refreshSecret')) {
     console.error(
       'FATAL: JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be set. Refusing to start.',
     );
     process.exit(1);
   }
-
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: process.env['NODE_ENV'] === 'development' }),
-  );
 
   // Multipart support for file uploads
   await app.register(import('@fastify/multipart'), {

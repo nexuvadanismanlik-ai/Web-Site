@@ -87,6 +87,22 @@ export class SiteContentController {
     return this.siteContent.createItem(slug, body, tenant);
   }
 
+  @Put('collections/:slug')
+  @Roles('CONTENT_EDITOR')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Replace an entire collection with the posted array. Positions follow ' +
+      'array order. Used by the admin editors, which save whole lists.',
+  })
+  replaceCollection(
+    @Param('slug') slug: string,
+    @Body() body: Record<string, unknown>[],
+    @Query('tenant') tenant?: string,
+  ) {
+    return this.siteContent.replaceCollection(slug, body, tenant);
+  }
+
   // Declared before :id so "reorder" is not captured as an item id.
   @Patch('collections/:slug/reorder')
   @Roles('CONTENT_EDITOR')

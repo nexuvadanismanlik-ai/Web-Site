@@ -1,24 +1,67 @@
-const API_BASE =
-  process.env['NEXT_PUBLIC_ADMIN_API_URL'] ?? 'http://localhost:4000/api/v1';
+import { getServerSession } from 'next-auth';
+import { authOptions } from './auth';
 
-export async function adminFetch<T>(
+const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+/** Access token issued by the backend at login, carried on the NextAuth JWT. */
+async function getAccessToken(): Promise<string> {
+  const session = (await getServerSession(authOptions)) as
+    | { accessToken?: string }
+    | null;
+  const token = session?.accessToken;
+  if (!token) {
+    throw new ApiError('Not authenticated — sign in again', 401);
+  }
+  return token;
+}
+
+/**
+ * Server-side call to the Nexuva API, authenticated as the signed-in admin.
+ * Only usable from server components and server actions — it reads the session
+ * from cookies and must never run in the browser.
+ */
+export async function apiFetch<T>(
   path: string,
-  token: string,
-  init?: RequestInit,
+  init: RequestInit & { auth?: boolean } = {},
 ): Promise<T> {
+  const { auth = true, ...rest } = init;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((rest.headers as Record<string, string>) ?? {}),
+  };
+
+  if (auth) headers['Authorization'] = `Bearer ${await getAccessToken()}`;
+
   const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...init?.headers,
-    },
+    ...rest,
+    headers,
+    // Admin views must always reflect the current database state.
+    cache: 'no-store',
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error((error as { message: string }).message);
+    let detail = res.statusText;
+    try {
+      const body = (await res.json()) as { message?: string | string[] };
+      if (body?.message) {
+        detail = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+      }
+    } catch {
+      // Response had no JSON body; the status text is the best available detail.
+    }
+    throw new ApiError(detail, res.status);
   }
 
-  return res.json() as Promise<T>;
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
 }

@@ -220,6 +220,39 @@ export class SiteContentService {
     return this.delegate(slug).create({ data: { ...data, tenantId } });
   }
 
+  /**
+   * Replaces an entire collection in one call. The admin editors work on whole
+   * arrays, so this maps to a single save instead of a diff of create/update/
+   * delete calls. Positions follow array order.
+   *
+   * Rows are removed outright rather than soft-deleted: this is a content
+   * replacement, and leaving tombstones would grow the table on every save.
+   */
+  async replaceCollection(slug: string, body: unknown, tenantSlug?: string) {
+    const def = this.def(slug);
+    if (!Array.isArray(body)) {
+      throw new BadRequestException('Body must be an array of collection items');
+    }
+
+    const rows = body.map((item, index) => {
+      const data = this.validate(def.create, item);
+      return { ...data, position: index };
+    });
+
+    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+
+    await this.prisma.$transaction(async (tx) => {
+      const txDelegate = (tx as unknown as Record<string, ReplaceDelegate>)[def.model];
+      if (!txDelegate) throw new InternalServerErrorException(`Unknown model ${def.model}`);
+      await txDelegate.deleteMany({ where: { tenantId } });
+      for (const row of rows) {
+        await txDelegate.create({ data: { ...row, tenantId } });
+      }
+    });
+
+    return this.listItems(slug, tenantSlug);
+  }
+
   async updateItem(slug: string, id: string, body: unknown, tenantSlug?: string) {
     const def = this.def(slug);
     const data = this.validate(def.create.partial(), body);
@@ -305,4 +338,10 @@ interface SafeParseLike {
   success: boolean;
   data?: unknown;
   error?: { issues: { path: (string | number)[]; message: string }[] };
+}
+
+/** Delegate subset used inside the replace transaction. */
+interface ReplaceDelegate {
+  deleteMany(args: AnyRecord): Promise<unknown>;
+  create(args: AnyRecord): Promise<unknown>;
 }

@@ -23,8 +23,8 @@ const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 export default async function DashboardHome() {
   // In parallel: two sequential round trips are two cold starts back to back
   // when the API has been idle.
-  const [content, messages] = await Promise.all([readSiteContent(), readMessages()]);
-  const unread = messages.filter((m) => !m.read).length;
+  const [content, inbox] = await Promise.all([readSiteContent(), readMessages()]);
+  const { items: messages, unread } = inbox;
 
   const stats = [
     { label: 'Hizmet', value: content.services.length, icon: Briefcase },

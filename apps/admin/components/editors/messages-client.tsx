@@ -6,11 +6,20 @@ import { Mail, MailOpen, Trash2, Check, Phone, Clock, CheckCheck, Inbox } from '
 import type { ContactMessage } from '@nexuva/types';
 import { setMessageRead, deleteMessage, markAllMessagesRead } from '../../app/actions';
 
-export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
+export function MessagesClient({
+  messages,
+  total,
+  unread,
+}: {
+  messages: ContactMessage[];
+  /** Enquiries in the database, which may exceed what this page holds. */
+  total: number;
+  /** Counted by the database, not derived from the rows on screen. */
+  unread: number;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [openId, setOpenId] = useState<string | null>(null);
-  const unread = messages.filter((m) => !m.read).length;
 
   const act = (fn: () => Promise<unknown>) =>
     startTransition(async () => {
@@ -32,7 +41,8 @@ export function MessagesClient({ messages }: { messages: ContactMessage[] }) {
         <div>
           <h1 className="font-heading text-2xl font-bold text-fg">Mesajlar</h1>
           <p className="mt-0.5 text-sm text-muted">
-            {messages.length} mesaj · {unread} okunmamış
+            {total} mesaj · {unread} okunmamış
+            {messages.length < total && ` · en yeni ${messages.length} tanesi gösteriliyor`}
           </p>
         </div>
         {unread > 0 && (

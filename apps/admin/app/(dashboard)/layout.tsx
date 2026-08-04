@@ -18,8 +18,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // still surfaces a real failure through error.tsx.
   let unread = 0;
   try {
-    const messages = await readMessages();
-    unread = messages.filter((m) => !m.read).length;
+    unread = (await readMessages()).unread;
   } catch {
     unread = 0;
   }

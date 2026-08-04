@@ -84,10 +84,32 @@ function toContactMessage(m: ApiContactMessage): ContactMessage {
   };
 }
 
-/** Cached for the same reason as readSiteContent — the shell and the page both want it. */
-export const readMessages = cache(async (): Promise<ContactMessage[]> => {
-  const res = await apiFetch<ApiMessageList>('/website/contact?limit=100');
-  return res.items.map(toContactMessage);
+export interface MessageList {
+  items: ContactMessage[];
+  /** Enquiries in total, not just on this page. */
+  total: number;
+  /** Counted by the database over the whole table, not over `items`. */
+  unread: number;
+}
+
+/**
+ * A page of enquiries plus the counts the panel displays.
+ *
+ * The unread count comes from the API. It used to be derived by downloading up
+ * to a hundred messages and filtering them in the browser, in three separate
+ * places — which is both a wasted transfer and a number that quietly goes wrong
+ * the moment there are more messages than the page holds.
+ *
+ * Cached for the same reason as readSiteContent — the shell and the page both
+ * want it, and without this they each made their own request.
+ */
+export const readMessages = cache(async (limit = 50): Promise<MessageList> => {
+  const res = await apiFetch<ApiMessageList>(`/website/contact?limit=${limit}`);
+  return {
+    items: res.items.map(toContactMessage),
+    total: res.meta.total,
+    unread: res.meta.unread,
+  };
 });
 
 // ─── Writes ─────────────────────────────────────────────────────────────────
@@ -248,6 +270,11 @@ export async function setMessageReadViaApi(id: string, read: boolean): Promise<v
 
 export async function deleteMessageViaApi(id: string): Promise<void> {
   await apiFetch(`/website/contact/${id}`, { method: 'DELETE' });
+}
+
+/** One request, whatever the inbox size. */
+export async function markAllMessagesReadViaApi(): Promise<{ updated: number }> {
+  return apiFetch<{ updated: number }>('/website/contact/read-all', { method: 'PATCH' });
 }
 
 // ─── Publishing ─────────────────────────────────────────────────────────────

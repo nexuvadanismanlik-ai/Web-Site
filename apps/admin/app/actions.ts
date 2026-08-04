@@ -6,7 +6,7 @@ import type { SiteContent } from '@nexuva/types';
 import { authOptions } from '../lib/auth';
 import { adminPath } from '../lib/routes';
 import {
-  readMessages,
+  markAllMessagesReadViaApi,
   saveSectionViaApi,
   saveLeafViaApi,
   setMessageReadViaApi,
@@ -157,12 +157,13 @@ export async function changePassword(
   }
 }
 
-export async function markAllMessagesRead(): Promise<{ ok: boolean }> {
+export async function markAllMessagesRead(): Promise<{ ok: boolean; error?: string }> {
   await requireAuth();
-  const list = await readMessages();
-  await Promise.all(
-    list.filter((m) => !m.read).map((m) => setMessageReadViaApi(m.id, true)),
-  );
+  try {
+    await markAllMessagesReadViaApi();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'İşaretlenemedi.' };
+  }
   revalidatePath(adminPath('/messages'));
   return { ok: true };
 }

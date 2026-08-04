@@ -75,6 +75,16 @@ export class ContactController {
     return this.contact.findOne(id, tenant);
   }
 
+  // Declared before ':id/read' so the literal segment is not captured as an id.
+  @Patch('read-all')
+  @Roles('CONTENT_EDITOR')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mark every unread message read, in one statement' })
+  @ApiQuery({ name: 'tenant', required: false })
+  markAllRead(@Query('tenant') tenant?: string) {
+    return this.contact.markAllRead(tenant);
+  }
+
   @Patch(':id/read')
   @Roles('CONTENT_EDITOR')
   @ApiBearerAuth()

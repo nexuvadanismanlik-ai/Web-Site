@@ -3,8 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { EmailService } from '../../email/email.service';
+import {
+  resolvePagination,
+  paginated,
+} from '../../../common/dto/pagination-query.dto';
 import type { CreateContactMessageDto } from './dto/create-contact-message.dto';
-import type { ListMessagesDto } from './dto/list-messages.dto';
+import {
+  MESSAGE_DEFAULT_SORT,
+  MESSAGE_SORTABLE,
+  type ListMessagesDto,
+} from './dto/list-messages.dto';
 
 /**
  * Submissions allowed from one IP within the rolling window. This only counts
@@ -13,6 +21,23 @@ import type { ListMessagesDto } from './dto/list-messages.dto';
  */
 const MAX_PER_IP = 5;
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Columns the list view actually renders. Request metadata is retained for
+ * abuse investigation and read through the single-message endpoint, not shipped
+ * with every row of every page.
+ */
+const MESSAGE_LIST_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  subject: true,
+  message: true,
+  isRead: true,
+  readAt: true,
+  createdAt: true,
+} as const;
 
 /** Everything here goes into an HTML email and is written by the public. */
 function escapeHtml(value: string): string {
@@ -139,30 +164,48 @@ export class ContactService {
 
   async list(query: ListMessagesDto, tenantSlug?: string) {
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const paging = resolvePagination(query, {
+      sortable: MESSAGE_SORTABLE,
+      defaultSort: MESSAGE_DEFAULT_SORT,
+    });
 
     const where = {
       tenantId,
       deletedAt: null,
       ...(query.isRead !== undefined ? { isRead: query.isRead === 'true' } : {}),
+      ...(paging.search
+        ? {
+            OR: [
+              { name: { contains: paging.search, mode: 'insensitive' as const } },
+              { email: { contains: paging.search, mode: 'insensitive' as const } },
+              { subject: { contains: paging.search, mode: 'insensitive' as const } },
+              { message: { contains: paging.search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
     };
 
     const [items, total, unread] = await Promise.all([
       this.prisma.contactMessage.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+        orderBy: paging.orderBy,
+        skip: paging.skip,
+        take: paging.take,
+        // The list view shows a sender and a preview. Message bodies, IP
+        // addresses and user agents were being sent for every row of every
+        // page to render a truncated subject line.
+        select: MESSAGE_LIST_SELECT,
       }),
       this.prisma.contactMessage.count({ where }),
       this.prisma.contactMessage.count({ where: { tenantId, deletedAt: null, isRead: false } }),
     ]);
 
-    return {
-      items,
-      meta: { page, limit, total, unread, totalPages: Math.ceil(total / limit) },
-    };
+    const page = paginated(items, total, paging);
+    // `items` sits alongside the shared `data` field because the panel reads
+    // it. Dropping it is a client change that belongs with the CRM work rather
+    // than buried in a pagination commit; `unread` is genuinely extra, and the
+    // panel was recomputing it in three places from a full download.
+    return { ...page, items, meta: { ...page.meta, unread } };
   }
 
   async findOne(id: string, tenantSlug?: string) {
@@ -172,6 +215,22 @@ export class ContactService {
     });
     if (!message) throw new NotFoundException(`Message "${id}" not found`);
     return message;
+  }
+
+  /**
+   * Marks every unread enquiry read in one statement.
+   *
+   * The panel used to do this by sending one request per unread message, so an
+   * inbox with forty unread items produced forty round trips through the whole
+   * auth stack.
+   */
+  async markAllRead(tenantSlug?: string): Promise<{ updated: number }> {
+    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+    const result = await this.prisma.contactMessage.updateMany({
+      where: { tenantId, deletedAt: null, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+    return { updated: result.count };
   }
 
   async setRead(id: string, isRead: boolean, tenantSlug?: string) {

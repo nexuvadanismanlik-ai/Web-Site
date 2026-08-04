@@ -70,6 +70,17 @@ function plainText(html) {
     .replace(/\s+/g, ' ');
 }
 
+/**
+ * Takes the payload out of the API's standard envelope, and tolerates a body
+ * without one so this keeps working against an instance that predates it.
+ */
+function unwrap(body) {
+  if (body !== null && typeof body === 'object' && 'success' in body && 'data' in body) {
+    return body.data;
+  }
+  return body;
+}
+
 /** Localized values are stored as { tr, en }. */
 function tr(value) {
   if (typeof value === 'string') return value;
@@ -85,7 +96,7 @@ let content = null;
 try {
   const res = await get(`${API}/website/content`);
   record('API ayakta ve içerik dönüyor', res.ok, `HTTP ${res.status}`);
-  if (res.ok) content = await res.json();
+  if (res.ok) content = unwrap(await res.json());
 } catch (err) {
   record('API ayakta ve içerik dönüyor', false, String(err));
 }

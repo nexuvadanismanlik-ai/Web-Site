@@ -10,11 +10,15 @@ import {
   Phone,
   ArrowRight,
   Mail,
+  ExternalLink,
 } from 'lucide-react';
 import { readSiteContent, readMessages } from '../../lib/content';
 import { adminPath } from '../../lib/routes';
 
 export const dynamic = 'force-dynamic';
+
+/** Public site, opened from the overview. Falls back to the local dev site. */
+const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 
 export default async function DashboardHome() {
   const content = await readSiteContent();
@@ -39,12 +43,18 @@ export default async function DashboardHome() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-8">
-        <h1 className="font-heading text-2xl font-bold text-fg sm:text-3xl">Hoş geldin 👋</h1>
-        <p className="mt-1 text-muted">
-          {content.brand.siteName} web sitesini buradan yönetiyorsun. Her değişiklik anında siteye
-          yansır.
-        </p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-fg sm:text-3xl">Hoş geldin 👋</h1>
+          <p className="mt-1 text-muted">
+            {content.brand.siteName} web sitesini buradan yönetiyorsun. Değişiklikler kaydedilir,
+            yayına almak için <span className="text-fg">Yayınla</span>&apos;ya bas.
+          </p>
+        </div>
+        <a href={SITE_URL} target="_blank" rel="noreferrer" className="btn-ghost shrink-0">
+          <ExternalLink className="h-4 w-4" />
+          Siteyi Görüntüle
+        </a>
       </div>
 
       {/* Stat cards */}

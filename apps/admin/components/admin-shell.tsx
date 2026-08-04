@@ -17,7 +17,6 @@ import {
   Phone,
   LayoutList,
   Inbox,
-  ExternalLink,
   LogOut,
   Menu,
   MousePointerClick,
@@ -27,9 +26,6 @@ import {
 } from 'lucide-react';
 import { PublishButton } from './publish-button';
 import { adminPath, isAdminRoute } from '../lib/routes';
-
-/** Public site, opened from the sidebar. Falls back to the local dev site. */
-const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 
 interface NavItem {
   label: string;
@@ -59,10 +55,6 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { label: 'İletişim', href: '/contact', icon: Phone },
       { label: 'Menü & Footer', href: '/navigation', icon: LayoutList },
     ],
-  },
-  {
-    section: 'Hesap',
-    items: [{ label: 'Ayarlar', href: '/settings', icon: Settings }],
   },
 ];
 
@@ -150,19 +142,31 @@ export function AdminShell({
         ))}
       </nav>
 
+      {/* Account block — the whole row is the way into Settings. */}
       <div className="border-t border-overlay/10 p-3">
-        <a
-          href={SITE_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-overlay/[0.06] hover:text-fg"
+        <Link
+          href={adminPath('/settings')}
+          onClick={() => setOpen(false)}
+          className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+            isActive('/settings') ? 'bg-overlay/10' : 'hover:bg-overlay/[0.06]'
+          }`}
         >
-          <ExternalLink style={{ width: 18, height: 18 }} />
-          Siteyi Görüntüle
-        </a>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full brand-gradient-bg text-sm font-bold text-white">
+            {userName.charAt(0).toUpperCase()}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-fg">{userName}</span>
+            <span className="block text-xs text-faint">Ayarlar</span>
+          </span>
+          <Settings
+            style={{ width: 16, height: 16 }}
+            className="shrink-0 text-faint group-hover:text-fg"
+          />
+        </Link>
+
         <button
           onClick={() => signOut({ callbackUrl: adminPath('/login') })}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-red-500/10 hover:text-red-500"
+          className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-red-500/10 hover:text-red-500"
         >
           <LogOut style={{ width: 18, height: 18 }} />
           Çıkış Yap
@@ -199,13 +203,9 @@ export function AdminShell({
             <Menu className="h-5 w-5" />
           </button>
           <div className="hidden lg:block" />
-          <div className="flex items-center gap-3">
-            <PublishButton />
-            <span className="hidden text-sm text-muted sm:inline">{userName}</span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full brand-gradient-bg text-sm font-bold text-white">
-              {userName.charAt(0)}
-            </span>
-          </div>
+          {/* Identity lives in the sidebar account block; the topbar is for the
+              one action that applies to every page. */}
+          <PublishButton />
         </header>
 
         <main className="flex-1 p-5 sm:p-8">{children}</main>

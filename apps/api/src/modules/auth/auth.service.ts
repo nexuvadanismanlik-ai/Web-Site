@@ -65,42 +65,61 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const tokenHash = await argon2.hash(dto.refreshToken);
-
-    // Find a stored token that matches hash and is not revoked
-    const stored = await this.prisma.refreshToken.findFirst({
+    // Stored hashes are salted, so the presented token cannot be looked up
+    // directly — each live token for this user is a candidate and has to be
+    // verified in turn. Newest first, since that is nearly always the match,
+    // and capped so a user with many sessions cannot turn one refresh into an
+    // unbounded run of argon2 verifications.
+    const candidates = await this.prisma.refreshToken.findMany({
       where: {
         userId: payload.sub,
         isRevoked: false,
         expiresAt: { gt: new Date() },
       },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
     });
+
+    let stored: (typeof candidates)[number] | undefined;
+    for (const candidate of candidates) {
+      if (await argon2.verify(candidate.tokenHash, dto.refreshToken)) {
+        stored = candidate;
+        break;
+      }
+    }
 
     if (!stored) {
       throw new UnauthorizedException('Refresh token not found or revoked');
     }
-
-    // Verify the raw token against stored hash
-    const hashValid = await argon2.verify(stored.tokenHash, dto.refreshToken);
-    if (!hashValid) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    // Rotate: revoke current token, issue new pair
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { isRevoked: true },
-    });
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || !user.isActive || user.deletedAt) {
       throw new UnauthorizedException('User account is inactive');
     }
 
+    // Deliberately NOT rotated: the refresh token is returned unchanged and its
+    // row stays live.
+    //
+    // Rotation is the stronger design, but it requires the caller to persist the
+    // replacement — and the admin panel refreshes from React server components,
+    // which cannot write cookies. Rotating there meant the first refresh revoked
+    // the only token the session still had, so every later request failed with
+    // Unauthorized. Issuing a fresh access token against a stable refresh token
+    // is idempotent, safe under concurrent requests, and adds no row per call.
+    //
+    // The trade-off is that a stolen refresh token stays usable until it expires
+    // or the user signs out or changes their password, both of which revoke it.
     const newPayload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
-    const tokens = await this.signTokenPair(newPayload, user.id);
+    const accessSecret = this.config.get<string>('jwt.accessSecret');
+    const accessExpiry = this.config.get<string>('jwt.accessExpiry', '15m');
 
-    return tokens;
+    return {
+      accessToken: this.jwt.sign(newPayload, {
+        secret: accessSecret,
+        expiresIn: accessExpiry,
+      }),
+      refreshToken: dto.refreshToken,
+    };
   }
 
   /**

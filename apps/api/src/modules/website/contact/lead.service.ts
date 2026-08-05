@@ -140,6 +140,91 @@ export class LeadService {
     });
   }
 
+  /**
+   * A lead entered by hand, from a phone call, an email or a meeting.
+   *
+   * Deliberately not the public submit path: that one is unauthenticated,
+   * rate limited per visitor, and sends the sender an acknowledgement. None of
+   * that belongs to someone typing up a call they just took — and an
+   * acknowledgement mail to a person who never filled in a form is a mistake
+   * the customer sees.
+   *
+   * The timeline says where it came from, because six months later "how did we
+   * get this one" is a question with money attached.
+   */
+  async create(
+    input: {
+      name: string;
+      email: string;
+      phone?: string | undefined;
+      company?: string | undefined;
+      service?: string | undefined;
+      budget?: string | undefined;
+      subject?: string | undefined;
+      message: string;
+      status?: LeadStatus | undefined;
+      assignedToId?: string | undefined;
+      source?: string | undefined;
+    },
+    actorId: string,
+    tenantSlug?: string,
+  ) {
+    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+
+    if (input.assignedToId) {
+      const exists = await this.prisma.user.findFirst({
+        where: { id: input.assignedToId, isActive: true },
+        select: { id: true },
+      });
+      if (!exists) throw new BadRequestException('Atanacak kullanıcı bulunamadı');
+    }
+
+    const lead = await this.prisma.contactMessage.create({
+      data: {
+        tenantId,
+        name: input.name,
+        email: input.email,
+        phone: input.phone ?? null,
+        company: input.company ?? null,
+        service: input.service ?? null,
+        budget: input.budget ?? null,
+        subject: input.subject ?? null,
+        message: input.message,
+        status: input.status ?? LeadStatus.NEW,
+        assignedToId: input.assignedToId ?? null,
+        // Somebody in the panel is looking at it as they type it, so it is not
+        // waiting to be read the way a form submission is.
+        isRead: true,
+        readAt: new Date(),
+        lastActionAt: new Date(),
+      },
+      select: { id: true, name: true },
+    });
+
+    const origin = input.source?.trim();
+    await this.prisma.leadActivity.create({
+      data: {
+        leadId: lead.id,
+        actorId,
+        type: LeadActivityType.CREATED,
+        description: origin ? `Talep elle eklendi — ${origin}` : 'Talep elle eklendi',
+      },
+    });
+
+    if (input.assignedToId && input.assignedToId !== actorId) {
+      await this.notify(
+        input.assignedToId,
+        tenantId,
+        NotificationType.INFO,
+        `Sana atandı: ${lead.name}`,
+        'Panelden eklenen bir talep sana atandı.',
+        { leadId: lead.id } as Prisma.InputJsonValue,
+      );
+    }
+
+    return this.findOne(lead.id, tenantSlug);
+  }
+
   async findOne(id: string, tenantSlug?: string) {
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
     const lead = await this.prisma.contactMessage.findFirst({

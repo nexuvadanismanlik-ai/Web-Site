@@ -23,6 +23,7 @@ import {
   readLeads,
   readPipelineCounts,
   readLeadSummary,
+  createLeadViaApi,
   readAssignees,
   readLeadDetail,
   setLeadStatusViaApi,
@@ -171,6 +172,43 @@ export async function getLeadSummary(): Promise<LeadSummary> {
       winRate: null,
     };
   }
+}
+
+/**
+ * Records a lead somebody took down by hand.
+ *
+ * Empty strings are dropped rather than sent: the form uses '' for "not
+ * stated", and the API would store that as an answer of "".
+ */
+export async function createLead(input: {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  service?: string;
+  budget?: string;
+  message: string;
+  status?: LeadStatus;
+  assignedToId?: string;
+  source?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+
+  const payload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (typeof value === 'string' && value.trim() === '') continue;
+    if (value === undefined) continue;
+    payload[key] = value;
+  }
+
+  try {
+    await createLeadViaApi(payload);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Talep eklenemedi.' };
+  }
+  revalidatePath(adminPath('/crm'));
+  revalidatePath(adminPath('/'), 'layout');
+  return { ok: true };
 }
 
 export async function getLeads(params: {

@@ -82,3 +82,21 @@ export const WEBSITE_KEY_BY_SLUG = Object.fromEntries(
 export function isWebsiteCollectionSlug(value: string): value is WebsiteCollectionSlug {
   return Object.prototype.hasOwnProperty.call(WEBSITE_KEY_BY_SLUG, value);
 }
+
+/**
+ * Budget bands offered on the contact form and in the panel's own lead form.
+ *
+ * Ranges rather than a number, because nobody wants to commit to a figure
+ * before a conversation. Shared so the two forms cannot drift: a lead typed
+ * into the panel and one submitted from the site have to be comparable, and
+ * they stop being comparable the moment the two lists disagree.
+ */
+export const LEAD_BUDGET_BANDS = [
+  '25.000 TL altı',
+  '25.000 - 50.000 TL',
+  '50.000 - 100.000 TL',
+  '100.000 TL üzeri',
+  'Henüz belirlemedim',
+] as const;
+
+export type LeadBudgetBand = (typeof LEAD_BUDGET_BANDS)[number];

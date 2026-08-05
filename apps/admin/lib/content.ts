@@ -321,6 +321,13 @@ export async function readPipelineCounts(): Promise<Record<LeadStatus, number>> 
   return apiFetch<Record<LeadStatus, number>>('/website/contact/pipeline/counts');
 }
 
+export async function createLeadViaApi(payload: Record<string, unknown>): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>('/website/contact/leads', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function readLeadSummary(): Promise<LeadSummary> {
   return apiFetch<LeadSummary>('/website/contact/pipeline/summary');
 }

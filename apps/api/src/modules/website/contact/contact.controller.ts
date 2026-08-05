@@ -23,6 +23,7 @@ import { SetReadDto } from './dto/set-read.dto';
 import {
   AddLeadNoteDto,
   AssignLeadDto,
+  CreateLeadDto,
   SetLeadStatusDto,
   SetLeadTagsDto,
 } from './dto/lead.dto';
@@ -125,6 +126,20 @@ export class ContactController {
   @ApiQuery({ name: 'tenant', required: false })
   pipeline(@Query('tenant') tenant?: string) {
     return this.leads.pipelineCounts(tenant);
+  }
+
+  @Post('leads')
+  @Roles('CONTENT_EDITOR')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Record a lead that arrived by phone, email or in person' })
+  @ApiQuery({ name: 'tenant', required: false })
+  createLead(
+    @Body() dto: CreateLeadDto,
+    @CurrentUser('id') userId: string,
+    @Query('tenant') tenant?: string,
+  ) {
+    return this.leads.create(dto, userId, tenant);
   }
 
   @Get('pipeline/summary')

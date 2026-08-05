@@ -1,3 +1,4 @@
+import { LEAD_BUDGET_BANDS } from '@nexuva/shared';
 import type { Metadata } from 'next';
 import { getSiteContent } from '../../lib/content';
 import { t } from '../../lib/i18n';
@@ -20,6 +21,7 @@ export default async function ContactPage() {
       <Contact
         contact={content.contact}
         services={content.services.map((s) => t(s.title))}
+        budgets={[...LEAD_BUDGET_BANDS]}
         hideHeading
       />
     </>

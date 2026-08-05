@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Inbox, RefreshCw, UserX } from 'lucide-react';
+import { Inbox, Plus, RefreshCw, UserX } from 'lucide-react';
 import { EmptyState, SearchBar, SelectField, useToast } from '@nexuva/ui';
 import { setLeadStatus } from '../../app/actions';
 import {
@@ -13,6 +13,7 @@ import {
   type LeadStatus,
 } from '../../lib/model';
 import { LeadDrawer } from './lead-drawer';
+import { NewLeadDialog } from './new-lead-dialog';
 import { STATUS_ACCENT, STATUS_LABELS } from './pipeline-status';
 
 function shortWhen(iso: string): string {
@@ -34,10 +35,16 @@ export function CrmBoard({
   leads,
   counts,
   assignees,
+  services,
+  budgets,
 }: {
   leads: Lead[];
   counts: Record<LeadStatus, number>;
   assignees: LeadPerson[];
+  /** Service names offered by the site, for the new-lead form. */
+  services: string[];
+  /** Budget bands, shared with the public form. */
+  budgets: string[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -46,6 +53,7 @@ export function CrmBoard({
   const [search, setSearch] = useState('');
   const [assignedFilter, setAssignedFilter] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<LeadStatus | null>(null);
 
@@ -110,15 +118,21 @@ export function CrmBoard({
             )}
           </p>
         </div>
-        <button
-          onClick={() => router.refresh()}
-          disabled={pending}
-          className="ui-button text-xs"
-          aria-label="Listeyi yenile"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${pending ? 'animate-spin' : ''}`} />
-          Yenile
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.refresh()}
+            disabled={pending}
+            className="ui-button text-xs"
+            aria-label="Listeyi yenile"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${pending ? 'animate-spin' : ''}`} />
+            Yenile
+          </button>
+          <button onClick={() => setCreating(true)} className="ui-button-primary text-xs">
+            <Plus className="h-3.5 w-3.5" />
+            Yeni Talep
+          </button>
+        </div>
       </div>
 
       <div className="mb-5 flex flex-wrap items-end gap-3">
@@ -142,7 +156,13 @@ export function CrmBoard({
           <EmptyState
             icon={<Inbox className="h-6 w-6" />}
             title="Henüz talep yok"
-            hint="Sitedeki iletişim formundan gelen talepler burada bir hattı takip eder."
+            hint="Sitedeki iletişim formundan gelen talepler burada bir hattı takip eder. Telefonla gelen bir talebi kendin de ekleyebilirsin."
+            action={
+              <button onClick={() => setCreating(true)} className="ui-button-primary text-xs">
+                <Plus className="h-3.5 w-3.5" />
+                Yeni Talep
+              </button>
+            }
           />
         </div>
       ) : (
@@ -252,6 +272,16 @@ export function CrmBoard({
           assignees={assignees}
           onClose={() => setOpenId(null)}
           onChanged={() => router.refresh()}
+        />
+      )}
+
+      {creating && (
+        <NewLeadDialog
+          assignees={assignees}
+          services={services}
+          budgets={budgets}
+          onClose={() => setCreating(false)}
+          onCreated={() => router.refresh()}
         />
       )}
     </div>

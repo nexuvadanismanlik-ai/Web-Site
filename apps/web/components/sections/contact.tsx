@@ -6,23 +6,21 @@ import type { ContactContent } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
 
-/** Budget bands, as ranges rather than a number nobody wants to commit to. */
-const BUDGETS = [
-  '25.000 TL altı',
-  '25.000 - 50.000 TL',
-  '50.000 - 100.000 TL',
-  '100.000 TL üzeri',
-  'Henüz belirlemedim',
-];
-
 export function Contact({
   contact,
   services = [],
+  budgets = [],
   hideHeading = false,
 }: {
   contact: ContactContent;
   /** Service names, so an enquiry says which one it is about. */
   services?: string[];
+  /**
+   * Budget bands. Passed in from the server rather than imported here: this is
+   * a client component, and importing the shared package pulls its whole barrel
+   * — zod included — into the browser for the sake of five strings.
+   */
+  budgets?: string[];
   hideHeading?: boolean;
 }) {
   const ui = getUi();
@@ -150,7 +148,7 @@ export function Contact({
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Choice name="service" label={ui.formService} options={services} />
-                  <Choice name="budget" label={ui.formBudget} options={BUDGETS} />
+                  <Choice name="budget" label={ui.formBudget} options={budgets} />
                 </div>
                 <Field name="subject" label={ui.formSubject} placeholder={ui.subjectPlaceholder} />
                 <div>

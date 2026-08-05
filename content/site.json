@@ -106,29 +106,7 @@
       },
       "href": "/services"
     },
-    "metrics": [
-      {
-        "value": "250+",
-        "label": {
-          "tr": "Tamamlanan Proje",
-          "en": "Projects Delivered"
-        }
-      },
-      {
-        "value": "98%",
-        "label": {
-          "tr": "Müşteri Memnuniyeti",
-          "en": "Client Satisfaction"
-        }
-      },
-      {
-        "value": "12",
-        "label": {
-          "tr": "Yıllık Tecrübe",
-          "en": "Years of Experience"
-        }
-      }
-    ]
+    "metrics": []
   },
   "logos": [],
   "servicesMeta": {
@@ -315,8 +293,8 @@
     },
     "paragraphs": [
       {
-        "tr": "2013'ten bu yana; girişimlerden kurumsal holdinglere kadar farklı ölçeklerdeki markaların dijital yolculuğuna eşlik ediyoruz. Her projeye stratejik bir ortak gibi yaklaşıyor, sadece kod yazmıyor; iş sonuçları üretiyoruz.",
-        "en": "Since 2013 we have accompanied brands of every scale — from startups to enterprise holdings — on their digital journey. We approach every project as a strategic partner, not just writing code but producing business outcomes."
+        "tr": "Girişimlerden kurumsal holdinglere kadar farklı ölçeklerdeki markaların dijital yolculuğuna eşlik ediyoruz. Her projeye stratejik bir ortak gibi yaklaşıyor, sadece kod yazmıyor; iş sonuçları üretiyoruz.",
+        "en": "We accompany brands of every scale — from startups to enterprise holdings — on their digital journey. We approach every project as a strategic partner, not just writing code but producing business outcomes."
       },
       {
         "tr": "Strateji, tasarım, mühendislik ve büyüme disiplinlerini tek ekipte birleştiriyoruz. Bu bütünsel yaklaşım, fikirlerin daha hızlı ve daha az riskle ürüne dönüşmesini sağlıyor.",

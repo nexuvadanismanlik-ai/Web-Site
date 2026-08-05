@@ -79,7 +79,10 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
             </Link>
           </motion.div>
 
-          {/* Metrics */}
+          {/* Metrics — hidden until there are real ones. The grid is fixed at
+              three columns, so a partially filled panel would look broken as
+              well as unearned. */}
+          {hero.metrics.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -103,6 +106,7 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
               </div>
             ))}
           </motion.div>
+          )}
         </div>
       </div>
     </section>

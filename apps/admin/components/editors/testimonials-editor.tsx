@@ -5,6 +5,7 @@ import { Trash2 } from 'lucide-react';
 import type { TestimonialItem, SectionMeta, Localized } from '@nexuva/types';
 import { saveSection } from '../../app/actions';
 import { TextField, LocalizedField, Panel, MetaFields, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
+import { DragHandle, useRemoveWithUndo, useSortable } from './list-controls';
 
 const empty: Localized = { tr: '', en: '' };
 
@@ -19,6 +20,9 @@ export function TestimonialsEditor({
   const [items, setItems] = useState<TestimonialItem[]>(t0);
   const { saving, saved, error, run } = useSaver();
 
+  const sort = useSortable(items, setItems);
+  const remove = useRemoveWithUndo(setItems);
+
   const patch = (id: string, p: Partial<TestimonialItem>) =>
     setItems((l) => l.map((t) => (t.id === id ? { ...t, ...p } : t)));
 
@@ -26,7 +30,7 @@ export function TestimonialsEditor({
     <div className="mx-auto max-w-4xl">
       <EditorHeader
         title="Müşteri Görüşleri"
-        subtitle="Testimonials bölümü"
+        subtitle="Müşteri görüşleri — sürükleyerek sırala"
         saving={saving}
         saved={saved}
         error={error}
@@ -40,11 +44,14 @@ export function TestimonialsEditor({
       <div className="space-y-6">
         <MetaFields meta={meta} onChange={setMeta} />
         <div className="space-y-3">
-          {items.map((t) => (
-            <Panel key={t.id}>
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-fg">{t.author || 'Yeni görüş'}</span>
-                <IconButton variant="danger" onClick={() => setItems((l) => l.filter((x) => x.id !== t.id))}>
+          {items.map((t, index) => {
+            const rowProps = sort.rowProps(index);
+            return (
+            <Panel key={t.id} className={`p-5 sm:p-6 ${rowProps.className}`}>
+              <div {...rowProps} className="mb-3 flex items-center gap-2">
+                <DragHandle index={index} count={items.length} handleProps={sort.handleProps(index)} onMoveUp={() => sort.moveUp(index)} onMoveDown={() => sort.moveDown(index)} label={t.author || 'Görüş'} />
+                <span className="flex-1 text-sm font-medium text-fg">{t.author || 'Yeni görüş'}</span>
+                <IconButton variant="danger" title="Görüşü sil" onClick={() => remove(index, t, t.author || 'Görüş')}>
                   <Trash2 className="h-4 w-4" />
                 </IconButton>
               </div>
@@ -70,7 +77,8 @@ export function TestimonialsEditor({
                 </div>
               </div>
             </Panel>
-          ))}
+            );
+          })}
         </div>
         <AddButton
           label="Görüş ekle"

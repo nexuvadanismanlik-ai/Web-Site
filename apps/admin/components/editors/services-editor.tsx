@@ -12,6 +12,7 @@ import {
   IconButton,
   AddButton,
 } from '../fields';
+import { DragHandle, useRemoveWithUndo, useSortable } from './list-controls';
 
 const SERVICE_ICONS = [
   'compass', 'code', 'cloud', 'trending-up', 'shield', 'palette',
@@ -32,6 +33,9 @@ export function ServicesEditor({
   const [openId, setOpenId] = useState<string | null>(s0[0]?.id ?? null);
   const { saving, saved, error, run } = useSaver();
 
+  const sort = useSortable(services, setServices);
+  const removeService = useRemoveWithUndo(setServices);
+
   const patch = (id: string, p: Partial<ServiceItem>) =>
     setServices((list) => list.map((s) => (s.id === id ? { ...s, ...p } : s)));
 
@@ -45,7 +49,7 @@ export function ServicesEditor({
     <div className="mx-auto max-w-4xl">
       <EditorHeader
         title="Hizmetler"
-        subtitle="Sunulan hizmetleri düzenle"
+        subtitle="Sunulan hizmetleri düzenle — sürükleyerek sırala"
         saving={saving}
         saved={saved}
         error={error}
@@ -61,11 +65,20 @@ export function ServicesEditor({
         <MetaFields meta={meta} onChange={setMeta} />
 
         <div className="space-y-3">
-          {services.map((svc) => {
+          {services.map((svc, index) => {
             const open = openId === svc.id;
+            const rowProps = sort.rowProps(index);
             return (
-              <div key={svc.id} className="panel overflow-hidden">
-                <div className="flex items-center gap-3 p-4">
+              <div key={svc.id} {...rowProps} className={`panel overflow-hidden ${rowProps.className}`}>
+                <div className="flex items-center gap-2 p-4">
+                  <DragHandle
+                    index={index}
+                    count={services.length}
+                    handleProps={sort.handleProps(index)}
+                    onMoveUp={() => sort.moveUp(index)}
+                    onMoveDown={() => sort.moveDown(index)}
+                    label={svc.title.tr || 'Hizmet'}
+                  />
                   <button
                     onClick={() => setOpenId(open ? null : svc.id)}
                     className="flex flex-1 items-center gap-3 text-left"
@@ -76,7 +89,11 @@ export function ServicesEditor({
                     </span>
                     <span className="rounded bg-overlay/5 px-2 py-0.5 text-xs text-muted">{svc.icon}</span>
                   </button>
-                  <IconButton variant="danger" onClick={() => setServices((l) => l.filter((s) => s.id !== svc.id))}>
+                  <IconButton
+                    variant="danger"
+                    title="Hizmeti sil"
+                    onClick={() => removeService(index, svc, svc.title.tr || 'Hizmet')}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </IconButton>
                 </div>
@@ -98,28 +115,10 @@ export function ServicesEditor({
                     <LocalizedField label="Başlık" value={svc.title} onChange={(v) => patch(svc.id, { title: v })} />
                     <LocalizedField label="Açıklama" value={svc.description} onChange={(v) => patch(svc.id, { description: v })} multiline rows={2} />
 
-                    <div>
-                      <label className="field-label">Özellikler</label>
-                      <div className="space-y-2">
-                        {svc.features.map((f, fi) => (
-                          <div key={fi} className="flex items-end gap-2">
-                            <div className="flex-1">
-                              <LocalizedField
-                                label=""
-                                value={f}
-                                onChange={(v) => patch(svc.id, { features: svc.features.map((x, xi) => (xi === fi ? v : x)) })}
-                              />
-                            </div>
-                            <IconButton variant="danger" onClick={() => patch(svc.id, { features: svc.features.filter((_, xi) => xi !== fi) })}>
-                              <Trash2 className="h-4 w-4" />
-                            </IconButton>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2">
-                        <AddButton label="Özellik ekle" onClick={() => patch(svc.id, { features: [...svc.features, { ...empty }] })} />
-                      </div>
-                    </div>
+                    <ServiceFeatures
+                      features={svc.features}
+                      onChange={(features) => patch(svc.id, { features })}
+                    />
                   </div>
                 )}
               </div>
@@ -128,6 +127,63 @@ export function ServicesEditor({
         </div>
 
         <AddButton label="Hizmet ekle" onClick={add} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The bullet list under one service. Sortable in its own right — the order of
+ * "what you get" is an argument, not an accident.
+ */
+function ServiceFeatures({
+  features,
+  onChange,
+}: {
+  features: Localized[];
+  onChange: (next: Localized[]) => void;
+}) {
+  const sort = useSortable(features, onChange);
+  const remove = useRemoveWithUndo<Localized>((updater) =>
+    onChange(typeof updater === 'function' ? updater(features) : updater),
+  );
+
+  return (
+    <div>
+      <label className="field-label">Özellikler</label>
+      <div className="space-y-2">
+        {features.map((f, fi) => {
+          const rowProps = sort.rowProps(fi);
+          return (
+            <div key={fi} {...rowProps} className={`flex items-center gap-2 rounded-lg ${rowProps.className}`}>
+              <DragHandle
+                index={fi}
+                count={features.length}
+                handleProps={sort.handleProps(fi)}
+                onMoveUp={() => sort.moveUp(fi)}
+                onMoveDown={() => sort.moveDown(fi)}
+                label={f.tr || 'Özellik'}
+              />
+              <div className="flex-1">
+                <LocalizedField
+                  label=""
+                  value={f}
+                  onChange={(v) => onChange(features.map((x, xi) => (xi === fi ? v : x)))}
+                />
+              </div>
+              <IconButton
+                variant="danger"
+                title="Özelliği sil"
+                onClick={() => remove(fi, f, f.tr || 'Özellik')}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2">
+        <AddButton label="Özellik ekle" onClick={() => onChange([...features, { tr: '', en: '' }])} />
       </div>
     </div>
   );

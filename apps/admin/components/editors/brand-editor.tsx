@@ -15,6 +15,7 @@ import {
   IconButton,
   AddButton,
 } from '../fields';
+import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-controls';
 
 const SOCIAL_ICONS = ['linkedin', 'twitter', 'instagram', 'github', 'globe'];
 
@@ -32,6 +33,9 @@ export function BrandEditor({
   const set = <K extends keyof BrandConfig>(key: K, value: BrandConfig[K]) =>
     setBrand((b) => ({ ...b, [key]: value }));
 
+  const setSocialList = fieldSetter(setBrand, 'social');
+  const sortSocial = useSortable(brand.social, setSocialList);
+  const removeSocial = useRemoveWithUndo(setSocialList);
   const setSocial = (i: number, patch: Partial<SocialLink>) =>
     set(
       'social',
@@ -145,8 +149,13 @@ export function BrandEditor({
 
         <Panel title="Sosyal Medya">
           <div className="space-y-3">
-            {brand.social.map((s, i) => (
-              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3">
+            {brand.social.map((s, i) => {
+              const rowProps = sortSocial.rowProps(i);
+              return (
+              <div key={i} {...rowProps} className={`flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3 ${rowProps.className}`}>
+                <div className="pb-1">
+                  <DragHandle index={i} count={brand.social.length} handleProps={sortSocial.handleProps(i)} onMoveUp={() => sortSocial.moveUp(i)} onMoveDown={() => sortSocial.moveDown(i)} label={s.label || 'Sosyal bağlantı'} />
+                </div>
                 <div className="w-32">
                   <label className="field-label">İkon</label>
                   <select
@@ -169,11 +178,12 @@ export function BrandEditor({
                   <label className="field-label">Bağlantı</label>
                   <input value={s.href} onChange={(e) => setSocial(i, { href: e.target.value })} className="field-input" />
                 </div>
-                <IconButton variant="danger" onClick={() => set('social', brand.social.filter((_, idx) => idx !== i))}>
+                <IconButton variant="danger" title="Bağlantıyı sil" onClick={() => removeSocial(i, s, s.label || 'Sosyal bağlantı')}>
                   <Trash2 className="h-4 w-4" />
                 </IconButton>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-3">
             <AddButton

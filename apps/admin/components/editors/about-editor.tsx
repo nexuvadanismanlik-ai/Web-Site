@@ -5,6 +5,7 @@ import { Trash2 } from 'lucide-react';
 import type { AboutContent, AboutHighlight, Localized } from '@nexuva/types';
 import { saveSection } from '../../app/actions';
 import { LocalizedField, Panel, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
+import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-controls';
 
 const empty: Localized = { tr: '', en: '' };
 const HL_ICONS = ['target', 'users', 'zap', 'shield', 'rocket', 'sparkles', 'layers', 'bar-chart', 'compass', 'cloud'];
@@ -17,6 +18,15 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
     setAbout((a) => ({ ...a, [k]: v }));
   const patchHl = (i: number, p: Partial<AboutHighlight>) =>
     set('highlights', about.highlights.map((h, idx) => (idx === i ? { ...h, ...p } : h)));
+
+  // Paragraph order is the argument the section makes; highlight order is what
+  // a reader sees first. Both were fixed at whatever order they were typed in.
+  const setParagraphs = fieldSetter(setAbout, 'paragraphs');
+  const setHighlights = fieldSetter(setAbout, 'highlights');
+  const sortParagraphs = useSortable(about.paragraphs, setParagraphs);
+  const sortHighlights = useSortable(about.highlights, setHighlights);
+  const removeParagraph = useRemoveWithUndo(setParagraphs);
+  const removeHighlight = useRemoveWithUndo(setHighlights);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -38,8 +48,13 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
 
         <Panel title="Paragraflar">
           <div className="space-y-3">
-            {about.paragraphs.map((p, i) => (
-              <div key={i} className="flex items-end gap-2">
+            {about.paragraphs.map((p, i) => {
+              const rowProps = sortParagraphs.rowProps(i);
+              return (
+              <div key={i} {...rowProps} className={`flex items-end gap-2 rounded-lg ${rowProps.className}`}>
+                <div className="pb-1">
+                  <DragHandle index={i} count={about.paragraphs.length} handleProps={sortParagraphs.handleProps(i)} onMoveUp={() => sortParagraphs.moveUp(i)} onMoveDown={() => sortParagraphs.moveDown(i)} label={`Paragraf ${i + 1}`} />
+                </div>
                 <div className="flex-1">
                   <LocalizedField
                     label={`Paragraf ${i + 1}`}
@@ -49,11 +64,12 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
                     rows={3}
                   />
                 </div>
-                <IconButton variant="danger" onClick={() => set('paragraphs', about.paragraphs.filter((_, xi) => xi !== i))}>
+                <IconButton variant="danger" title="Paragrafı sil" onClick={() => removeParagraph(i, p, `Paragraf ${i + 1}`)}>
                   <Trash2 className="h-4 w-4" />
                 </IconButton>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-3">
             <AddButton label="Paragraf ekle" onClick={() => set('paragraphs', [...about.paragraphs, { ...empty }])} />
@@ -62,10 +78,15 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
 
         <Panel title="Öne Çıkanlar">
           <div className="space-y-3">
-            {about.highlights.map((h, i) => (
-              <div key={i} className="rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="w-40">
+            {about.highlights.map((h, i) => {
+              const rowProps = sortHighlights.rowProps(i);
+              return (
+              <div key={i} {...rowProps} className={`rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4 ${rowProps.className}`}>
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div className="pb-1">
+                    <DragHandle index={i} count={about.highlights.length} handleProps={sortHighlights.handleProps(i)} onMoveUp={() => sortHighlights.moveUp(i)} onMoveDown={() => sortHighlights.moveDown(i)} label={h.title.tr || 'Öne çıkan'} />
+                  </div>
+                  <div className="w-40 flex-1">
                     <label className="field-label">İkon</label>
                     <select value={h.icon} onChange={(e) => patchHl(i, { icon: e.target.value })} className="field-input">
                       {HL_ICONS.map((ic) => (
@@ -73,7 +94,7 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
                       ))}
                     </select>
                   </div>
-                  <IconButton variant="danger" onClick={() => set('highlights', about.highlights.filter((_, xi) => xi !== i))}>
+                  <IconButton variant="danger" title="Öne çıkanı sil" onClick={() => removeHighlight(i, h, h.title.tr || 'Öne çıkan')}>
                     <Trash2 className="h-4 w-4" />
                   </IconButton>
                 </div>
@@ -82,7 +103,8 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
                   <LocalizedField label="Metin" value={h.text} onChange={(v) => patchHl(i, { text: v })} multiline rows={2} />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-3">
             <AddButton

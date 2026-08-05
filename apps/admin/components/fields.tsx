@@ -58,46 +58,55 @@ export function TextAreaField({
   );
 }
 
-/** Bilingual (tr/en) field with two inputs. */
+/**
+ * One text field for one piece of site text.
+ *
+ * The site is Turkish. The data model still carries a Turkish and an English
+ * string per field, because dropping the English half would be a migration and
+ * bringing the language back later would be another one — but the panel used to
+ * show both boxes, so every heading, every button and every paragraph was asked
+ * for twice. People either typed everything twice or left the second box empty
+ * and had no way to know which one the site would use.
+ *
+ * So: one box, and English is kept in step with it. If English ever ships, this
+ * component grows a language switch and the stored values are already there.
+ */
 export function LocalizedField({
   label,
   value,
   onChange,
   multiline = false,
   rows = 2,
+  placeholder,
 }: {
   label: string;
   value: Localized;
   onChange: (v: Localized) => void;
   multiline?: boolean;
   rows?: number;
+  placeholder?: string;
 }) {
+  const set = (next: string) => onChange({ tr: next, en: next });
+
   return (
     <div>
-      <label className="field-label">{label}</label>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {(['tr', 'en'] as const).map((loc) => (
-          <div key={loc} className="relative">
-            <span className="absolute left-2.5 top-2.5 rounded bg-overlay/10 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase text-muted">
-              {loc}
-            </span>
-            {multiline ? (
-              <textarea
-                value={value[loc]}
-                rows={rows}
-                onChange={(e) => onChange({ ...value, [loc]: e.target.value })}
-                className="field-input resize-none pt-8"
-              />
-            ) : (
-              <input
-                value={value[loc]}
-                onChange={(e) => onChange({ ...value, [loc]: e.target.value })}
-                className="field-input pl-12"
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      {label && <label className="field-label">{label}</label>}
+      {multiline ? (
+        <textarea
+          value={value.tr}
+          rows={rows}
+          placeholder={placeholder}
+          onChange={(e) => set(e.target.value)}
+          className="field-input resize-none"
+        />
+      ) : (
+        <input
+          value={value.tr}
+          placeholder={placeholder}
+          onChange={(e) => set(e.target.value)}
+          className="field-input"
+        />
+      )}
     </div>
   );
 }

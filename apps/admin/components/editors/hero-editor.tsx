@@ -13,6 +13,7 @@ import {
   IconButton,
   AddButton,
 } from '../fields';
+import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-controls';
 
 export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaContent }) {
   const [hero, setHero] = useState<HeroContent>(h0);
@@ -21,6 +22,9 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
 
   const setH = <K extends keyof HeroContent>(k: K, v: HeroContent[K]) =>
     setHero((s) => ({ ...s, [k]: v }));
+  const setMetrics = fieldSetter(setHero, 'metrics');
+  const sortMetrics = useSortable(hero.metrics, setMetrics);
+  const removeMetric = useRemoveWithUndo(setMetrics);
   const setMetric = (i: number, patch: Partial<HeroMetric>) =>
     setH('metrics', hero.metrics.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
 
@@ -67,8 +71,13 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
 
         <Panel title="Metrikler">
           <div className="space-y-3">
-            {hero.metrics.map((m, i) => (
-              <div key={i} className="flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3">
+            {hero.metrics.map((m, i) => {
+              const rowProps = sortMetrics.rowProps(i);
+              return (
+              <div key={i} {...rowProps} className={`flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3 ${rowProps.className}`}>
+                <div className="pb-1">
+                  <DragHandle index={i} count={hero.metrics.length} handleProps={sortMetrics.handleProps(i)} onMoveUp={() => sortMetrics.moveUp(i)} onMoveDown={() => sortMetrics.moveDown(i)} label={m.label.tr || 'Metrik'} />
+                </div>
                 <div className="w-28">
                   <label className="field-label">Değer</label>
                   <input value={m.value} onChange={(e) => setMetric(i, { value: e.target.value })} className="field-input" />
@@ -76,11 +85,12 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
                 <div className="min-w-[12rem] flex-1">
                   <LocalizedField label="Etiket" value={m.label} onChange={(v) => setMetric(i, { label: v })} />
                 </div>
-                <IconButton variant="danger" onClick={() => setH('metrics', hero.metrics.filter((_, idx) => idx !== i))}>
+                <IconButton variant="danger" title="Metriği sil" onClick={() => removeMetric(i, m, m.label.tr || 'Metrik')}>
                   <Trash2 className="h-4 w-4" />
                 </IconButton>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-3">
             <AddButton label="Metrik ekle" onClick={() => setH('metrics', [...hero.metrics, { value: '0', label: { tr: '', en: '' } }])} />

@@ -31,38 +31,58 @@ interface Toast {
   id: number;
   kind: ToastKind;
   message: string;
+  /** Offered inside the toast; dismisses it when taken. */
+  action?: { label: string; run: () => void };
 }
 
 interface ToastApi {
   success(message: string): void;
   error(message: string): void;
   info(message: string): void;
+  /**
+   * Announces something destructive and offers to take it back.
+   *
+   * A confirmation dialog asks before, an undo asks after. Deleting one row of
+   * a list is the case where after is better: it costs nothing when the answer
+   * is yes, which it almost always is, and still costs nothing when it is no.
+   */
+  undo(message: string, onUndo: () => void): void;
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
 
 /** Long enough to read a sentence; errors stay until dismissed. */
 const TOAST_MS = 4000;
+/** Long enough to notice the mistake and reach for the button. */
+const UNDO_MS = 10000;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
 
-  const push = useCallback((kind: ToastKind, message: string) => {
-    const id = nextId.current++;
-    setToasts((current) => [...current, { id, kind, message }]);
-    // An error is the one thing a person may need to copy, re-read, or act on,
-    // so it does not disappear on its own.
-    if (kind !== 'error') {
-      setTimeout(() => setToasts((c) => c.filter((t) => t.id !== id)), TOAST_MS);
-    }
-  }, []);
+  const push = useCallback(
+    (kind: ToastKind, message: string, action?: { label: string; run: () => void }) => {
+      const id = nextId.current++;
+      setToasts((current) => [...current, { id, kind, message, ...(action ? { action } : {}) }]);
+      // An error is the one thing a person may need to copy, re-read, or act on,
+      // so it does not disappear on its own. An undo lingers too — four seconds
+      // is not long enough to notice a mistake, read the message and decide.
+      if (kind !== 'error' && !action) {
+        setTimeout(() => setToasts((c) => c.filter((t) => t.id !== id)), TOAST_MS);
+      }
+      if (action) {
+        setTimeout(() => setToasts((c) => c.filter((t) => t.id !== id)), UNDO_MS);
+      }
+    },
+    [],
+  );
 
   const api = useMemo<ToastApi>(
     () => ({
       success: (m) => push('success', m),
       error: (m) => push('error', m),
       info: (m) => push('info', m),
+      undo: (m, onUndo) => push('info', m, { label: 'Geri al', run: onUndo }),
     }),
     [push],
   );
@@ -116,6 +136,17 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
     >
       {style.icon}
       <span className="flex-1 break-words">{toast.message}</span>
+      {toast.action && (
+        <button
+          onClick={() => {
+            toast.action?.run();
+            onDismiss();
+          }}
+          className="shrink-0 font-semibold underline underline-offset-2 hover:opacity-80"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button onClick={onDismiss} aria-label="Kapat" className="shrink-0 opacity-60 hover:opacity-100">
         <X className="h-3.5 w-3.5" />
       </button>

@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, Mail, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { adminPath } from '../../../lib/routes';
+import { diagnoseSignInFailure } from './actions';
 
 /**
  * Split out from the page because useSearchParams opts a component out of
@@ -34,7 +35,11 @@ export function LoginForm() {
       router.push(callbackUrl);
       router.refresh();
     } else {
-      setError('E-posta veya şifre hatalı.');
+      // The provider can only say no. Ask why before blaming the password:
+      // during an outage this form used to tell the one person who could fix
+      // it that their credentials were wrong.
+      const reason = await diagnoseSignInFailure();
+      setError(reason.message);
       setLoading(false);
     }
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Play, Sparkles } from 'lucide-react';
 import type { HeroContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
@@ -9,6 +9,10 @@ import { t } from '../../lib/i18n';
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function Hero({ hero }: { hero: HeroContent }) {
+  // The hero animates on load rather than on scroll, so it is the first thing a
+  // reduced-motion visitor would be shown moving.
+  const rise = useReducedMotion() ? 0 : 1;
+
   return (
     <section className="relative overflow-hidden pt-36 pb-20 sm:pt-44 sm:pb-28">
       {/* Decorative animated blobs */}
@@ -21,7 +25,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
       <div className="container-x">
         <div className="mx-auto max-w-4xl text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 20 * rise }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE }}
           >
@@ -32,7 +36,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 26 }}
+            initial={{ opacity: 0, y: 26 * rise }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.08 }}
             className="mt-7 font-heading text-4xl font-bold leading-[1.08] text-fg text-balance sm:text-6xl md:text-7xl"
@@ -42,7 +46,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 22 }}
+            initial={{ opacity: 0, y: 22 * rise }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.16 }}
             className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted"
@@ -52,7 +56,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 20 * rise }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.24 }}
             className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
@@ -80,7 +84,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
               well as unearned. */}
           {hero.metrics.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 24 * rise }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.34 }}
             className="mx-auto mt-16 grid max-w-2xl grid-cols-3 divide-x divide-overlay/10 rounded-3xl border border-overlay/10 bg-card/80 py-7 shadow-card"

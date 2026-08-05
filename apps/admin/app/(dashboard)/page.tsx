@@ -11,8 +11,13 @@ import {
   ArrowRight,
   Mail,
   ExternalLink,
+  KanbanSquare,
+  UserX,
+  CalendarDays,
+  Trophy,
 } from 'lucide-react';
 import { readSiteContent, readMessages } from '../../lib/content';
+import { getLeadSummary } from '../actions';
 import { adminPath } from '../../lib/routes';
 
 export const dynamic = 'force-dynamic';
@@ -23,8 +28,21 @@ const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 export default async function DashboardHome() {
   // In parallel: two sequential round trips are two cold starts back to back
   // when the API has been idle.
-  const [content, inbox] = await Promise.all([readSiteContent(), readMessages()]);
+  const [content, inbox, crm] = await Promise.all([
+    readSiteContent(),
+    readMessages(),
+    getLeadSummary(),
+  ]);
   const { items: messages, unread } = inbox;
+
+  // The pipeline, summarised. Unassigned leads come first because they are the
+  // only line here that is somebody's job rather than a fact.
+  const crmTiles = [
+    { label: 'Atanmamış', value: crm.unassigned, icon: UserX, alert: crm.unassigned > 0 },
+    { label: 'Açık talep', value: crm.open, icon: KanbanSquare, alert: false },
+    { label: 'Bu hafta', value: crm.thisWeek, icon: CalendarDays, alert: false },
+    { label: 'Kazanıldı', value: crm.won, icon: Trophy, alert: false },
+  ];
 
   const stats = [
     { label: 'Hizmet', value: content.services.length, icon: Briefcase },
@@ -76,6 +94,37 @@ export default async function DashboardHome() {
             </div>
           );
         })}
+      </div>
+
+      {/* CRM */}
+      <div className="mt-8">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-heading text-lg font-semibold text-fg">Talep Yönetimi</h2>
+          <Link href={adminPath('/crm')} className="text-sm text-brand-dyn hover:opacity-80">
+            Pipeline
+          </Link>
+        </div>
+        <Link
+          href={adminPath('/crm')}
+          className="panel grid grid-cols-2 gap-4 p-5 transition-colors hover:border-overlay/25 hover:bg-overlay/[0.03] sm:grid-cols-4"
+        >
+          {crmTiles.map((tile) => {
+            const Icon = tile.icon;
+            return (
+              <div key={tile.label}>
+                <span
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                    tile.alert ? 'bg-amber-500/15 text-amber-500' : 'bg-overlay/5 text-brand-dyn'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="mt-3 font-heading text-2xl font-bold text-fg">{tile.value}</div>
+                <div className="mt-0.5 text-xs text-muted">{tile.label}</div>
+              </div>
+            );
+          })}
+        </Link>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">

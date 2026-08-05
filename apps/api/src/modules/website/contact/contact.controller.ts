@@ -127,6 +127,15 @@ export class ContactController {
     return this.leads.pipelineCounts(tenant);
   }
 
+  @Get('pipeline/summary')
+  @Roles('CONTENT_EDITOR')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Headline numbers for the CRM overview' })
+  @ApiQuery({ name: 'tenant', required: false })
+  summary(@Query('tenant') tenant?: string) {
+    return this.leads.summary(tenant);
+  }
+
   @Get('pipeline/assignees')
   @Roles('CONTENT_EDITOR')
   @ApiBearerAuth()

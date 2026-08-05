@@ -102,6 +102,22 @@ export interface AppNotification {
   metadata?: { leadId?: string } | null;
 }
 
+/**
+ * Headline numbers for the CRM overview, counted by the database.
+ *
+ * `winRate` is null when nothing has been won or lost yet — a rate over no
+ * decisions is unknown, not zero, and the screen shows it as such.
+ */
+export interface LeadSummary {
+  open: number;
+  unassigned: number;
+  awaitingFirstTouch: number;
+  thisWeek: number;
+  won: number;
+  lost: number;
+  winRate: number | null;
+}
+
 // ─── Media ──────────────────────────────────────────────────────────────────
 
 /** Folders the API accepts. Anything else is rejected as path traversal. */

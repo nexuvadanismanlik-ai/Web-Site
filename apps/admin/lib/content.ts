@@ -7,6 +7,7 @@ import type {
   LeadDetail,
   LeadPerson,
   LeadStatus,
+  LeadSummary,
   AppNotification,
   MediaFile,
   MediaFolder,
@@ -318,6 +319,10 @@ export async function readLeads(query: string): Promise<{ items: Lead[]; total: 
 
 export async function readPipelineCounts(): Promise<Record<LeadStatus, number>> {
   return apiFetch<Record<LeadStatus, number>>('/website/contact/pipeline/counts');
+}
+
+export async function readLeadSummary(): Promise<LeadSummary> {
+  return apiFetch<LeadSummary>('/website/contact/pipeline/summary');
 }
 
 export async function readAssignees(): Promise<LeadPerson[]> {

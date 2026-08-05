@@ -96,6 +96,37 @@ export class LeadService {
   }
 
   /**
+   * The numbers on the CRM overview.
+   *
+   * Counted by the database, not derived in the browser from a page of leads:
+   * the list endpoint returns at most a hundred rows, so a summary computed
+   * from it would be right until the hundred-and-first enquiry and quietly
+   * wrong afterwards.
+   */
+  async summary(tenantSlug?: string) {
+    const tenantId = await this.tenants.resolveTenantId(tenantSlug);
+    const base = { tenantId, deletedAt: null };
+    const openWhere = { ...base, status: { notIn: CLOSED } };
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [open, unassigned, awaitingFirstTouch, thisWeek, won, lost] = await Promise.all([
+      this.prisma.contactMessage.count({ where: openWhere }),
+      this.prisma.contactMessage.count({ where: { ...openWhere, assignedToId: null } }),
+      this.prisma.contactMessage.count({ where: { ...base, status: LeadStatus.NEW } }),
+      this.prisma.contactMessage.count({ where: { ...base, createdAt: { gte: weekAgo } } }),
+      this.prisma.contactMessage.count({ where: { ...base, status: LeadStatus.WON } }),
+      this.prisma.contactMessage.count({ where: { ...base, status: LeadStatus.LOST } }),
+    ]);
+
+    // A win rate over no decisions is not zero, it is unknown. Null so the
+    // screen can say so instead of reporting a 0% nobody earned.
+    const decided = won + lost;
+    const winRate = decided === 0 ? null : Math.round((won / decided) * 100);
+
+    return { open, unassigned, awaitingFirstTouch, thisWeek, won, lost, winRate };
+  }
+
+  /**
    * Who a lead can be handed to.
    *
    * A separate, narrow read rather than opening GET /users to content editors:

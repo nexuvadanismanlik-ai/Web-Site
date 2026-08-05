@@ -22,6 +22,7 @@ import {
   MEDIA_FOLDERS,
   readLeads,
   readPipelineCounts,
+  readLeadSummary,
   readAssignees,
   readLeadDetail,
   setLeadStatusViaApi,
@@ -36,6 +37,7 @@ import {
   type LeadDetail,
   type LeadPerson,
   type LeadStatus,
+  type LeadSummary,
   type AppNotification,
   type MediaList,
   type MediaFile,
@@ -151,6 +153,24 @@ export async function getPipeline(): Promise<{
     readAssignees().catch(() => []),
   ]);
   return { counts, assignees };
+}
+
+/** The CRM overview numbers. Zeros rather than a crash if the API is unreachable. */
+export async function getLeadSummary(): Promise<LeadSummary> {
+  await requireAuth();
+  try {
+    return await readLeadSummary();
+  } catch {
+    return {
+      open: 0,
+      unassigned: 0,
+      awaitingFirstTouch: 0,
+      thisWeek: 0,
+      won: 0,
+      lost: 0,
+      winRate: null,
+    };
+  }
 }
 
 export async function getLeads(params: {

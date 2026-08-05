@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -69,6 +75,31 @@ export class StorageService {
 
     this.bucket = config.get<string>('storage.bucketName') ?? 'nexuva-os';
     this.publicUrl = config.get<string>('storage.publicUrl') ?? '';
+
+    const missing = this.missingConfig();
+    if (missing.length > 0) {
+      this.logger.warn(
+        `Storage is not configured; uploads will be refused. Missing: ${missing.join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * Which storage settings are absent.
+   *
+   * Reading and deleting records work without them — only putting bytes into
+   * the bucket does not. An unconfigured upload used to reach the S3 client and
+   * come back as a bare 500, which tells an operator nothing about the four
+   * environment variables they are missing.
+   */
+  private missingConfig(): string[] {
+    const required: [string, string][] = [
+      ['R2_ACCOUNT_ID', 'storage.accountId'],
+      ['R2_ACCESS_KEY_ID', 'storage.accessKeyId'],
+      ['R2_SECRET_ACCESS_KEY', 'storage.secretAccessKey'],
+      ['R2_PUBLIC_URL', 'storage.publicUrl'],
+    ];
+    return required.filter(([, key]) => !this.config.get<string>(key)).map(([name]) => name);
   }
 
   // ─── Ownership helpers ────────────────────────────────────────────────────
@@ -165,6 +196,15 @@ export class StorageService {
   }) {
     const { tenantId, uploadedById, actorRole, actorCompanyId, folder, buffer, mimeType, filename } =
       params;
+
+    // 0. Say what is missing rather than failing inside the S3 client, which
+    //    surfaces as a bare 500 and tells an operator nothing.
+    const missing = this.missingConfig();
+    if (missing.length > 0) {
+      throw new ServiceUnavailableException(
+        `Dosya depolama yapılandırılmamış. Sunucuda tanımlanması gereken değişkenler: ${missing.join(', ')}`,
+      );
+    }
 
     // 1. Ownership: caller must belong to the company that owns this tenant
     const { slug: tenantSlug } = await this.assertTenantOwnership(tenantId, actorRole, actorCompanyId);

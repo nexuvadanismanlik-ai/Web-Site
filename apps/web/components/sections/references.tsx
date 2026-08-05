@@ -76,6 +76,8 @@ export function References({
   locale: Locale;
   hideHeading?: boolean;
 }) {
+  if (references.length === 0) return null;
+
   const indexed = references.map((r, i) => ({ ...r, __idx: i }));
   const mid = Math.ceil(indexed.length / 2);
   const rowA = indexed.slice(0, mid);

@@ -64,6 +64,11 @@ export function Testimonials({
   testimonials: TestimonialItem[];
   locale: Locale;
 }) {
+  // No quotes, no section. A heading over an empty rail reads worse than the
+  // section simply not being there yet, and hiding it is what makes deleting
+  // placeholder testimonials safe.
+  if (testimonials.length === 0) return null;
+
   const doubled = [...testimonials, ...testimonials];
   return (
     <section className="section overflow-hidden">

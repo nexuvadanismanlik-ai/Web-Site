@@ -18,6 +18,8 @@ export function Services({
   showAll?: boolean;
   hideHeading?: boolean;
 }) {
+  if (services.length === 0) return null;
+
   const list = showAll ? services : services.slice(0, 6);
   return (
     <section id="services" className={hideHeading ? 'py-8' : 'section'}>

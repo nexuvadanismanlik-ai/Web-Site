@@ -3,6 +3,9 @@ import { t, type Locale } from '../../lib/i18n';
 import { CountUp, StaggerItem, Stagger } from '../motion';
 
 export function Stats({ stats, locale }: { stats: StatItem[]; locale: Locale }) {
+  // Numbers nobody has supplied are worse than no numbers.
+  if (stats.length === 0) return null;
+
   return (
     <section className="relative py-8">
       <div className="container-x">

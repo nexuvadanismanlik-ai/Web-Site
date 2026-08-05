@@ -130,20 +130,7 @@
       }
     ]
   },
-  "logos": [
-    "Vestera",
-    "Aurora Bank",
-    "Metronom",
-    "Helios Enerji",
-    "Quanta",
-    "Northwind",
-    "Lumina",
-    "Orbit Tech",
-    "Zephyr",
-    "Kalder",
-    "Nova Holding",
-    "Prime Retail"
-  ],
+  "logos": [],
   "servicesMeta": {
     "badge": {
       "tr": "Ne Yapıyoruz",
@@ -316,44 +303,7 @@
       ]
     }
   ],
-  "stats": [
-    {
-      "id": "stat-projects",
-      "value": 250,
-      "suffix": "+",
-      "label": {
-        "tr": "Tamamlanan Proje",
-        "en": "Projects Delivered"
-      }
-    },
-    {
-      "id": "stat-clients",
-      "value": 120,
-      "suffix": "+",
-      "label": {
-        "tr": "Mutlu Müşteri",
-        "en": "Happy Clients"
-      }
-    },
-    {
-      "id": "stat-experts",
-      "value": 45,
-      "suffix": "",
-      "label": {
-        "tr": "Uzman Ekip Üyesi",
-        "en": "Expert Team Members"
-      }
-    },
-    {
-      "id": "stat-satisfaction",
-      "value": 98,
-      "suffix": "%",
-      "label": {
-        "tr": "Memnuniyet Oranı",
-        "en": "Satisfaction Rate"
-      }
-    }
-  ],
+  "stats": [],
   "about": {
     "badge": {
       "tr": "Biz Kimiz",
@@ -546,64 +496,7 @@
       "en": "Success lives in the words of the brands we work with."
     }
   },
-  "testimonials": [
-    {
-      "id": "tst-1",
-      "quote": {
-        "tr": "Nexuva ekibi dijital dönüşüm sürecimizde gerçek bir stratejik ortak oldu. Beklentilerimizin ötesinde bir iş çıkardılar.",
-        "en": "The Nexuva team became a true strategic partner in our digital transformation. They delivered beyond our expectations."
-      },
-      "author": "Elif Yıldız",
-      "role": {
-        "tr": "Dijital Direktörü",
-        "en": "Digital Director"
-      },
-      "company": "Aurora Bank",
-      "rating": 5
-    },
-    {
-      "id": "tst-2",
-      "quote": {
-        "tr": "Ürünümüzü rekor sürede pazara çıkardık. Teknik derinlikleri ve iletişimleri kusursuzdu.",
-        "en": "We launched our product to market in record time. Their technical depth and communication were flawless."
-      },
-      "author": "Mert Kaya",
-      "role": {
-        "tr": "Kurucu Ortak",
-        "en": "Co-Founder"
-      },
-      "company": "Orbit Tech",
-      "rating": 5
-    },
-    {
-      "id": "tst-3",
-      "quote": {
-        "tr": "E-ticaret dönüşüm oranımız ilk çeyrekte %40 arttı. Veri odaklı yaklaşımları fark yarattı.",
-        "en": "Our e-commerce conversion rate grew 40% in the first quarter. Their data-driven approach made the difference."
-      },
-      "author": "Selin Demir",
-      "role": {
-        "tr": "Pazarlama Müdürü",
-        "en": "Marketing Manager"
-      },
-      "company": "Prime Retail",
-      "rating": 5
-    },
-    {
-      "id": "tst-4",
-      "quote": {
-        "tr": "Altyapımızı buluta taşıdıktan sonra operasyon maliyetlerimiz belirgin şekilde düştü. Kesintisiz ve güvenli.",
-        "en": "After migrating our infrastructure to the cloud, our operational costs dropped noticeably. Seamless and secure."
-      },
-      "author": "Can Öztürk",
-      "role": {
-        "tr": "CTO",
-        "en": "CTO"
-      },
-      "company": "Helios Enerji",
-      "rating": 5
-    }
-  ],
+  "testimonials": [],
   "processMeta": {
     "badge": {
       "tr": "Nasıl Çalışıyoruz",

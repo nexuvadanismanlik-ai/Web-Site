@@ -12,6 +12,8 @@ export function Process({
   steps: ProcessStep[];
   locale: Locale;
 }) {
+  if (steps.length === 0) return null;
+
   return (
     <section className="section">
       <div className="container-x">

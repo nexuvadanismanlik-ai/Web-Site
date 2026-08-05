@@ -1,6 +1,12 @@
 import type { CSSProperties } from 'react';
 
 export function LogosMarquee({ logos, label }: { logos: string[]; label: string }) {
+  // An empty strip renders nothing rather than an empty frame under a heading
+  // promising trusted brands. This is what lets placeholder content be deleted
+  // without leaving a hole in the page: the section reappears by itself when
+  // real logos are added in the panel.
+  if (logos.length === 0) return null;
+
   const items = [...logos, ...logos];
   return (
     <section className="border-y border-overlay/5 py-14">

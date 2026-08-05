@@ -1,14 +1,10 @@
 import Link from 'next/link';
 import type { CtaContent } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
 import { Reveal } from '../motion';
 
-function localized(href: string, locale: Locale) {
-  return href === '/' ? `/${locale}` : `/${locale}${href}`;
-}
-
-export function Cta({ cta, locale }: { cta: CtaContent; locale: Locale }) {
+export function Cta({ cta }: { cta: CtaContent }) {
   return (
     <section className="section">
       <div className="container-x">
@@ -23,18 +19,18 @@ export function Cta({ cta, locale }: { cta: CtaContent; locale: Locale }) {
               className="mx-auto max-w-2xl font-heading text-3xl font-bold text-white text-balance sm:text-4xl md:text-5xl"
               data-edit="cta.title"
             >
-              {t(cta.title, locale)}
+              {t(cta.title)}
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base text-white/80 sm:text-lg" data-edit="cta.subtitle">
-              {t(cta.subtitle, locale)}
+              {t(cta.subtitle)}
             </p>
             <div className="mt-9 flex justify-center">
               <Link
-                href={localized(cta.button.href, locale)}
+                href={cta.button.href}
                 data-edit="cta.button.label"
                 className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-semibold text-ink-950 shadow-2xl transition-transform duration-300 hover:-translate-y-0.5 hover:scale-[1.02]"
               >
-                {t(cta.button.label, locale)}
+                {t(cta.button.label)}
                 <Icon
                   name="arrow-right"
                   className="h-4 w-4 transition-transform group-hover:translate-x-1"

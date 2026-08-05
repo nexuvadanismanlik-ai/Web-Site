@@ -125,158 +125,210 @@
   },
   "services": [
     {
-      "id": "svc-strategy",
-      "icon": "compass",
+      "id": "svc-1",
+      "icon": "target",
       "title": {
-        "tr": "Dijital Strateji & Danışmanlık",
-        "en": "Digital Strategy & Consulting"
+        "en": "Google Ads Yönetimi",
+        "tr": "Google Ads Yönetimi"
       },
       "description": {
-        "tr": "İş hedeflerinizi dijital yol haritasına dönüştürüyor, sürdürülebilir büyüme için doğru teknolojiyi konumlandırıyoruz.",
-        "en": "We turn your business goals into a digital roadmap and position the right technology for sustainable growth."
+        "en": "Arama, görüntülü ve alışveriş kampanyalarını kuruyor, bütçeyi dönüşüm getiren aramalara yönlendiriyoruz. Kampanyalar haftalık olarak izlenir ve teklif stratejisi verilere göre güncellenir.",
+        "tr": "Arama, görüntülü ve alışveriş kampanyalarını kuruyor, bütçeyi dönüşüm getiren aramalara yönlendiriyoruz. Kampanyalar haftalık olarak izlenir ve teklif stratejisi verilere göre güncellenir."
       },
       "features": [
         {
-          "tr": "Dijital olgunluk analizi",
-          "en": "Digital maturity assessment"
+          "en": "Arama & alışveriş kampanyaları",
+          "tr": "Arama & alışveriş kampanyaları"
         },
         {
-          "tr": "Yol haritası & KPI tasarımı",
-          "en": "Roadmap & KPI design"
+          "en": "Dönüşüm takibi kurulumu",
+          "tr": "Dönüşüm takibi kurulumu"
         },
         {
-          "tr": "Süreç optimizasyonu",
-          "en": "Process optimization"
+          "en": "Aylık performans raporu",
+          "tr": "Aylık performans raporu"
         }
       ]
     },
     {
-      "id": "svc-software",
-      "icon": "code",
+      "id": "svc-2",
+      "icon": "users",
       "title": {
-        "tr": "Yazılım Geliştirme",
-        "en": "Software Development"
+        "en": "Meta Reklam Yönetimi",
+        "tr": "Meta Reklam Yönetimi"
       },
       "description": {
-        "tr": "Web, mobil ve kurumsal uygulamaları ölçeklenebilir, güvenli ve modern mimarilerle hayata geçiriyoruz.",
-        "en": "We build web, mobile and enterprise applications with scalable, secure and modern architectures."
+        "en": "Facebook ve Instagram reklamlarını hedef kitle, kreatif ve teklif düzeyinde yönetiyoruz. Reklam setleri test edilerek ilerler; çalışan kurgu ölçeklenir, çalışmayan durdurulur.",
+        "tr": "Facebook ve Instagram reklamlarını hedef kitle, kreatif ve teklif düzeyinde yönetiyoruz. Reklam setleri test edilerek ilerler; çalışan kurgu ölçeklenir, çalışmayan durdurulur."
       },
       "features": [
         {
-          "tr": "Web & mobil uygulamalar",
-          "en": "Web & mobile apps"
+          "en": "Hedef kitle & yeniden pazarlama",
+          "tr": "Hedef kitle & yeniden pazarlama"
         },
         {
-          "tr": "API & entegrasyonlar",
-          "en": "APIs & integrations"
+          "en": "Kreatif testleri",
+          "tr": "Kreatif testleri"
         },
         {
-          "tr": "Mikroservis mimarisi",
-          "en": "Microservice architecture"
+          "en": "Piksel ve olay kurulumu",
+          "tr": "Piksel ve olay kurulumu"
         }
       ]
     },
     {
-      "id": "svc-cloud",
-      "icon": "cloud",
-      "title": {
-        "tr": "Bulut & DevOps",
-        "en": "Cloud & DevOps"
-      },
-      "description": {
-        "tr": "Altyapınızı buluta taşıyor, otomasyon ve gözlemlenebilirlik ile kesintisiz operasyon sağlıyoruz.",
-        "en": "We migrate your infrastructure to the cloud and ensure seamless operations with automation and observability."
-      },
-      "features": [
-        {
-          "tr": "Bulut migrasyonu",
-          "en": "Cloud migration"
-        },
-        {
-          "tr": "CI/CD otomasyonu",
-          "en": "CI/CD automation"
-        },
-        {
-          "tr": "7/24 izleme",
-          "en": "24/7 monitoring"
-        }
-      ]
-    },
-    {
-      "id": "svc-growth",
+      "id": "svc-3",
       "icon": "trending-up",
       "title": {
-        "tr": "Büyüme & Pazarlama",
-        "en": "Growth & Marketing"
+        "en": "SEO",
+        "tr": "SEO"
       },
       "description": {
-        "tr": "Veriye dayalı pazarlama, SEO ve dönüşüm optimizasyonu ile markanızın dijital görünürlüğünü artırıyoruz.",
-        "en": "We boost your brand's digital visibility with data-driven marketing, SEO and conversion optimization."
+        "en": "Teknik altyapı, içerik ve site içi yapıyı arama motorlarının anlayacağı hâle getiriyoruz. Teknik denetimle başlar, içerik planı ve ölçümle devam eder.",
+        "tr": "Teknik altyapı, içerik ve site içi yapıyı arama motorlarının anlayacağı hâle getiriyoruz. Teknik denetimle başlar, içerik planı ve ölçümle devam eder."
       },
       "features": [
         {
-          "tr": "Performans pazarlama",
-          "en": "Performance marketing"
+          "en": "Teknik SEO denetimi",
+          "tr": "Teknik SEO denetimi"
         },
         {
-          "tr": "SEO & içerik",
-          "en": "SEO & content"
+          "en": "Anahtar kelime & içerik planı",
+          "tr": "Anahtar kelime & içerik planı"
         },
         {
-          "tr": "Analitik & raporlama",
-          "en": "Analytics & reporting"
+          "en": "Sıralama ve trafik takibi",
+          "tr": "Sıralama ve trafik takibi"
         }
       ]
     },
     {
-      "id": "svc-security",
-      "icon": "shield",
+      "id": "svc-4",
+      "icon": "code",
       "title": {
-        "tr": "Siber Güvenlik",
-        "en": "Cyber Security"
+        "en": "Kurumsal Web Sitesi",
+        "tr": "Kurumsal Web Sitesi"
       },
       "description": {
-        "tr": "Sistemlerinizi uçtan uca koruyor, sızma testleri ve uyumluluk denetimleri ile riskleri en aza indiriyoruz.",
-        "en": "We protect your systems end to end, minimizing risk with penetration tests and compliance audits."
+        "en": "Şirketinizi doğru anlatan, hızlı ve yönetilebilir web siteleri geliştiriyoruz. İçeriği kendi ekibinizin güncelleyebilmesi için yönetim paneliyle birlikte teslim edilir.",
+        "tr": "Şirketinizi doğru anlatan, hızlı ve yönetilebilir web siteleri geliştiriyoruz. İçeriği kendi ekibinizin güncelleyebilmesi için yönetim paneliyle birlikte teslim edilir."
       },
       "features": [
         {
-          "tr": "Sızma testleri",
-          "en": "Penetration testing"
+          "en": "Tasarım ve geliştirme",
+          "tr": "Tasarım ve geliştirme"
         },
         {
-          "tr": "KVKK & uyumluluk",
-          "en": "GDPR & compliance"
+          "en": "Yönetim paneli",
+          "tr": "Yönetim paneli"
         },
         {
-          "tr": "Güvenlik operasyonları",
-          "en": "Security operations"
+          "en": "Mobil uyumluluk ve hız",
+          "tr": "Mobil uyumluluk ve hız"
         }
       ]
     },
     {
-      "id": "svc-design",
-      "icon": "palette",
+      "id": "svc-5",
+      "icon": "zap",
       "title": {
-        "tr": "UX / UI Tasarım",
-        "en": "UX / UI Design"
+        "en": "Landing Page",
+        "tr": "Landing Page"
       },
       "description": {
-        "tr": "Kullanıcı odaklı, estetik ve dönüşüm getiren arayüzler tasarlıyor, marka deneyimini güçlendiriyoruz.",
-        "en": "We design user-centric, aesthetic and high-converting interfaces that strengthen your brand experience."
+        "en": "Tek bir kampanya veya ürün için, tek bir eyleme odaklanan sayfalar kuruyoruz. Reklam trafiğini karşılamak üzere tasarlanır ve ölçülebilir biçimde yayına alınır.",
+        "tr": "Tek bir kampanya veya ürün için, tek bir eyleme odaklanan sayfalar kuruyoruz. Reklam trafiğini karşılamak üzere tasarlanır ve ölçülebilir biçimde yayına alınır."
       },
       "features": [
         {
-          "tr": "Kullanıcı araştırması",
-          "en": "User research"
+          "en": "Kampanyaya özel tasarım",
+          "tr": "Kampanyaya özel tasarım"
         },
         {
-          "tr": "Tasarım sistemleri",
-          "en": "Design systems"
+          "en": "Form ve dönüşüm takibi",
+          "tr": "Form ve dönüşüm takibi"
         },
         {
-          "tr": "Prototipleme",
-          "en": "Prototyping"
+          "en": "A/B test altyapısı",
+          "tr": "A/B test altyapısı"
+        }
+      ]
+    },
+    {
+      "id": "svc-6",
+      "icon": "compass",
+      "title": {
+        "en": "Dijital Marka Danışmanlığı",
+        "tr": "Dijital Marka Danışmanlığı"
+      },
+      "description": {
+        "en": "Markanın dijitalde nasıl konumlanacağını, hangi kanalda ne anlatacağını birlikte belirliyoruz. Mevcut durumun analiziyle başlar, uygulanabilir bir plana bağlanır.",
+        "tr": "Markanın dijitalde nasıl konumlanacağını, hangi kanalda ne anlatacağını birlikte belirliyoruz. Mevcut durumun analiziyle başlar, uygulanabilir bir plana bağlanır."
+      },
+      "features": [
+        {
+          "en": "Konumlandırma ve mesaj",
+          "tr": "Konumlandırma ve mesaj"
+        },
+        {
+          "en": "Kanal stratejisi",
+          "tr": "Kanal stratejisi"
+        },
+        {
+          "en": "İçerik yönü",
+          "tr": "İçerik yönü"
+        }
+      ]
+    },
+    {
+      "id": "svc-7",
+      "icon": "layers",
+      "title": {
+        "en": "Otomasyon Sistemleri",
+        "tr": "Otomasyon Sistemleri"
+      },
+      "description": {
+        "en": "Tekrar eden işleri yazılıma devrediyoruz: form ve talep akışları, raporlama, sistemler arası veri aktarımı. Hangi işin otomatikleşmeye değdiğini birlikte tespit ediyoruz.",
+        "tr": "Tekrar eden işleri yazılıma devrediyoruz: form ve talep akışları, raporlama, sistemler arası veri aktarımı. Hangi işin otomatikleşmeye değdiğini birlikte tespit ediyoruz."
+      },
+      "features": [
+        {
+          "en": "Süreç analizi",
+          "tr": "Süreç analizi"
+        },
+        {
+          "en": "Entegrasyon ve veri aktarımı",
+          "tr": "Entegrasyon ve veri aktarımı"
+        },
+        {
+          "en": "Otomatik raporlama",
+          "tr": "Otomatik raporlama"
+        }
+      ]
+    },
+    {
+      "id": "svc-8",
+      "icon": "rocket",
+      "title": {
+        "en": "LogiOps Entegrasyonu",
+        "tr": "LogiOps Entegrasyonu"
+      },
+      "description": {
+        "en": "Nexuva’nın geliştirdiği LogiOps’u mevcut operasyonunuza bağlıyoruz. Kurulum, veri aktarımı ve ekip eğitimi dahil olmak üzere uçtan uca yürütülür.",
+        "tr": "Nexuva’nın geliştirdiği LogiOps’u mevcut operasyonunuza bağlıyoruz. Kurulum, veri aktarımı ve ekip eğitimi dahil olmak üzere uçtan uca yürütülür."
+      },
+      "features": [
+        {
+          "en": "Kurulum ve yapılandırma",
+          "tr": "Kurulum ve yapılandırma"
+        },
+        {
+          "en": "Mevcut veriyle entegrasyon",
+          "tr": "Mevcut veriyle entegrasyon"
+        },
+        {
+          "en": "Ekip eğitimi",
+          "tr": "Ekip eğitimi"
         }
       ]
     }

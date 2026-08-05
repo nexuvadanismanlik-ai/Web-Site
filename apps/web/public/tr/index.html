@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Nexuva</title>
+    <!--
+      The site used to live under /tr and /en, with the root sniffing the
+      browser language — which sent an English-speaking visitor to an English
+      site nobody maintains. There is one site now, at the root.
+
+      A static export has no server and so cannot answer 301, which is what this
+      would otherwise be. The canonical link is what search engines act on.
+    -->
+    <link rel="canonical" href="/" />
+    <meta name="robots" content="noindex, follow" />
+    <meta http-equiv="refresh" content="0; url=/" />
+    <script>
+      window.location.replace('/' + window.location.search + window.location.hash);
+    </script>
+  </head>
+  <body>
+    <p>Bu sayfa taşındı. <a href="/">Nexuva anasayfasına git</a>.</p>
+  </body>
+</html>

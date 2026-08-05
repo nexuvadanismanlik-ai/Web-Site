@@ -1,14 +1,12 @@
 import type { CSSProperties } from 'react';
 import type { ReferenceItem, SectionMeta } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { SectionHeading } from './section-heading';
 
 function ReferenceCard({
   item,
-  locale,
 }: {
   item: ReferenceItem & { __idx: number };
-  locale: Locale;
 }) {
   const initials = item.name
     .split(' ')
@@ -32,7 +30,7 @@ function ReferenceCard({
           className="truncate text-xs uppercase tracking-wide text-faint"
           data-edit={`references.${item.__idx}.category`}
         >
-          {t(item.category, locale)}
+          {t(item.category)}
         </div>
       </div>
     </div>
@@ -41,12 +39,10 @@ function ReferenceCard({
 
 function Row({
   items,
-  locale,
   reverse = false,
   duration = '46s',
 }: {
   items: (ReferenceItem & { __idx: number })[];
-  locale: Locale;
   reverse?: boolean;
   duration?: string;
 }) {
@@ -58,7 +54,7 @@ function Row({
         style={{ '--marquee-duration': duration } as CSSProperties}
       >
         {doubled.map((item, i) => (
-          <ReferenceCard key={`${item.id}-${i}`} item={item} locale={locale} />
+          <ReferenceCard key={`${item.id}-${i}`} item={item} />
         ))}
       </div>
     </div>
@@ -68,12 +64,10 @@ function Row({
 export function References({
   meta,
   references,
-  locale,
   hideHeading = false,
 }: {
   meta: SectionMeta;
   references: ReferenceItem[];
-  locale: Locale;
   hideHeading?: boolean;
 }) {
   if (references.length === 0) return null;
@@ -86,12 +80,12 @@ export function References({
     <section id="references" className={`overflow-hidden ${hideHeading ? 'py-8' : 'section'}`}>
       {!hideHeading && (
         <div className="container-x">
-          <SectionHeading meta={meta} locale={locale} basePath="referencesMeta" />
+          <SectionHeading meta={meta} basePath="referencesMeta" />
         </div>
       )}
       <div className={`flex flex-col gap-4 ${hideHeading ? '' : 'mt-14'}`}>
-        <Row items={rowA.length ? rowA : indexed} locale={locale} duration="44s" />
-        <Row items={rowB.length ? rowB : indexed} locale={locale} reverse duration="52s" />
+        <Row items={rowA.length ? rowA : indexed} duration="44s" />
+        <Row items={rowB.length ? rowB : indexed} reverse duration="52s" />
       </div>
     </section>
   );

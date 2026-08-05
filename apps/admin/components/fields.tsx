@@ -240,10 +240,13 @@ export function EditorHeader({
 }) {
   return (
     <div className="chrome sticky top-16 z-20 -mx-5 mb-6 border-b px-5 py-4 sm:-mx-8 sm:px-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-xl font-bold text-fg sm:text-2xl">{title}</h1>
-          {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+      <div className="flex items-center justify-between gap-3">
+        {/* min-w-0 so a long title truncates instead of pushing the save button
+            off a narrow screen. Without it the flex child refuses to shrink
+            below its content width. */}
+        <div className="min-w-0">
+          <h1 className="truncate font-heading text-lg font-bold text-fg sm:text-2xl">{title}</h1>
+          {subtitle && <p className="mt-0.5 truncate text-sm text-muted">{subtitle}</p>}
         </div>
         <button onClick={onSave} disabled={saving} className="btn-primary shrink-0">
           {saving ? (

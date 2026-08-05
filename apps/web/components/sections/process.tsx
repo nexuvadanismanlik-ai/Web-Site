@@ -1,23 +1,21 @@
 import type { ProcessStep, SectionMeta } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { SectionHeading } from './section-heading';
 import { Stagger, StaggerItem } from '../motion';
 
 export function Process({
   meta,
   steps,
-  locale,
 }: {
   meta: SectionMeta;
   steps: ProcessStep[];
-  locale: Locale;
 }) {
   if (steps.length === 0) return null;
 
   return (
     <section className="section">
       <div className="container-x">
-        <SectionHeading meta={meta} locale={locale} basePath="processMeta" />
+        <SectionHeading meta={meta} basePath="processMeta" />
 
         <div className="relative mt-16">
           {/* Connecting line */}
@@ -31,10 +29,10 @@ export function Process({
                   <span className="absolute inset-0 rounded-2xl border border-brand-500/30" />
                 </div>
                 <h3 className="font-heading text-lg font-semibold text-fg" data-edit={`process.${i}.title`}>
-                  {t(step.title, locale)}
+                  {t(step.title)}
                 </h3>
                 <p className="mt-2.5 text-sm leading-relaxed text-muted" data-edit={`process.${i}.description`}>
-                  {t(step.description, locale)}
+                  {t(step.description)}
                 </p>
               </StaggerItem>
             ))}

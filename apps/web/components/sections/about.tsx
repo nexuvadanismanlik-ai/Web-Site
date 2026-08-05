@@ -1,15 +1,13 @@
 import type { AboutContent } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
 import { Reveal, Stagger, StaggerItem } from '../motion';
 
 export function About({
   about,
-  locale,
   hideHeading = false,
 }: {
   about: AboutContent;
-  locale: Locale;
   hideHeading?: boolean;
 }) {
   return (
@@ -23,7 +21,7 @@ export function About({
                 <Reveal>
                   <span className="eyebrow" data-edit="about.badge">
                     <span className="h-1.5 w-1.5 rounded-full brand-gradient-bg" />
-                    {t(about.badge, locale)}
+                    {t(about.badge)}
                   </span>
                 </Reveal>
                 <Reveal delay={0.05}>
@@ -31,7 +29,7 @@ export function About({
                     className="mt-5 font-heading text-3xl font-bold text-fg text-balance sm:text-4xl md:text-[2.6rem] md:leading-[1.1]"
                     data-edit="about.title"
                   >
-                    {t(about.title, locale)}
+                    {t(about.title)}
                   </h2>
                 </Reveal>
               </>
@@ -43,7 +41,7 @@ export function About({
                     className="text-base leading-relaxed text-muted"
                     data-edit={`about.paragraphs.${i}`}
                   >
-                    {t(p, locale)}
+                    {t(p)}
                   </p>
                 </Reveal>
               ))}
@@ -64,13 +62,13 @@ export function About({
                     className="mt-5 font-heading text-lg font-semibold text-fg"
                     data-edit={`about.highlights.${i}.title`}
                   >
-                    {t(h.title, locale)}
+                    {t(h.title)}
                   </h3>
                   <p
                     className="mt-2 text-sm leading-relaxed text-muted"
                     data-edit={`about.highlights.${i}.text`}
                   >
-                    {t(h.text, locale)}
+                    {t(h.text)}
                   </p>
                 </div>
               </StaggerItem>

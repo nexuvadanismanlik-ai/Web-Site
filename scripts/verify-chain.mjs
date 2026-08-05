@@ -133,12 +133,13 @@ try {
 
 // ── 4. The published site carries what the API holds ────────────────────────
 if (content) {
-  // Route segments are the English directory names under app/[locale];
-  // Faz 2 moves these to Turkish slugs at the site root.
+  // The site is Turkish and lives at the root. It used to be served under /tr
+  // and /en with the root sniffing the browser language; those paths are now
+  // forwarding pages, checked separately below.
   const pages = [
-    { path: '/tr/', items: (content.references ?? []).map((r) => r.name).filter(Boolean) },
-    { path: '/tr/services/', items: (content.services ?? []).map((s) => tr(s.title)).filter(Boolean) },
-    { path: '/tr/references/', items: (content.references ?? []).map((r) => r.name).filter(Boolean) },
+    { path: '/', items: (content.references ?? []).map((r) => r.name).filter(Boolean) },
+    { path: '/services/', items: (content.services ?? []).map((s) => tr(s.title)).filter(Boolean) },
+    { path: '/references/', items: (content.references ?? []).map((r) => r.name).filter(Boolean) },
   ];
 
   for (const page of pages) {
@@ -161,6 +162,21 @@ if (content) {
     } catch (err) {
       record(`Canlı site ${page.path}`, false, String(err));
     }
+  }
+}
+
+// ── 4b. Old locale paths still lead somewhere ───────────────────────────────
+for (const legacy of ['/tr/', '/en/']) {
+  try {
+    const res = await get(`${SITE}${legacy}`);
+    const body = res.ok ? await res.text() : '';
+    record(
+      `Eski ${legacy} adresi köke yönlendiriyor`,
+      res.ok && body.includes('rel="canonical" href="/"'),
+      `HTTP ${res.status}`,
+    );
+  } catch (err) {
+    record(`Eski ${legacy} adresi köke yönlendiriyor`, false, String(err));
   }
 }
 

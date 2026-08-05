@@ -3,19 +3,17 @@
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent } from '@nexuva/types';
-import { t, getUi, type Locale } from '../../lib/i18n';
+import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
 
 export function Contact({
   contact,
-  locale,
   hideHeading = false,
 }: {
   contact: ContactContent;
-  locale: Locale;
   hideHeading?: boolean;
 }) {
-  const ui = getUi(locale);
+  const ui = getUi();
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [failure, setFailure] = useState<ContactError | null>(null);
 
@@ -52,7 +50,7 @@ export function Contact({
   const infoItems = [
     { icon: Mail, label: contact.email, href: `mailto:${contact.email}` },
     { icon: Phone, label: contact.phone, href: `tel:${contact.phone.replace(/\s/g, '')}` },
-    { icon: MapPin, label: t(contact.address, locale), href: undefined },
+    { icon: MapPin, label: t(contact.address), href: undefined },
   ];
 
   return (
@@ -65,16 +63,16 @@ export function Contact({
               <>
                 <span className="eyebrow" data-edit="contact.badge">
                   <span className="h-1.5 w-1.5 rounded-full brand-gradient-bg" />
-                  {t(contact.badge, locale)}
+                  {t(contact.badge)}
                 </span>
                 <h2
                   className="mt-5 font-heading text-3xl font-bold text-fg text-balance sm:text-4xl md:text-[2.6rem] md:leading-[1.1]"
                   data-edit="contact.title"
                 >
-                  {t(contact.title, locale)}
+                  {t(contact.title)}
                 </h2>
                 <p className="mt-5 max-w-md text-base leading-relaxed text-muted" data-edit="contact.description">
-                  {t(contact.description, locale)}
+                  {t(contact.description)}
                 </p>
               </>
             )}
@@ -114,7 +112,7 @@ export function Contact({
                   className="btn-ghost mt-8"
                   type="button"
                 >
-                  {locale === 'tr' ? 'Yeni mesaj gönder' : 'Send another message'}
+                  {'Yeni mesaj gönder'}
                 </button>
               </div>
             ) : (

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, ArrowUpRight, Globe } from 'lucide-react';
-import type { Locale } from '../../lib/i18n';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
+
 
 export interface HeaderNavItem {
   label: string;
@@ -13,17 +13,12 @@ export interface HeaderNavItem {
 }
 
 interface HeaderProps {
-  locale: Locale;
   logoText: string;
   nav: HeaderNavItem[];
   ctaLabel: string;
 }
 
-function localized(href: string, locale: Locale) {
-  return href === '/' ? `/${locale}` : `/${locale}${href}`;
-}
-
-export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
+export function Header({ logoText, nav, ctaLabel }: HeaderProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -46,16 +41,9 @@ export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
     };
   }, [open]);
 
-  const otherLocale: Locale = locale === 'tr' ? 'en' : 'tr';
-  const switchHref = (() => {
-    const segments = (pathname ?? '/').split('/').filter(Boolean);
-    segments[0] = otherLocale;
-    return '/' + segments.join('/');
-  })();
-
   const isActive = (href: string) => {
-    const target = localized(href, locale);
-    if (href === '/') return pathname === target || pathname === `/${locale}`;
+    const target = href;
+    if (href === '/') return pathname === target || pathname === '/';
     return pathname === target || pathname?.startsWith(target + '/');
   };
 
@@ -75,7 +63,7 @@ export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
             }`}
           >
             {/* Logo */}
-            <Link href={localized('/', locale)} className="group flex items-center gap-2.5 pl-2">
+            <Link href={'/'} className="group flex items-center gap-2.5 pl-2">
               <span className="relative flex h-8 w-8 items-center justify-center rounded-xl brand-gradient-bg text-sm font-bold text-white shadow-glow-brand">
                 {logoText.charAt(0)}
                 <span className="absolute inset-0 rounded-xl brand-gradient-bg opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-70" />
@@ -88,7 +76,7 @@ export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
               {nav.map((item, i) => (
                 <Link
                   key={item.href}
-                  href={localized(item.href, locale)}
+                  href={item.href}
                   data-edit={`nav.${i}.label`}
                   className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                     isActive(item.href)
@@ -110,15 +98,7 @@ export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
 
             {/* Right actions */}
             <div className="flex items-center gap-2">
-              <Link
-                href={switchHref}
-                className="hidden items-center gap-1.5 rounded-full border border-overlay/10 bg-overlay/5 px-3 py-2 text-xs font-semibold uppercase text-muted transition-colors hover:border-overlay/25 hover:text-fg sm:flex"
-                aria-label="Switch language"
-              >
-                <Globe className="h-3.5 w-3.5" />
-                {otherLocale}
-              </Link>
-              <Link href={localized('/contact', locale)} className="hidden md:inline-flex">
+              <Link href={'/contact'} className="hidden md:inline-flex">
                 <span className="btn-primary !px-5 !py-2.5 text-sm">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
@@ -172,7 +152,7 @@ export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
                     transition={{ delay: 0.05 * i + 0.1 }}
                   >
                     <Link
-                      href={localized(item.href, locale)}
+                      href={item.href}
                       data-edit={`nav.${i}.label`}
                       className={`block rounded-2xl px-4 py-4 font-heading text-2xl font-semibold transition-colors ${
                         isActive(item.href) ? 'gradient-text' : 'text-fg hover:text-muted'
@@ -184,11 +164,7 @@ export function Header({ locale, logoText, nav, ctaLabel }: HeaderProps) {
                 ))}
               </nav>
               <div className="mt-auto flex flex-col gap-3">
-                <Link href={switchHref} className="btn-ghost w-full justify-center">
-                  <Globe className="h-4 w-4" />
-                  {otherLocale === 'tr' ? 'Türkçe' : 'English'}
-                </Link>
-                <Link href={localized('/contact', locale)} className="btn-primary w-full justify-center">
+                <Link href={'/contact'} className="btn-primary w-full justify-center">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>

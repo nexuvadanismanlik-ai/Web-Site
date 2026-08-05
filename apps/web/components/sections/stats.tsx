@@ -1,8 +1,8 @@
 import type { StatItem } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { CountUp, StaggerItem, Stagger } from '../motion';
 
-export function Stats({ stats, locale }: { stats: StatItem[]; locale: Locale }) {
+export function Stats({ stats }: { stats: StatItem[] }) {
   // Numbers nobody has supplied are worse than no numbers.
   if (stats.length === 0) return null;
 
@@ -20,7 +20,7 @@ export function Stats({ stats, locale }: { stats: StatItem[]; locale: Locale }) 
                     <CountUp to={s.value} prefix={s.prefix ?? ''} suffix={s.suffix} />
                   </span>
                 </div>
-                <div className="mt-2 text-sm font-medium text-muted" data-edit={`stats.${i}.label`}>{t(s.label, locale)}</div>
+                <div className="mt-2 text-sm font-medium text-muted" data-edit={`stats.${i}.label`}>{t(s.label)}</div>
               </StaggerItem>
             ))}
           </Stagger>

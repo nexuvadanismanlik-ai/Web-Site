@@ -4,15 +4,11 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Play, Sparkles } from 'lucide-react';
 import type { HeroContent } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-function localized(href: string, locale: Locale) {
-  return href === '/' ? `/${locale}` : `/${locale}${href}`;
-}
-
-export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
+export function Hero({ hero }: { hero: HeroContent }) {
   return (
     <section className="relative overflow-hidden pt-36 pb-20 sm:pt-44 sm:pb-28">
       {/* Decorative animated blobs */}
@@ -31,7 +27,7 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
           >
             <span className="eyebrow" data-edit="hero.badge">
               <Sparkles className="h-3.5 w-3.5 text-brand-dyn" />
-              {t(hero.badge, locale)}
+              {t(hero.badge)}
             </span>
           </motion.div>
 
@@ -41,8 +37,8 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
             transition={{ duration: 0.7, ease: EASE, delay: 0.08 }}
             className="mt-7 font-heading text-4xl font-bold leading-[1.08] text-fg text-balance sm:text-6xl md:text-7xl"
           >
-            <span data-edit="hero.titleLead">{t(hero.titleLead, locale)}</span>{' '}
-            <span className="gradient-text" data-edit="hero.titleHighlight">{t(hero.titleHighlight, locale)}</span>
+            <span data-edit="hero.titleLead">{t(hero.titleLead)}</span>{' '}
+            <span className="gradient-text" data-edit="hero.titleHighlight">{t(hero.titleHighlight)}</span>
           </motion.h1>
 
           <motion.p
@@ -52,7 +48,7 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
             className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-muted"
             data-edit="hero.subtitle"
           >
-            {t(hero.subtitle, locale)}
+            {t(hero.subtitle)}
           </motion.p>
 
           <motion.div
@@ -62,20 +58,20 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
             className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
           >
             <Link
-              href={localized(hero.primaryCta.href, locale)}
+              href={hero.primaryCta.href}
               className="btn-primary group"
               data-edit="hero.primaryCta.label"
             >
-              {t(hero.primaryCta.label, locale)}
+              {t(hero.primaryCta.label)}
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
             <Link
-              href={localized(hero.secondaryCta.href, locale)}
+              href={hero.secondaryCta.href}
               className="btn-ghost group"
               data-edit="hero.secondaryCta.label"
             >
               <Play className="h-4 w-4 fill-current" />
-              {t(hero.secondaryCta.label, locale)}
+              {t(hero.secondaryCta.label)}
             </Link>
           </motion.div>
 
@@ -101,7 +97,7 @@ export function Hero({ hero, locale }: { hero: HeroContent; locale: Locale }) {
                   className="mt-1 text-xs text-muted sm:text-sm"
                   data-edit={`hero.metrics.${i}.label`}
                 >
-                  {t(m.label, locale)}
+                  {t(m.label)}
                 </div>
               </div>
             ))}

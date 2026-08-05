@@ -1,16 +1,14 @@
 import type { CSSProperties } from 'react';
 import type { TestimonialItem, SectionMeta } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
 import { SectionHeading } from './section-heading';
 
 function TestimonialCard({
   item,
-  locale,
   idx,
 }: {
   item: TestimonialItem;
-  locale: Locale;
   idx: number;
 }) {
   const initials = item.author
@@ -31,7 +29,7 @@ function TestimonialCard({
           className="mt-4 text-[0.95rem] leading-relaxed text-fg/90"
           data-edit={`testimonials.${idx}.quote`}
         >
-          “{t(item.quote, locale)}”
+          “{t(item.quote)}”
         </blockquote>
       </div>
       <figcaption className="mt-6 flex items-center gap-3.5 border-t border-overlay/10 pt-5">
@@ -46,7 +44,7 @@ function TestimonialCard({
             {item.author}
           </div>
           <div className="text-xs text-muted">
-            <span data-edit={`testimonials.${idx}.role`}>{t(item.role, locale)}</span> ·{' '}
+            <span data-edit={`testimonials.${idx}.role`}>{t(item.role)}</span> ·{' '}
             <span data-edit={`testimonials.${idx}.company`}>{item.company}</span>
           </div>
         </div>
@@ -58,11 +56,9 @@ function TestimonialCard({
 export function Testimonials({
   meta,
   testimonials,
-  locale,
 }: {
   meta: SectionMeta;
   testimonials: TestimonialItem[];
-  locale: Locale;
 }) {
   // No quotes, no section. A heading over an empty rail reads worse than the
   // section simply not being there yet, and hiding it is what makes deleting
@@ -73,7 +69,7 @@ export function Testimonials({
   return (
     <section className="section overflow-hidden">
       <div className="container-x">
-        <SectionHeading meta={meta} locale={locale} basePath="testimonialsMeta" />
+        <SectionHeading meta={meta} basePath="testimonialsMeta" />
       </div>
       <div className="marquee-mask pause-on-hover mt-14 overflow-hidden">
         <div
@@ -84,7 +80,6 @@ export function Testimonials({
             <TestimonialCard
               key={`${item.id}-${i}`}
               item={item}
-              locale={locale}
               idx={i % testimonials.length}
             />
           ))}

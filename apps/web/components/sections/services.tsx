@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ServiceItem, SectionMeta } from '@nexuva/types';
-import { t, type Locale } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
 import { SectionHeading } from './section-heading';
 import { Reveal, Stagger, StaggerItem } from '../motion';
@@ -8,13 +8,11 @@ import { Reveal, Stagger, StaggerItem } from '../motion';
 export function Services({
   meta,
   services,
-  locale,
   showAll = false,
   hideHeading = false,
 }: {
   meta: SectionMeta;
   services: ServiceItem[];
-  locale: Locale;
   showAll?: boolean;
   hideHeading?: boolean;
 }) {
@@ -24,7 +22,7 @@ export function Services({
   return (
     <section id="services" className={hideHeading ? 'py-8' : 'section'}>
       <div className="container-x">
-        {!hideHeading && <SectionHeading meta={meta} locale={locale} basePath="servicesMeta" />}
+        {!hideHeading && <SectionHeading meta={meta} basePath="servicesMeta" />}
 
         <Stagger
           className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${hideHeading ? '' : 'mt-16'}`}
@@ -41,10 +39,10 @@ export function Services({
                   />
                 </div>
                 <h3 className="font-heading text-xl font-semibold text-fg" data-edit={`services.${i}.title`}>
-                  {t(svc.title, locale)}
+                  {t(svc.title)}
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted" data-edit={`services.${i}.description`}>
-                  {t(svc.description, locale)}
+                  {t(svc.description)}
                 </p>
                 <ul className="mt-5 space-y-2.5">
                   {svc.features.map((f, j) => (
@@ -56,7 +54,7 @@ export function Services({
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500/15">
                         <Icon name="check" className="h-3 w-3 text-brand-dyn" />
                       </span>
-                      {t(f, locale)}
+                      {t(f)}
                     </li>
                   ))}
                 </ul>
@@ -67,8 +65,8 @@ export function Services({
 
         {!showAll && (
           <Reveal className="mt-12 text-center" delay={0.1}>
-            <Link href={`/${locale}/services`} className="btn-ghost">
-              {locale === 'tr' ? 'Tüm hizmetleri gör' : 'View all services'}
+            <Link href={'/services'} className="btn-ghost">
+              {'Tüm hizmetleri gör'}
               <Icon name="arrow-right" className="h-4 w-4" />
             </Link>
           </Reveal>

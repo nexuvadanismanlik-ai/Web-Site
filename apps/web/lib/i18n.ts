@@ -1,32 +1,31 @@
 import type { Localized } from '@nexuva/types';
 
-export type Locale = 'tr' | 'en';
+/**
+ * The site is Turkish.
+ *
+ * It used to be served under /tr and /en, with the root detecting the browser
+ * language and forwarding — which meant a visitor with an English browser was
+ * sent to an English site nobody maintains. There is one site now, at the root.
+ *
+ * The `Localized { tr, en }` shape stays in the content model. Removing it would
+ * be a migration, and keeping it costs nothing: an English edition later is a
+ * matter of reading the other field, not of restructuring the data.
+ */
+export type Locale = 'tr';
 
-export const LOCALES: Locale[] = ['tr', 'en'];
 export const DEFAULT_LOCALE: Locale = 'tr';
 
-export function isLocale(value: string): value is Locale {
-  return value === 'tr' || value === 'en';
-}
-
-export function normalizeLocale(value: string | undefined): Locale {
-  return value && isLocale(value) ? value : DEFAULT_LOCALE;
-}
-
-/** Resolve a localized string for the active locale, falling back to Turkish. */
-export function t(value: Localized | undefined | null, locale: string): string {
+/** Reads the Turkish text out of a localized value. */
+export function t(value: Localized | undefined | null): string {
   if (!value) return '';
-  const loc = normalizeLocale(locale);
-  return value[loc] ?? value.tr ?? '';
+  return value.tr ?? value.en ?? '';
 }
 
 /** Static UI micro-copy that is not part of the editable content store. */
-export const ui = {
-  tr: {
+const copy = {
     menu: 'Menü',
     close: 'Kapat',
     getStarted: 'Hemen Başla',
-    langLabel: 'Dil',
     // contact form
     formName: 'Ad Soyad',
     formEmail: 'E-posta',
@@ -47,34 +46,9 @@ export const ui = {
     messagePlaceholder: 'Projeniz hakkında birkaç cümle...',
     trustedBy: 'Bize güvenen markalar',
     backHome: 'Anasayfaya dön',
-  },
-  en: {
-    menu: 'Menu',
-    close: 'Close',
-    getStarted: 'Get Started',
-    langLabel: 'Language',
-    formName: 'Full Name',
-    formEmail: 'Email',
-    formPhone: 'Phone',
-    formSubject: 'Subject',
-    formMessage: 'Your Message',
-    formSubmit: 'Send Message',
-    formSending: 'Sending...',
-    formSuccess: 'Thank you! Your message has been received, we will get back to you shortly.',
-    formError: 'Something went wrong. Please try again.',
-    formInvalid: 'Please check the fields and try again.',
-    formRateLimit:
-      'Too many messages sent in a short time. Please try again shortly, or email us directly.',
-    namePlaceholder: 'Your full name',
-    emailPlaceholder: 'you@company.com',
-    phonePlaceholder: '+90 5xx xxx xx xx',
-    subjectPlaceholder: 'How can we help you?',
-    messagePlaceholder: 'A few sentences about your project...',
-    trustedBy: 'Trusted by leading brands',
-    backHome: 'Back to home',
-  },
 } as const;
 
-export function getUi(locale: string) {
-  return ui[normalizeLocale(locale)];
+/** Static UI micro-copy that is not part of the editable content store. */
+export function getUi() {
+  return copy;
 }

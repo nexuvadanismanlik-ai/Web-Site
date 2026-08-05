@@ -56,8 +56,8 @@ export function MessagesClient({
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="font-heading text-2xl font-bold text-fg">Mesajlar</h1>
           <p className="mt-0.5 text-sm text-muted">
             {total} mesaj · {unread} okunmamış

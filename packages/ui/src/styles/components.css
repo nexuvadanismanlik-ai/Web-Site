@@ -1,0 +1,99 @@
+/*
+ * Styles the shared components depend on.
+ *
+ * The package carries these itself. A component that relies on a class defined
+ * in one application breaks silently in the other, which is how the two apps
+ * ended up with their own copies of the same six class names.
+ *
+ * Names are prefixed `ui-` on purpose. The apps also define `.btn-primary` and
+ * they define it differently — the site is marketing scale (rounded-full,
+ * px-7 py-3.5), the panel is tool scale (rounded-xl, px-5 py-2.5). Those are
+ * two design contexts that happen to share a word, not a duplication to merge;
+ * unifying them would visually break one of them. The kit takes its own names
+ * and leaves both alone.
+ *
+ * Colour comes from the semantic tokens each app defines (--c-fg, --c-card,
+ * --c-overlay …) so one component renders correctly in both themes.
+ *
+ * Imported by each app's globals.css.
+ */
+
+/* Container for a group of controls. */
+.ui-panel {
+  @apply rounded-2xl;
+  background: rgb(var(--c-card));
+  border: 1px solid rgb(var(--c-overlay) / 0.09);
+  box-shadow: var(--shadow-card, 0 1px 2px rgb(0 0 0 / 0.04));
+}
+
+.ui-label {
+  @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide;
+  color: rgb(var(--c-muted));
+}
+
+.ui-input {
+  @apply w-full rounded-xl px-3.5 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2;
+  border: 1px solid rgb(var(--c-overlay) / 0.14);
+  background: rgb(var(--c-page));
+  color: rgb(var(--c-fg));
+}
+.ui-input::placeholder {
+  color: rgb(var(--c-faint));
+}
+.ui-input:focus {
+  border-color: var(--brand);
+  --tw-ring-color: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+.ui-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ui-input[aria-invalid='true'] {
+  border-color: rgb(239 68 68 / 0.6);
+}
+
+/* Neutral action. Deliberately not called btn-ghost. */
+.ui-button {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors;
+  border: 1px solid rgb(var(--c-overlay) / 0.14);
+  background: rgb(var(--c-overlay) / 0.03);
+  color: rgb(var(--c-fg));
+}
+.ui-button:hover:not(:disabled) {
+  border-color: rgb(var(--c-overlay) / 0.26);
+  background: rgb(var(--c-overlay) / 0.07);
+}
+.ui-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-button-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-opacity;
+  background-image: linear-gradient(120deg, var(--brand), var(--accent));
+}
+.ui-button-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-button-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors;
+  background: rgb(239 68 68 / 0.15);
+  color: rgb(220 38 38);
+}
+[data-theme='dark'] .ui-button-danger {
+  color: rgb(252 165 165);
+}
+.ui-button-danger:hover:not(:disabled) {
+  background: rgb(239 68 68 / 0.25);
+}
+.ui-button-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Switch track when on. */
+.ui-switch-on {
+  background-image: linear-gradient(120deg, var(--brand), var(--accent));
+}

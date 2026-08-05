@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, MailOpen, Trash2, Check, Phone, Clock, CheckCheck, Inbox } from 'lucide-react';
 import type { ContactMessage } from '@nexuva/types';
 import { setMessageRead, deleteMessage, markAllMessagesRead } from '../../app/actions';
-import { ConfirmDialog, EmptyState, useToast } from '../ui';
+import { ConfirmDialog, EmptyState, useToast } from '@nexuva/ui';
 
 export function MessagesClient({
   messages,

@@ -30,7 +30,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="field-label">
+      <label htmlFor={id} className="ui-label">
         {label}
       </label>
       {children}
@@ -75,7 +75,7 @@ export function SelectField({
         aria-invalid={error ? true : undefined}
         aria-errormessage={error ? `${id}-error` : undefined}
         onChange={(e) => onChange(e.target.value)}
-        className="field-input"
+        className="ui-input"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -121,7 +121,7 @@ export function NumberField({
         // than silently writing 0 over a value someone was in the middle of
         // retyping.
         onChange={(e) => onChange(e.target.value === '' ? Number.NaN : Number(e.target.value))}
-        className="field-input"
+        className="ui-input"
       />
     </Field>
   );
@@ -150,7 +150,7 @@ export function DateField({
         aria-invalid={error ? true : undefined}
         aria-errormessage={error ? `${id}-error` : undefined}
         onChange={(e) => onChange(e.target.value)}
-        className="field-input"
+        className="ui-input"
       />
     </Field>
   );
@@ -182,7 +182,7 @@ export function SwitchField({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-          checked ? 'brand-gradient-bg' : 'bg-overlay/20'
+          checked ? 'ui-switch-on' : 'bg-overlay/20'
         }`}
       >
         <span
@@ -232,7 +232,7 @@ export function SearchBar({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="field-input"
+        className="ui-input"
       />
     </form>
   );

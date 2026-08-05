@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { fontVars } from '../lib/fonts';
 import { ThemeProvider, ThemeScript } from './theme-provider';
-import { ToastProvider } from './ui';
+import { ToastProvider } from '@nexuva/ui';
 import '../app/globals.css';
 
 /**

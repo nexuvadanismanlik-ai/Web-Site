@@ -112,7 +112,7 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   return (
     <div
       role={toast.kind === 'error' ? 'alert' : 'status'}
-      className={`pointer-events-auto flex items-start gap-2 rounded-xl border px-3.5 py-3 text-sm shadow-card ${style.border}`}
+      className={`pointer-events-auto flex items-start gap-2 rounded-xl border px-3.5 py-3 text-sm shadow-lg ${style.border}`}
     >
       {style.icon}
       <span className="flex-1 break-words">{toast.message}</span>
@@ -234,12 +234,12 @@ export function ConfirmDialog({
       aria-label={title}
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
     >
-      <div className="panel w-full max-w-md p-6">
+      <div className="ui-panel w-full max-w-md p-6">
         <h2 className="font-heading text-lg font-semibold text-fg">{title}</h2>
         {body && <div className="mt-2 text-sm text-muted">{body}</div>}
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button onClick={onCancel} disabled={busy} className="btn-ghost disabled:opacity-50">
+          <button onClick={onCancel} disabled={busy} className="ui-button">
             {cancelLabel}
           </button>
           <button
@@ -248,7 +248,7 @@ export function ConfirmDialog({
             className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity disabled:opacity-50 ${
               destructive
                 ? 'bg-red-500/15 text-red-500 hover:bg-red-500/25'
-                : 'brand-gradient-bg text-white'
+                : 'ui-button-primary'
             }`}
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}

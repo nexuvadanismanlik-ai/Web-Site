@@ -1,3 +1,9 @@
+/* Styles belonging to the shared components. They live with the components so
+   the same component renders identically here and on the public site.
+   First, because postcss-import has to inline it before Tailwind processes the
+   @layer blocks it contains. */
+@import '@nexuva/ui/styles';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

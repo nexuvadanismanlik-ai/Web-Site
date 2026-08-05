@@ -291,6 +291,65 @@ export interface PublishStatus {
   history: PublishResult[];
 }
 
+// ─── Media ──────────────────────────────────────────────────────────────────
+
+/** Folders the API accepts. Anything else is rejected as path traversal. */
+export const MEDIA_FOLDERS = ['images', 'logos', 'documents', 'attachments', 'uploads'] as const;
+export type MediaFolder = (typeof MEDIA_FOLDERS)[number];
+
+export interface MediaFile {
+  id: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  folder: string;
+  createdAt: string;
+}
+
+export interface MediaList {
+  files: MediaFile[];
+  total: number;
+  usedBytes: number;
+}
+
+interface ApiFileList {
+  files: MediaFile[];
+  pagination: { total: number; limit: number; offset: number };
+  usage: { totalBytes: number; totalMB: number };
+}
+
+/**
+ * A page of uploaded files.
+ *
+ * Addressed by tenant slug rather than id: the panel knows the slug and the
+ * storage endpoints previously only accepted an id, which is why nothing in the
+ * admin could reach them.
+ */
+export async function readMedia(limit = 100, offset = 0): Promise<MediaList> {
+  const res = await apiFetch<ApiFileList>(
+    `/storage/files?tenant=&limit=${limit}&offset=${offset}`,
+  );
+  return {
+    files: res.files,
+    total: res.pagination.total,
+    usedBytes: res.usage.totalBytes,
+  };
+}
+
+export async function deleteMediaViaApi(id: string): Promise<void> {
+  await apiFetch(`/storage/files/${id}`, { method: 'DELETE' });
+}
+
+export async function uploadMediaViaApi(file: File, folder: MediaFolder): Promise<MediaFile> {
+  const body = new FormData();
+  body.append('file', file);
+  return apiFetch<MediaFile>(`/storage/upload?tenant=&folder=${folder}`, {
+    method: 'POST',
+    body,
+  });
+}
+
 /** One entry in the content history. Snapshots are not carried in the list. */
 export interface ContentVersion {
   id: string;

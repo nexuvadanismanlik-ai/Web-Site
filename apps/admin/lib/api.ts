@@ -77,7 +77,12 @@ export async function apiFetch<T>(
   // Only declare a JSON body when there is one. Fastify rejects a request that
   // announces application/json and then sends nothing, which surfaced as a 500
   // on the bodyless POST /website/publish.
-  if (rest.body !== undefined && rest.body !== null) {
+  //
+  // FormData is the exception: its content type carries a generated boundary,
+  // so it has to be left for fetch to set. Declaring JSON over it makes the
+  // multipart parser find no file.
+  const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData;
+  if (rest.body !== undefined && rest.body !== null && !isFormData) {
     headers['Content-Type'] = 'application/json';
   }
 

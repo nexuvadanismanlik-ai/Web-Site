@@ -12,6 +12,7 @@ import {
   BarChart3,
   Building2,
   CloudUpload,
+  Image as ImageIcon,
   Star,
   Quote,
   ListChecks,
@@ -39,6 +40,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { label: 'Genel Bakış', href: '/', icon: LayoutDashboard },
       { label: 'Yayın Merkezi', href: '/publish', icon: CloudUpload },
+      { label: 'Medya', href: '/media', icon: ImageIcon },
       { label: 'Canlı Düzenleme', href: '/visual', icon: MousePointerClick },
       { label: 'Marka & Tema', href: '/brand', icon: Palette },
     ],

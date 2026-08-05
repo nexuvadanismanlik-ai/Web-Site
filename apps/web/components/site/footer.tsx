@@ -15,10 +15,21 @@ export function Footer({ content }: { content: SiteContent }) {
           {/* Brand */}
           <div>
             <Link href={'/'} className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl brand-gradient-bg text-sm font-bold text-white">
-                {brand.logoText.charAt(0)}
-              </span>
-              <span className="font-heading text-xl font-bold text-fg">{brand.logoText}</span>
+              {brand.logoUrl ? (
+                // uploaded asset on a CDN, next/image is off for static export
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.logoText}
+                  className="h-9 w-auto max-w-[11rem] object-contain"
+                />
+              ) : (
+                <>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl brand-gradient-bg text-sm font-bold text-white">
+                    {brand.logoText.charAt(0)}
+                  </span>
+                  <span className="font-heading text-xl font-bold text-fg">{brand.logoText}</span>
+                </>
+              )}
             </Link>
             <p data-edit="footer.about" className="mt-5 max-w-xs text-sm leading-relaxed text-muted">
               {t(footer.about)}

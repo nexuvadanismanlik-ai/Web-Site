@@ -57,7 +57,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       suppressHydrationWarning
     >
       <body style={brandStyle}>
-        <Header logoText={content.brand.logoText} nav={nav} ctaLabel={ui.getStarted} />
+        <Header
+          logoText={content.brand.logoText}
+          logoUrl={content.brand.logoUrl ?? ''}
+          nav={nav}
+          ctaLabel={ui.getStarted}
+        />
         <main className="relative">{children}</main>
         <Footer content={content} />
         <EditOverlay />

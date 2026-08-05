@@ -11,6 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { StorageService } from './storage.service';
+import { WebsiteTenantService } from '../website/website-tenant.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ResponseMessage } from '../../common/decorators/response.decorator';
@@ -40,7 +41,10 @@ interface AuthUser {
 @ApiBearerAuth()
 @Controller('storage')
 export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly tenants: WebsiteTenantService,
+  ) {}
 
   /**
    * Upload a file to Cloudflare R2 for a specific tenant.
@@ -53,13 +57,15 @@ export class StorageController {
   @ApiConsumes('multipart/form-data')
   @ApiQuery({ name: 'tenantId', required: true, description: 'Target tenant ID' })
   @ApiQuery({ name: 'folder', required: false, example: 'images', description: 'Storage folder (images | documents | logos | uploads | attachments)' })
+  @ApiQuery({ name: 'tenant', required: false, description: 'Tenant slug, as an alternative to tenantId' })
   async upload(
     @Req() req: FastifyRequest,
-    @Query('tenantId') tenantId: string,
     @Query('folder') folder = 'uploads',
     @CurrentUser() user: AuthUser,
+    @Query('tenantId') tenantIdParam?: string,
+    @Query('tenant') tenantSlug?: string,
   ) {
-    if (!tenantId) throw new BadRequestException('tenantId query parameter is required');
+    const tenantId = await this.resolveTenant(tenantIdParam, tenantSlug);
 
     if (!ALLOWED_FOLDERS.has(folder)) {
       throw new BadRequestException(
@@ -122,13 +128,15 @@ export class StorageController {
   @ApiQuery({ name: 'tenantId', required: true })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiQuery({ name: 'offset', required: false, example: 0 })
+  @ApiQuery({ name: 'tenant', required: false, description: 'Tenant slug, as an alternative to tenantId' })
   async listFiles(
-    @Query('tenantId') tenantId: string,
     @CurrentUser() user: AuthUser,
+    @Query('tenantId') tenantIdParam?: string,
+    @Query('tenant') tenantSlug?: string,
     @Query('limit') limitStr?: string,
     @Query('offset') offsetStr?: string,
   ) {
-    if (!tenantId) throw new BadRequestException('tenantId query parameter is required');
+    const tenantId = await this.resolveTenant(tenantIdParam, tenantSlug);
 
     const limit = Math.min(Math.max(parseInt(limitStr ?? '20', 10) || 20, 1), 100);
     const offset = Math.max(parseInt(offsetStr ?? '0', 10) || 0, 0);
@@ -171,5 +179,19 @@ export class StorageController {
     });
 
     return { id: fileId };
+  }
+
+  /**
+   * Takes either a tenant id or a tenant slug.
+   *
+   * The website endpoints address a tenant by slug and this one by id, so the
+   * admin panel — which knows the slug and not the id — could not call it at
+   * all. Accepting both is what the media library needs to reach storage;
+   * existing callers passing tenantId are unaffected.
+   */
+  private async resolveTenant(tenantId?: string, slug?: string): Promise<string> {
+    if (tenantId) return tenantId;
+    if (slug !== undefined) return this.tenants.resolveTenantId(slug);
+    throw new BadRequestException('Either tenantId or tenant must be supplied');
   }
 }

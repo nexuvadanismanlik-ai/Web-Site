@@ -14,11 +14,13 @@ export interface HeaderNavItem {
 
 interface HeaderProps {
   logoText: string;
+  /** Uploaded logo. Empty until one is added in the panel. */
+  logoUrl?: string;
   nav: HeaderNavItem[];
   ctaLabel: string;
 }
 
-export function Header({ logoText, nav, ctaLabel }: HeaderProps) {
+export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -64,11 +66,18 @@ export function Header({ logoText, nav, ctaLabel }: HeaderProps) {
           >
             {/* Logo */}
             <Link href={'/'} className="group flex items-center gap-2.5 pl-2">
-              <span className="relative flex h-8 w-8 items-center justify-center rounded-xl brand-gradient-bg text-sm font-bold text-white shadow-glow-brand">
-                {logoText.charAt(0)}
-                <span className="absolute inset-0 rounded-xl brand-gradient-bg opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-70" />
-              </span>
-              <span className="font-heading text-lg font-bold text-fg">{logoText}</span>
+              {logoUrl ? (
+                // uploaded asset on a CDN, next/image is off for static export
+                <img src={logoUrl} alt={logoText} className="h-8 w-auto max-w-[10rem] object-contain" />
+              ) : (
+                <>
+                  <span className="relative flex h-8 w-8 items-center justify-center rounded-xl brand-gradient-bg text-sm font-bold text-white shadow-glow-brand">
+                    {logoText.charAt(0)}
+                    <span className="absolute inset-0 rounded-xl brand-gradient-bg opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-70" />
+                  </span>
+                  <span className="font-heading text-lg font-bold text-fg">{logoText}</span>
+                </>
+              )}
             </Link>
 
             {/* Desktop nav */}

@@ -16,6 +16,13 @@ import {
   changePasswordViaApi,
   readVersions,
   restoreVersionViaApi,
+  readMedia,
+  uploadMediaViaApi,
+  deleteMediaViaApi,
+  MEDIA_FOLDERS,
+  type MediaList,
+  type MediaFile,
+  type MediaFolder,
   type PublishResult,
   type PublishStatus,
   type ContentVersion,
@@ -112,6 +119,58 @@ export async function publishSite(): Promise<PublishResult> {
       version: null,
     };
   }
+}
+
+// ─── Media ──────────────────────────────────────────────────────────────────
+
+export async function getMedia(): Promise<MediaList> {
+  await requireAuth();
+  try {
+    return await readMedia();
+  } catch {
+    return { files: [], total: 0, usedBytes: 0 };
+  }
+}
+
+/**
+ * Uploads one file.
+ *
+ * Takes FormData because that is what a file input produces and what the API
+ * consumes; converting it to JSON in between would mean base64 and a third copy
+ * of a ten-megabyte buffer.
+ */
+export async function uploadMedia(
+  form: FormData,
+): Promise<{ ok: boolean; error?: string; file?: MediaFile }> {
+  await requireAuth();
+  const file = form.get('file');
+  const folder = String(form.get('folder') ?? 'uploads') as MediaFolder;
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: 'Dosya seçilmedi.' };
+  }
+  if (!MEDIA_FOLDERS.includes(folder)) {
+    return { ok: false, error: `Geçersiz klasör: ${folder}` };
+  }
+
+  try {
+    const uploaded = await uploadMediaViaApi(file, folder);
+    revalidatePath(adminPath('/media'));
+    return { ok: true, file: uploaded };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Yüklenemedi.' };
+  }
+}
+
+export async function deleteMedia(id: string): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  try {
+    await deleteMediaViaApi(id);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Silinemedi.' };
+  }
+  revalidatePath(adminPath('/media'));
+  return { ok: true };
 }
 
 /** Publish history: every version, who froze it, and which one is live. */

@@ -41,4 +41,6 @@ export {
   SearchBar,
 } from './components/forms';
 
+export { ImageField, type PickableImage } from './components/forms/image-field';
+
 export { cn } from './lib/cn';

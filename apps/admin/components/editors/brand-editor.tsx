@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Trash2, Sun, Moon } from 'lucide-react';
 import type { BrandConfig, SocialLink } from '@nexuva/types';
+import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import {
   TextField,
@@ -17,7 +18,14 @@ import {
 
 const SOCIAL_ICONS = ['linkedin', 'twitter', 'instagram', 'github', 'globe'];
 
-export function BrandEditor({ initial }: { initial: BrandConfig }) {
+export function BrandEditor({
+  initial,
+  images,
+}: {
+  initial: BrandConfig;
+  /** What the media library holds, so the logo can be picked rather than typed. */
+  images: PickableImage[];
+}) {
   const [brand, setBrand] = useState<BrandConfig>(initial);
   const { saving, saved, error, run } = useSaver();
 
@@ -46,6 +54,15 @@ export function BrandEditor({ initial }: { initial: BrandConfig }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField label="Site Adı" value={brand.siteName} onChange={(v) => set('siteName', v)} />
             <TextField label="Logo Metni" value={brand.logoText} onChange={(v) => set('logoText', v)} />
+          </div>
+          <div className="mt-4">
+            <ImageField
+              label="Logo"
+              value={brand.logoUrl ?? ''}
+              onChange={(url) => set('logoUrl', url)}
+              images={images}
+              hint="Boş bırakılırsa logo metninin baş harfi kullanılır."
+            />
           </div>
           <div className="mt-4">
             <LocalizedField label="Slogan" value={brand.tagline} onChange={(v) => set('tagline', v)} />

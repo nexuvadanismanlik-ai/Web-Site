@@ -29,6 +29,12 @@ export interface SocialLink {
 export interface BrandConfig {
   siteName: string;
   logoText: string;
+  /**
+   * Uploaded logo. When empty the header and footer fall back to the initial
+   * of `logoText` in a brand-coloured tile, which is what they did before an
+   * upload was possible at all.
+   */
+  logoUrl?: string;
   tagline: Localized;
   /** Site-wide color scheme, editable from the admin panel. */
   theme: 'light' | 'dark';

@@ -15,6 +15,7 @@ import {
   UserX,
   CalendarDays,
   Trophy,
+  ServerCrash,
 } from 'lucide-react';
 import { readSiteContent, readMessages } from '../../lib/content';
 import { getLeadSummary } from '../actions';
@@ -28,11 +29,18 @@ const SITE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
 export default async function DashboardHome() {
   // In parallel: two sequential round trips are two cold starts back to back
   // when the API has been idle.
+  // The overview must survive an unreachable API. It used to throw straight
+  // into error.tsx, so the first thing an operator saw when the backend was
+  // down was a blank apology with no cause and nowhere to go — while the one
+  // screen that could explain it sat one click away, unmentioned.
   const [content, inbox, crm] = await Promise.all([
-    readSiteContent(),
-    readMessages(),
+    readSiteContent().catch(() => null),
+    readMessages().catch(() => ({ items: [], total: 0, unread: 0 })),
     getLeadSummary(),
   ]);
+
+  if (!content) return <ApiUnreachable />;
+
   const { items: messages, unread } = inbox;
 
   // The pipeline, summarised. Unassigned leads come first because they are the
@@ -190,6 +198,39 @@ export default async function DashboardHome() {
                 </Link>
               ))
             )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What the overview shows when the API cannot be reached.
+ *
+ * Not an error page: an error page says something went wrong, and the person
+ * reading it already knows that. This says which part is down, what it stops
+ * them doing, and where to look — because the panel is the only window they
+ * have onto the system it manages.
+ */
+function ApiUnreachable() {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/[0.06] p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/15 text-red-500">
+            <ServerCrash className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-heading text-xl font-bold text-fg">API&apos;ye ulaşılamıyor</h1>
+            <p className="mt-1 text-sm text-muted">
+              Panel ayakta, ancak içeriği tutan servise bağlanamıyor. Bu haldeyken içerik
+              okunamaz, kaydedilemez ve yayınlanamaz — site son yayınlanan haliyle kalır.
+            </p>
+            <Link href={adminPath('/system')} className="btn-primary mt-5 inline-flex">
+              Sistem &amp; Bağlantılar
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>

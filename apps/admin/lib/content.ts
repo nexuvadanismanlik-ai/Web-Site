@@ -8,6 +8,7 @@ import type {
   LeadPerson,
   LeadStatus,
   LeadSummary,
+  Connection,
   AppNotification,
   MediaFile,
   MediaFolder,
@@ -326,6 +327,10 @@ export async function createLeadViaApi(payload: Record<string, unknown>): Promis
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export async function readConnections(): Promise<{ connections: Connection[]; checkedAt: string }> {
+  return apiFetch<{ connections: Connection[]; checkedAt: string }>('/health/connections');
 }
 
 export async function readLeadSummary(): Promise<LeadSummary> {

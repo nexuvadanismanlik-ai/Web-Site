@@ -23,6 +23,7 @@ import {
   readLeads,
   readPipelineCounts,
   readLeadSummary,
+  readConnections,
   createLeadViaApi,
   readAssignees,
   readLeadDetail,
@@ -39,6 +40,7 @@ import {
   type LeadPerson,
   type LeadStatus,
   type LeadSummary,
+  type SystemStatus,
   type AppNotification,
   type MediaList,
   type MediaFile,
@@ -137,6 +139,66 @@ export async function publishSite(): Promise<PublishResult> {
       id: null,
       actor: null,
       version: null,
+    };
+  }
+}
+
+// ─── System ─────────────────────────────────────────────────────────────────
+
+/** Where this panel expects to find the API. Same value lib/api.ts uses. */
+const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
+
+/**
+ * The state of every connection the platform depends on.
+ *
+ * Probes the API from this server first, and reports that separately. When the
+ * API is down there is no connection list to fetch — and that is precisely when
+ * somebody opens this screen, so "we could not reach the API, here is the
+ * address we tried" has to be an answer the page can render rather than an
+ * error boundary.
+ *
+ * The probe is short and unauthenticated: /health is public, and waiting 75
+ * seconds for the usual wake-up retry would make a status page feel broken too.
+ */
+export async function getSystemStatus(): Promise<SystemStatus> {
+  await requireAuth();
+
+  let apiReachable = false;
+  let apiDetail = '';
+  const started = Date.now();
+
+  try {
+    const res = await fetch(`${API_BASE}/health`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(20_000),
+    });
+    apiReachable = res.ok;
+    apiDetail = res.ok
+      ? `Yanıt ${Date.now() - started} ms.`
+      : `HTTP ${res.status} döndü. Servis ayakta değil ya da adres yanlış.`;
+  } catch (err) {
+    apiDetail =
+      err instanceof Error && err.name === 'TimeoutError'
+        ? 'Zaman aşımı. Servis uykuda olabilir; birkaç saniye sonra tekrar deneyin.'
+        : 'Bağlantı kurulamadı. Servis çalışmıyor ya da adres yanlış.';
+  }
+
+  if (!apiReachable) {
+    return { apiReachable, apiUrl: API_BASE, apiDetail, connections: [], checkedAt: new Date().toISOString() };
+  }
+
+  try {
+    const report = await readConnections();
+    return { apiReachable, apiUrl: API_BASE, apiDetail, ...report };
+  } catch (err) {
+    return {
+      apiReachable,
+      apiUrl: API_BASE,
+      apiDetail: `API yanıt veriyor ama bağlantı raporu alınamadı: ${
+        err instanceof Error ? err.message : 'bilinmeyen hata'
+      }`,
+      connections: [],
+      checkedAt: new Date().toISOString(),
     };
   }
 }

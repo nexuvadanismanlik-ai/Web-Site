@@ -118,6 +118,35 @@ export interface LeadSummary {
   winRate: number | null;
 }
 
+// ─── System ─────────────────────────────────────────────────────────────────
+
+export type ConnectionState = 'connected' | 'broken' | 'missing';
+
+export interface Connection {
+  key: string;
+  label: string;
+  state: ConnectionState;
+  detail: string;
+  /** Environment variables that would fix a missing connection. */
+  missing?: string[];
+}
+
+/**
+ * What the panel knows about the platform it is running on.
+ *
+ * `apiReachable` is separate from the connection list on purpose: when the API
+ * is down there is no list, and that is exactly the moment somebody opens this
+ * screen. A page that renders nothing at the only time it matters is not a
+ * status page.
+ */
+export interface SystemStatus {
+  apiReachable: boolean;
+  apiUrl: string;
+  apiDetail: string;
+  connections: Connection[];
+  checkedAt: string;
+}
+
 // ─── Media ──────────────────────────────────────────────────────────────────
 
 /** Folders the API accepts. Anything else is rejected as path traversal. */

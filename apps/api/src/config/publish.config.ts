@@ -31,6 +31,15 @@ export const publishConfig = registerAs('publish', () => ({
    * deploy is polled and the publish record settles on SUCCEEDED or FAILED.
    */
   renderApiKey: process.env.RENDER_API_KEY ?? '',
+
+  /**
+   * Where the published site is served.
+   *
+   * Used to check that a publish actually reached visitors. Every other link
+   * in the chain can report success while the site itself is down, and that is
+   * the one failure nobody sees from inside.
+   */
+  siteUrl: process.env.SITE_URL ?? '',
   renderServiceId: process.env.RENDER_FRONTEND_SERVICE_ID ?? '',
 
   // PUBLISH_AUTO and PUBLISH_DEBOUNCE_MS are gone. Publishing now freezes a

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Mail, MailOpen, Trash2, Check, Phone, Clock, CheckCheck, Inbox } from 'lucide-react';
 import type { ContactMessage } from '@nexuva/types';
 import { setMessageRead, deleteMessage, markAllMessagesRead } from '../../app/actions';
+import { ConfirmDialog, EmptyState, useToast } from '../ui';
 
 export function MessagesClient({
   messages,
@@ -18,12 +19,30 @@ export function MessagesClient({
   unread: number;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<ContactMessage | null>(null);
 
-  const act = (fn: () => Promise<unknown>) =>
+  /**
+   * Runs a server action and says what happened.
+   *
+   * This used to await and refresh without looking at the result, so an action
+   * that failed left the screen unchanged and silent — indistinguishable from
+   * one that had nothing to do.
+   */
+  const act = (fn: () => Promise<{ ok: boolean; error?: string }>, failure: string) =>
     startTransition(async () => {
-      await fn();
+      try {
+        const result = await fn();
+        if (!result.ok) {
+          toast.error(result.error?.trim() || failure);
+          return;
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : failure);
+        return;
+      }
       router.refresh();
     });
 
@@ -47,7 +66,7 @@ export function MessagesClient({
         </div>
         {unread > 0 && (
           <button
-            onClick={() => act(() => markAllMessagesRead())}
+            onClick={() => act(() => markAllMessagesRead(), 'İşaretlenemedi.')}
             disabled={pending}
             className="btn-ghost"
           >
@@ -57,11 +76,12 @@ export function MessagesClient({
       </div>
 
       {messages.length === 0 ? (
-        <div className="panel flex flex-col items-center gap-3 p-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-overlay/5 text-muted">
-            <Inbox className="h-7 w-7" />
-          </div>
-          <p className="text-muted">Henüz mesaj yok. İletişim formundan gelen mesajlar burada listelenir.</p>
+        <div className="panel">
+          <EmptyState
+            icon={<Inbox className="h-6 w-6" />}
+            title="Henüz mesaj yok"
+            hint="İletişim formundan gelen talepler burada listelenir."
+          />
         </div>
       ) : (
         <div className="space-y-3">
@@ -110,7 +130,9 @@ export function MessagesClient({
                   <div className="flex shrink-0 gap-1.5">
                     <button
                       title={m.read ? 'Okunmadı işaretle' : 'Okundu işaretle'}
-                      onClick={() => act(() => setMessageRead(m.id, !m.read))}
+                      onClick={() =>
+                        act(() => setMessageRead(m.id, !m.read), 'İşaretlenemedi.')
+                      }
                       disabled={pending}
                       className="flex h-9 w-9 items-center justify-center rounded-lg border border-overlay/10 bg-overlay/5 text-muted hover:text-fg"
                     >
@@ -118,7 +140,10 @@ export function MessagesClient({
                     </button>
                     <button
                       title="Sil"
-                      onClick={() => act(() => deleteMessage(m.id))}
+                      aria-label={`${m.name} adlı kişinin mesajını sil`}
+                      // Asked for, not done on the click. This deleted a
+                      // customer enquiry outright, with no way back.
+                      onClick={() => setConfirming(m)}
                       disabled={pending}
                       className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-300 hover:bg-red-500/15"
                     >
@@ -142,6 +167,26 @@ export function MessagesClient({
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirming !== null}
+        title="Mesajı sil"
+        body={
+          confirming && (
+            <>
+              <strong className="text-fg">{confirming.name}</strong> adlı kişiden gelen mesaj
+              silinecek. Bu talep bir müşteri isteği olabilir; silmeden önce yanıtladığından emin ol.
+            </>
+          )
+        }
+        busy={pending}
+        onCancel={() => setConfirming(null)}
+        onConfirm={() => {
+          const target = confirming;
+          setConfirming(null);
+          if (target) act(() => deleteMessage(target.id), 'Mesaj silinemedi.');
+        }}
+      />
     </div>
   );
 }

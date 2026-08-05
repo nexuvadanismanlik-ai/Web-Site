@@ -64,16 +64,30 @@ export async function saveAtPath(
   return { ok: true };
 }
 
-export async function setMessageRead(id: string, read: boolean): Promise<{ ok: boolean }> {
+// Every action reports failure the same way: by returning it. A server action
+// that throws loses its message in production, so the caller would only see a
+// generic render error.
+export async function setMessageRead(
+  id: string,
+  read: boolean,
+): Promise<{ ok: boolean; error?: string }> {
   await requireAuth();
-  await setMessageReadViaApi(id, read);
+  try {
+    await setMessageReadViaApi(id, read);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'İşaretlenemedi.' };
+  }
   revalidatePath(adminPath('/messages'));
   return { ok: true };
 }
 
-export async function deleteMessage(id: string): Promise<{ ok: boolean }> {
+export async function deleteMessage(id: string): Promise<{ ok: boolean; error?: string }> {
   await requireAuth();
-  await deleteMessageViaApi(id);
+  try {
+    await deleteMessageViaApi(id);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Mesaj silinemedi.' };
+  }
   revalidatePath(adminPath('/messages'));
   return { ok: true };
 }

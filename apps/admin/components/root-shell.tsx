@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { fontVars } from '../lib/fonts';
 import { ThemeProvider, ThemeScript } from './theme-provider';
+import { ToastProvider } from './ui';
 import '../app/globals.css';
 
 /**
@@ -20,7 +21,9 @@ export function RootShell({ children }: { children: ReactNode }) {
         <ThemeScript />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -31,6 +31,12 @@ const copy = {
     formEmail: 'E-posta',
     formPhone: 'Telefon',
     formSubject: 'Konu',
+    formCompany: 'Firma',
+    formService: 'İlgilendiğiniz hizmet',
+    formBudget: 'Bütçe aralığı',
+    companyPlaceholder: 'Firma adı',
+    consentLabel:
+      'Kişisel verilerimin, talebimi değerlendirmek ve benimle iletişime geçmek amacıyla işlenmesini kabul ediyorum.',
     formMessage: 'Mesajınız',
     formSubmit: 'Mesajı Gönder',
     formSending: 'Gönderiliyor...',

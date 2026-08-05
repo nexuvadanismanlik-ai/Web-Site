@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev --port 3001",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint \"{app,components,lib}/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

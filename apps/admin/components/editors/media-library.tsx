@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Copy, Download, HardDrive, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
 import { ConfirmDialog, EmptyState, SearchBar, SelectField, useToast } from '@nexuva/ui';
 import { uploadMedia, deleteMedia } from '../../app/actions';
-import { MEDIA_FOLDERS, type MediaFile, type MediaFolder, type MediaList } from '../../lib/content';
+import { MEDIA_FOLDERS, type MediaFile, type MediaFolder, type MediaList } from '../../lib/model';
 
 /** What each folder is for, so the choice is not a guess. */
 const FOLDER_LABELS: Record<MediaFolder, string> = {

@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { PublishButton } from './publish-button';
+import { NotificationCenter } from './notification-center';
 import { adminPath, isAdminRoute } from '../lib/routes';
 
 interface NavItem {
@@ -65,10 +66,14 @@ export function AdminShell({
   children,
   userName,
   unreadCount,
+  unreadNotifications,
 }: {
   children: ReactNode;
   userName: string;
+  /** Unread enquiries, shown on the CRM link. */
   unreadCount: number;
+  /** Unread notifications, shown on the bell. */
+  unreadNotifications: number;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -121,17 +126,17 @@ export function AdminShell({
               })}
               {group.section === 'İçerik' && (
                 <Link
-                  href={adminPath('/messages')}
+                  href={adminPath('/crm')}
                   onClick={() => setOpen(false)}
                   className={`group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive('/messages')
+                    isActive('/crm') || isActive('/messages')
                       ? 'bg-overlay/10 text-fg'
                       : 'text-muted hover:bg-overlay/[0.06] hover:text-fg'
                   }`}
                 >
                   <span className="flex items-center gap-3">
                     <Inbox style={{ width: 18, height: 18 }} className="text-faint group-hover:text-fg" />
-                    Mesajlar
+                    Talep Yönetimi
                   </span>
                   {unreadCount > 0 && (
                     <span className="flex h-5 min-w-5 items-center justify-center rounded-full brand-gradient-bg px-1.5 text-[0.65rem] font-bold text-white">
@@ -206,9 +211,12 @@ export function AdminShell({
             <Menu className="h-5 w-5" />
           </button>
           <div className="hidden lg:block" />
-          {/* Identity lives in the sidebar account block; the topbar is for the
-              one action that applies to every page. */}
-          <PublishButton />
+          {/* Identity lives in the sidebar account block; the topbar carries
+              what applies to every page: what happened, and publishing. */}
+          <div className="flex items-center gap-3">
+            <NotificationCenter initialUnread={unreadNotifications} />
+            <PublishButton />
+          </div>
         </header>
 
         <main className="flex-1 p-5 sm:p-8">{children}</main>

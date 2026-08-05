@@ -2,6 +2,21 @@ import { cache } from 'react';
 import type { SiteContent, ContactMessage } from '@nexuva/types';
 import { WEBSITE_SLUG_BY_KEY, isWebsiteSectionKey } from '@nexuva/shared';
 import { apiFetch } from './api';
+import type {
+  Lead,
+  LeadDetail,
+  LeadPerson,
+  LeadStatus,
+  AppNotification,
+  MediaFile,
+  MediaFolder,
+  MediaList,
+} from './model';
+
+// Shapes and constants live in lib/model, which imports nothing from the
+// server — a client component pulling a constant from here would otherwise
+// drag next-auth into the browser bundle.
+export * from './model';
 
 /**
  * Content access for the admin panel. Everything goes through the Nexuva API,
@@ -291,27 +306,75 @@ export interface PublishStatus {
   history: PublishResult[];
 }
 
+// ─── CRM ────────────────────────────────────────────────────────────────────
+
+/** A filtered page of leads. Query is built by the caller. */
+export async function readLeads(query: string): Promise<{ items: Lead[]; total: number }> {
+  const res = await apiFetch<{ items: Lead[]; meta: { total: number } }>(
+    `/website/contact?${query}`,
+  );
+  return { items: res.items, total: res.meta.total };
+}
+
+export async function readPipelineCounts(): Promise<Record<LeadStatus, number>> {
+  return apiFetch<Record<LeadStatus, number>>('/website/contact/pipeline/counts');
+}
+
+export async function readAssignees(): Promise<LeadPerson[]> {
+  return apiFetch<LeadPerson[]>('/website/contact/pipeline/assignees');
+}
+
+export async function readLeadDetail(id: string): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/website/contact/${id}/detail`);
+}
+
+export async function setLeadStatusViaApi(id: string, status: LeadStatus): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/website/contact/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function assignLeadViaApi(id: string, userId: string | null): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/website/contact/${id}/assign`, {
+    method: 'PATCH',
+    body: JSON.stringify({ userId }),
+  });
+}
+
+export async function addLeadNoteViaApi(id: string, body: string): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/website/contact/${id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  });
+}
+
+export async function removeLeadNoteViaApi(noteId: string): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/website/contact/notes/${noteId}`, { method: 'DELETE' });
+}
+
+export async function setLeadTagsViaApi(id: string, tags: string[]): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/website/contact/${id}/tags`, {
+    method: 'PATCH',
+    body: JSON.stringify({ tags }),
+  });
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+export async function readNotifications(unreadOnly = false): Promise<AppNotification[]> {
+  return apiFetch<AppNotification[]>(`/notifications?unreadOnly=${unreadOnly}`);
+}
+
+export async function markNotificationReadViaApi(id: string): Promise<void> {
+  await apiFetch(`/notifications/${id}/read`, { method: 'PATCH' });
+}
+
+export async function markAllNotificationsReadViaApi(): Promise<void> {
+  await apiFetch('/notifications/read-all', { method: 'PATCH' });
+}
+
 // ─── Media ──────────────────────────────────────────────────────────────────
-
-/** Folders the API accepts. Anything else is rejected as path traversal. */
-export const MEDIA_FOLDERS = ['images', 'logos', 'documents', 'attachments', 'uploads'] as const;
-export type MediaFolder = (typeof MEDIA_FOLDERS)[number];
-
-export interface MediaFile {
-  id: string;
-  url: string;
-  filename: string;
-  mimeType: string;
-  size: number;
-  folder: string;
-  createdAt: string;
-}
-
-export interface MediaList {
-  files: MediaFile[];
-  total: number;
-  usedBytes: number;
-}
 
 interface ApiFileList {
   files: MediaFile[];

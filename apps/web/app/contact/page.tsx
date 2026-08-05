@@ -17,7 +17,11 @@ export default async function ContactPage() {
         title={t(content.contact.title)}
         subtitle={t(content.contact.description)}
       />
-      <Contact contact={content.contact} hideHeading />
+      <Contact
+        contact={content.contact}
+        services={content.services.map((s) => t(s.title))}
+        hideHeading
+      />
     </>
   );
 }

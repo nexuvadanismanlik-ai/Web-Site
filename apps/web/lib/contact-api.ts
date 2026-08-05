@@ -11,6 +11,13 @@ export interface ContactInput {
   phone?: string;
   subject?: string;
   message: string;
+  company?: string;
+  service?: string;
+  budget?: string;
+  /** The privacy notice checkbox. Recorded with a timestamp on the server. */
+  consent?: boolean;
+  /** Honeypot. A real visitor never sees the field that fills this. */
+  website?: string;
 }
 
 /**
@@ -48,6 +55,11 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
         phone: (input.phone ?? '').trim().slice(0, 60),
         subject: (input.subject ?? '').trim().slice(0, 160),
         message: message.slice(0, 4000),
+        company: (input.company ?? '').trim().slice(0, 160),
+        service: (input.service ?? '').trim().slice(0, 120),
+        budget: (input.budget ?? '').trim().slice(0, 60),
+        consent: input.consent === true,
+        website: (input.website ?? '').slice(0, 200),
       }),
     });
 

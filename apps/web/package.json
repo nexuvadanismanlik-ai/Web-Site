@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev --port 3000",
     "preview": "npx --yes serve out -l 4173",
-    "lint": "next lint",
+    "lint": "eslint \"{app,components,lib}/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

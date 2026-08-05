@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth';
 import { readMessages } from '../../lib/content';
+import { getNotifications } from '../actions';
 import { adminPath } from '../../lib/routes';
 import { AdminShell } from '../../components/admin-shell';
 import { RootShell } from '../../components/root-shell';
@@ -17,15 +18,25 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // down with it if the API is briefly unreachable. The page inside this layout
   // still surfaces a real failure through error.tsx.
   let unread = 0;
+  let unreadNotifications = 0;
   try {
-    unread = (await readMessages()).unread;
+    const [inbox, notifications] = await Promise.all([
+      readMessages(),
+      getNotifications(true).catch(() => []),
+    ]);
+    unread = inbox.unread;
+    unreadNotifications = notifications.length;
   } catch {
     unread = 0;
   }
 
   return (
     <RootShell>
-      <AdminShell userName={session.user?.name ?? 'Admin'} unreadCount={unread}>
+      <AdminShell
+        userName={session.user?.name ?? 'Admin'}
+        unreadCount={unread}
+        unreadNotifications={unreadNotifications}
+      >
         {children}
       </AdminShell>
     </RootShell>

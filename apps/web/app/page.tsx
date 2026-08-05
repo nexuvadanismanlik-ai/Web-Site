@@ -1,5 +1,5 @@
 import { getSiteContent } from '../lib/content';
-import { getUi } from '../lib/i18n';
+import { getUi, t } from '../lib/i18n';
 import { Hero } from '../components/sections/hero';
 import { LogosMarquee } from '../components/sections/logos';
 import { Services } from '../components/sections/services';
@@ -29,7 +29,7 @@ export default async function HomePage() {
       />
       <Process meta={content.processMeta} steps={content.process} />
       <Cta cta={content.cta} />
-      <Contact contact={content.contact} />
+      <Contact contact={content.contact} services={content.services.map((s) => t(s.title))} />
     </>
   );
 }

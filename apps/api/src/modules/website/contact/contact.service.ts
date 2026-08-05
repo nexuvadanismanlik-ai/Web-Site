@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { EmailService } from '../../email/email.service';
+import { LeadService } from './lead.service';
 import {
   resolvePagination,
   paginated,
@@ -29,14 +30,22 @@ const WINDOW_MS = 60 * 60 * 1000; // 1 hour
  */
 const MESSAGE_LIST_SELECT = {
   id: true,
+  requestNo: true,
   name: true,
   email: true,
   phone: true,
   subject: true,
   message: true,
+  company: true,
+  service: true,
+  budget: true,
+  status: true,
+  tags: true,
   isRead: true,
   readAt: true,
   createdAt: true,
+  lastActionAt: true,
+  assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
 } as const;
 
 /** Everything here goes into an HTML email and is written by the public. */
@@ -57,6 +66,7 @@ export class ContactService {
     private readonly tenants: WebsiteTenantService,
     private readonly email: EmailService,
     private readonly config: ConfigService,
+    private readonly leads: LeadService,
   ) {}
 
   // ─── Public submission ────────────────────────────────────────────────────
@@ -90,6 +100,14 @@ export class ContactService {
       }
     }
 
+    // Honeypot: a field no real visitor sees. Filled means a bot, and the
+    // submission is acknowledged without being stored — telling a bot it failed
+    // only teaches it to try again differently.
+    if (dto.website && dto.website.trim().length > 0) {
+      this.logger.warn(`Contact honeypot triggered from ip=${meta.ip ?? 'unknown'}`);
+      return { id: 'ok', createdAt: new Date() };
+    }
+
     const created = await this.prisma.contactMessage.create({
       data: {
         tenantId,
@@ -98,11 +116,19 @@ export class ContactService {
         phone: dto.phone?.trim() || null,
         subject: dto.subject?.trim() || null,
         message: dto.message.trim(),
+        company: dto.company?.trim() || null,
+        service: dto.service?.trim() || null,
+        budget: dto.budget?.trim() || null,
+        consentAt: dto.consent ? new Date() : null,
         ipAddress: meta.ip ?? null,
         userAgent: meta.userAgent?.slice(0, 500) ?? null,
       },
       select: { id: true, createdAt: true },
     });
+
+    // Timeline entry and team notification. Not awaited: the enquiry is stored,
+    // and a failure to announce it must not turn into a failure to receive it.
+    void this.leads.onLeadCreated(created.id, tenantId, dto.name.trim());
 
     // Announced, not awaited: the enquiry is already safely stored, and the
     // visitor should not wait on an outbound mail call — or see an error if it
@@ -173,6 +199,11 @@ export class ContactService {
       tenantId,
       deletedAt: null,
       ...(query.isRead !== undefined ? { isRead: query.isRead === 'true' } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      // "none" is how the UI asks for the leads nobody has picked up.
+      ...(query.assignedTo
+        ? { assignedToId: query.assignedTo === 'none' ? null : query.assignedTo }
+        : {}),
       ...(paging.search
         ? {
             OR: [
@@ -180,6 +211,7 @@ export class ContactService {
               { email: { contains: paging.search, mode: 'insensitive' as const } },
               { subject: { contains: paging.search, mode: 'insensitive' as const } },
               { message: { contains: paging.search, mode: 'insensitive' as const } },
+              { company: { contains: paging.search, mode: 'insensitive' as const } },
             ],
           }
         : {}),

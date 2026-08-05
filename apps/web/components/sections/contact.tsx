@@ -6,11 +6,23 @@ import type { ContactContent } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
 
+/** Budget bands, as ranges rather than a number nobody wants to commit to. */
+const BUDGETS = [
+  '25.000 TL altı',
+  '25.000 - 50.000 TL',
+  '50.000 - 100.000 TL',
+  '100.000 TL üzeri',
+  'Henüz belirlemedim',
+];
+
 export function Contact({
   contact,
+  services = [],
   hideHeading = false,
 }: {
   contact: ContactContent;
+  /** Service names, so an enquiry says which one it is about. */
+  services?: string[];
   hideHeading?: boolean;
 }) {
   const ui = getUi();
@@ -28,6 +40,11 @@ export function Contact({
       phone: String(data.get('phone') ?? ''),
       subject: String(data.get('subject') ?? ''),
       message: String(data.get('message') ?? ''),
+      company: String(data.get('company') ?? ''),
+      service: String(data.get('service') ?? ''),
+      budget: String(data.get('budget') ?? ''),
+      consent: data.get('consent') === 'on',
+      website: String(data.get('website') ?? ''),
     });
     if (res.ok) {
       setFailure(null);
@@ -129,13 +146,19 @@ export function Contact({
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field name="phone" label={ui.formPhone} placeholder={ui.phonePlaceholder} />
-                  <Field name="subject" label={ui.formSubject} placeholder={ui.subjectPlaceholder} />
+                  <Field name="company" label={ui.formCompany} placeholder={ui.companyPlaceholder} />
                 </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Choice name="service" label={ui.formService} options={services} />
+                  <Choice name="budget" label={ui.formBudget} options={BUDGETS} />
+                </div>
+                <Field name="subject" label={ui.formSubject} placeholder={ui.subjectPlaceholder} />
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-muted">
+                  <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-muted">
                     {ui.formMessage}
                   </label>
                   <textarea
+                    id="contact-message"
                     name="message"
                     required
                     rows={5}
@@ -143,6 +166,25 @@ export function Contact({
                     className="w-full resize-none rounded-2xl border border-overlay/10 bg-overlay/[0.04] px-4 py-3 text-sm text-fg placeholder:text-faint transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                   />
                 </div>
+
+                {/* Honeypot. Hidden from people, not from bots — which is the
+                    point. aria-hidden and tabIndex keep it out of the way of
+                    anyone using a screen reader or the keyboard. */}
+                <div className="absolute left-[-9999px]" aria-hidden="true">
+                  <label htmlFor="contact-website">Web sitesi</label>
+                  <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+                </div>
+
+                <label className="flex items-start gap-2.5 text-xs leading-relaxed text-muted">
+                  <input
+                    type="checkbox"
+                    name="consent"
+                    required
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-overlay/30 accent-[var(--brand)]"
+                  />
+                  <span>{ui.consentLabel}</span>
+                </label>
+
                 {status === 'error' && (
                   <p role="alert" className="text-sm text-red-400">
                     {failureMessage}
@@ -174,6 +216,39 @@ export function Contact({
   );
 }
 
+/** A dropdown that stays optional: "not sure yet" is a real answer. */
+function Choice({
+  name,
+  label,
+  options,
+}: {
+  name: string;
+  label: string;
+  options: string[];
+}) {
+  if (options.length === 0) return null;
+  return (
+    <div>
+      <label htmlFor={`contact-${name}`} className="mb-2 block text-sm font-medium text-muted">
+        {label}
+      </label>
+      <select
+        id={`contact-${name}`}
+        name={name}
+        defaultValue=""
+        className="w-full rounded-2xl border border-overlay/10 bg-overlay/[0.04] px-4 py-3 text-sm text-fg transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+      >
+        <option value="">Seçiniz</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function Field({
   name,
   label,
@@ -189,11 +264,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-muted">
+      <label htmlFor={`contact-${name}`} className="mb-2 block text-sm font-medium text-muted">
         {label}
         {required && <span className="text-brand-dyn"> *</span>}
       </label>
       <input
+        id={`contact-${name}`}
         name={name}
         type={type}
         required={required}

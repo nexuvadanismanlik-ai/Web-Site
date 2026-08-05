@@ -376,6 +376,9 @@ model User {
   storageFiles  StorageFile[]
   publishLogs   PublishLog[]
   contentVersions ContentVersion[]
+  assignedLeads ContactMessage[] @relation("LeadAssignee")
+  leadNotes     LeadNote[]
+  leadActivities LeadActivity[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -499,12 +502,18 @@ model StorageFile {
   folder   String  @default("uploads")
   filename String  // original filename from the upload
 
+  /// Set when the file was attached to an enquiry rather than uploaded to the
+  /// library on its own.
+  leadId String?
+  lead   ContactMessage? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 
   @@index([tenantId])
   @@index([tenantId, deletedAt])
   @@index([uploadedById])
+  @@index([leadId])
   @@map("storage_files")
 }
 
@@ -881,8 +890,37 @@ model WebsiteProcessStep {
   @@map("website_process_steps")
 }
 
+/// Where an enquiry stands. The order is the pipeline order.
+enum LeadStatus {
+  NEW
+  REVIEWING
+  CONTACTED
+  PROPOSAL_SENT
+  MEETING
+  WAITING
+  WON
+  LOST
+  ARCHIVED
+}
+
+/// What happened to a lead. Written by the service, never by a client.
+enum LeadActivityType {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  NOTE_ADDED
+  FILE_ATTACHED
+  READ
+  UPDATED
+}
+
 /// Submissions from the public contact form. Written by an unauthenticated
 /// endpoint, so the service enforces validation and length caps.
+///
+/// The table keeps its name because it holds the enquiries already received;
+/// everything the CRM needs is added alongside rather than migrated into a new
+/// one.
 model ContactMessage {
   id       String @id @default(cuid())
   tenantId String
@@ -893,6 +931,34 @@ model ContactMessage {
   phone   String?
   subject String?
   message String
+
+  /// Collected by the extended contact form; absent on older enquiries.
+  company String?
+  service String?
+  budget  String?
+
+  /// Human-facing reference, so an enquiry can be quoted on the phone.
+  requestNo Int @default(autoincrement())
+
+  status LeadStatus @default(NEW)
+
+  assignedToId String?
+  assignedTo   User?   @relation("LeadAssignee", fields: [assignedToId], references: [id])
+
+  /// Free-form labels. A table would buy nothing a string array does not.
+  tags String[] @default([])
+
+  /// When the visitor agreed to the privacy notice. Null for enquiries that
+  /// predate the consent checkbox.
+  consentAt DateTime?
+
+  /// Last time anyone did anything to this lead, for sorting the neglected
+  /// ones to the top.
+  lastActionAt DateTime @default(now())
+
+  notes      LeadNote[]
+  activities LeadActivity[]
+  files      StorageFile[]
 
   isRead Boolean   @default(false)
   readAt DateTime?
@@ -908,7 +974,50 @@ model ContactMessage {
   @@index([tenantId, createdAt(sort: Desc)])
   @@index([tenantId, isRead])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, status])
+  @@index([tenantId, assignedToId])
   @@map("contact_messages")
+}
+
+/// A comment someone left on a lead.
+model LeadNote {
+  id     String         @id @default(cuid())
+  leadId String
+  lead   ContactMessage @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  body String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@map("lead_notes")
+}
+
+/// The timeline. Append-only: every change to a lead lands here, so "what
+/// happened to this enquiry" has an answer that does not depend on anyone
+/// having written a note about it.
+model LeadActivity {
+  id     String         @id @default(cuid())
+  leadId String
+  lead   ContactMessage @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  /// Null when the system acted rather than a person — an arriving enquiry.
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  type        LeadActivityType
+  description String
+  /// Before/after for a status change, the assignee for an assignment.
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@map("lead_activities")
 }
 
 /// Outcome of a publish attempt.

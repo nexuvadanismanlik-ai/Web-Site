@@ -20,6 +20,23 @@ import {
   uploadMediaViaApi,
   deleteMediaViaApi,
   MEDIA_FOLDERS,
+  readLeads,
+  readPipelineCounts,
+  readAssignees,
+  readLeadDetail,
+  setLeadStatusViaApi,
+  assignLeadViaApi,
+  addLeadNoteViaApi,
+  removeLeadNoteViaApi,
+  setLeadTagsViaApi,
+  readNotifications,
+  markNotificationReadViaApi,
+  markAllNotificationsReadViaApi,
+  type Lead,
+  type LeadDetail,
+  type LeadPerson,
+  type LeadStatus,
+  type AppNotification,
   type MediaList,
   type MediaFile,
   type MediaFolder,
@@ -119,6 +136,115 @@ export async function publishSite(): Promise<PublishResult> {
       version: null,
     };
   }
+}
+
+// ─── CRM ────────────────────────────────────────────────────────────────────
+
+/** Everything the pipeline screen needs, in one round trip. */
+export async function getPipeline(): Promise<{
+  counts: Record<LeadStatus, number>;
+  assignees: LeadPerson[];
+}> {
+  await requireAuth();
+  const [counts, assignees] = await Promise.all([
+    readPipelineCounts().catch(() => ({}) as Record<LeadStatus, number>),
+    readAssignees().catch(() => []),
+  ]);
+  return { counts, assignees };
+}
+
+export async function getLeads(params: {
+  status?: LeadStatus;
+  assignedTo?: string;
+  search?: string;
+}): Promise<{ items: Lead[]; total: number }> {
+  await requireAuth();
+  const query = new URLSearchParams({ limit: '100', sortBy: 'lastActionAt', sortOrder: 'desc' });
+  if (params.status) query.set('status', params.status);
+  if (params.assignedTo) query.set('assignedTo', params.assignedTo);
+  if (params.search) query.set('search', params.search);
+
+  try {
+    const res = await readLeads(query.toString());
+    return res;
+  } catch {
+    return { items: [], total: 0 };
+  }
+}
+
+export async function getLead(id: string): Promise<LeadDetail | null> {
+  await requireAuth();
+  try {
+    return await readLeadDetail(id);
+  } catch {
+    return null;
+  }
+}
+
+type LeadResult = { ok: boolean; error?: string; lead?: LeadDetail };
+
+async function leadAction(fn: () => Promise<LeadDetail>, failure: string): Promise<LeadResult> {
+  await requireAuth();
+  try {
+    const lead = await fn();
+    revalidatePath(adminPath('/crm'));
+    return { ok: true, lead };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : failure };
+  }
+}
+
+export async function setLeadStatus(id: string, status: LeadStatus): Promise<LeadResult> {
+  return leadAction(() => setLeadStatusViaApi(id, status), 'Durum değiştirilemedi.');
+}
+
+export async function assignLead(id: string, userId: string | null): Promise<LeadResult> {
+  return leadAction(() => assignLeadViaApi(id, userId), 'Atama yapılamadı.');
+}
+
+export async function addLeadNote(id: string, body: string): Promise<LeadResult> {
+  return leadAction(() => addLeadNoteViaApi(id, body), 'Not eklenemedi.');
+}
+
+export async function removeLeadNote(noteId: string): Promise<LeadResult> {
+  return leadAction(() => removeLeadNoteViaApi(noteId), 'Not silinemedi.');
+}
+
+export async function setLeadTags(id: string, tags: string[]): Promise<LeadResult> {
+  return leadAction(() => setLeadTagsViaApi(id, tags), 'Etiketler kaydedilemedi.');
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+export async function getNotifications(unreadOnly = false): Promise<AppNotification[]> {
+  await requireAuth();
+  try {
+    return await readNotifications(unreadOnly);
+  } catch {
+    return [];
+  }
+}
+
+export async function markNotificationRead(id: string): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  try {
+    await markNotificationReadViaApi(id);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'İşaretlenemedi.' };
+  }
+  revalidatePath(adminPath('/'), 'layout');
+  return { ok: true };
+}
+
+export async function markAllNotificationsRead(): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  try {
+    await markAllNotificationsReadViaApi();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'İşaretlenemedi.' };
+  }
+  revalidatePath(adminPath('/'), 'layout');
+  return { ok: true };
 }
 
 // ─── Media ──────────────────────────────────────────────────────────────────

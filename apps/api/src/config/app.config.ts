@@ -22,6 +22,35 @@ export function resolveTrustProxy(raw: string | undefined, nodeEnv: string): boo
   return Number.isFinite(hops) && hops > 0 ? hops : false;
 }
 
+/** The four environments the platform runs in. */
+export const APP_ENVIRONMENTS = ['local', 'development', 'staging', 'production'] as const;
+export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
+
+/**
+ * Which deployment this process is.
+ *
+ * Separate from NODE_ENV, which only distinguishes "built" from "not built" and
+ * is `production` on a developer's machine the moment they run a build. This
+ * names the environment the data belongs to, which is the question that matters
+ * before writing to a database.
+ */
+export function resolveAppEnv(raw: string | undefined): AppEnvironment {
+  const value = (raw ?? '').trim().toLowerCase();
+  return (APP_ENVIRONMENTS as readonly string[]).includes(value)
+    ? (value as AppEnvironment)
+    : 'local';
+}
+
+/** The database host, for logging. Never the credentials. */
+export function databaseHost(url: string | undefined): string {
+  if (!url) return '(tanımsız)';
+  try {
+    return new URL(url).host;
+  } catch {
+    return '(okunamadı)';
+  }
+}
+
 export const appConfig = registerAs('app', () => ({
   port: parseInt(process.env.PORT ?? process.env.API_PORT ?? '4000', 10),
   prefix: process.env.API_PREFIX ?? 'api/v1',
@@ -31,4 +60,5 @@ export const appConfig = registerAs('app', () => ({
   // Single-site deployments never need to pass a tenant.
   websiteTenantSlug: process.env.WEBSITE_TENANT_SLUG ?? 'nexuva',
   trustProxy: resolveTrustProxy(process.env.TRUST_PROXY, process.env.NODE_ENV ?? 'development'),
+  env: resolveAppEnv(process.env.APP_ENV),
 }));

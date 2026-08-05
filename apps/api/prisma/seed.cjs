@@ -187,8 +187,99 @@ async function main() {
     console.log(`${c.label.padEnd(14)}: ${c.rows.length}`);
   }
 
+  await bootstrapFirstVersion(tenantId);
+
   console.log('');
   console.log('Seed complete.');
+}
+
+/**
+ * Gives a fresh database its first published content version.
+ *
+ * The public site is served from a published version and nothing else — there
+ * is deliberately no fallback to the draft, because a fallback would put
+ * unpublished work in front of visitors whenever the version table was empty,
+ * and would look like the site working normally. So an environment with content
+ * but no version has a site that refuses to build, which is correct but useless
+ * for a database that was just seeded.
+ *
+ * Idempotent: does nothing once anything is published.
+ *
+ * The snapshot is assembled here rather than reusing the API's assembly, which
+ * is the one duplication in this file. It is deliberate — the seed runs under
+ * plain node with no access to the compiled Nest application — and it is why
+ * this only ever creates version 1. Every later version comes from the real
+ * publish path.
+ */
+async function bootstrapFirstVersion(tenantId) {
+  const existing = await prisma.contentVersion.count({ where: { tenantId } });
+  if (existing > 0) {
+    console.log(`version       : ${existing} already recorded, left alone`);
+    return;
+  }
+
+  const activeOrdered = { where: { tenantId, isActive: true }, orderBy: { position: 'asc' } };
+  const activeLive = {
+    where: { tenantId, isActive: true, deletedAt: null },
+    orderBy: { position: 'asc' },
+  };
+
+  const [sections, nav, logos, services, stats, references, testimonials, process] =
+    await Promise.all([
+      prisma.websiteSection.findMany({ where: { tenantId } }),
+      prisma.websiteNavItem.findMany(activeOrdered),
+      prisma.websiteLogo.findMany(activeOrdered),
+      prisma.websiteService.findMany(activeLive),
+      prisma.websiteStat.findMany(activeOrdered),
+      prisma.websiteReference.findMany(activeLive),
+      prisma.websiteTestimonial.findMany(activeLive),
+      prisma.websiteProcessStep.findMany(activeOrdered),
+    ]);
+
+  const byKey = Object.fromEntries(sections.map((row) => [row.key, row.data]));
+
+  const snapshot = {
+    ...byKey,
+    nav: nav.map((i) => ({ label: i.label, href: i.href })),
+    logos: logos.map((i) => i.name),
+    services: services.map((i) => ({
+      id: i.id,
+      icon: i.icon,
+      title: i.title,
+      description: i.description,
+      features: i.features,
+    })),
+    stats: stats.map((i) => ({
+      id: i.id,
+      value: i.value,
+      prefix: i.prefix ?? undefined,
+      suffix: i.suffix,
+      label: i.label,
+    })),
+    references: references.map((i) => ({ id: i.id, name: i.name, category: i.category })),
+    testimonials: testimonials.map((i) => ({
+      id: i.id,
+      quote: i.quote,
+      author: i.author,
+      role: i.role,
+      company: i.company,
+      rating: i.rating,
+    })),
+    process: process.map((i) => ({ id: i.id, title: i.title, description: i.description })),
+  };
+
+  await prisma.contentVersion.create({
+    data: {
+      tenantId,
+      number: 1,
+      snapshot,
+      isPublished: true,
+      publishedAt: new Date(),
+      note: 'İlk sürüm — veritabanı hazırlanırken oluşturuldu',
+    },
+  });
+
+  console.log('version       : 1 created and published');
 }
 
 main()

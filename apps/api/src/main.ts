@@ -6,7 +6,9 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { resolveTrustProxy } from './config/app.config';
+import { resolveTrustProxy, type AppEnvironment } from './config/app.config';
+import { assertEnvironmentMatches } from './common/environment-guard';
+import { PrismaService } from './prisma/prisma.service';
 
 /** Requests per minute per client for the API at large. */
 const MAX_PER_MINUTE = 100;
@@ -76,6 +78,14 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
+
+  // Before anything writes: is this the database this process belongs to?
+  await assertEnvironmentMatches(
+    app.get(PrismaService),
+    config.get<AppEnvironment>('app.env', 'local'),
+    process.env['DATABASE_URL'],
+  );
+
   const port = config.get<number>('app.port', 4000);
   const prefix = config.get<string>('app.prefix', 'api/v1');
   const corsOrigins = config.get<string>('app.corsOrigins', '').split(',').filter(Boolean);

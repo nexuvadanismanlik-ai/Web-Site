@@ -52,23 +52,55 @@ let cached: Promise<SiteContent> | null = null;
  */
 const BUILD_NONCE = Date.now().toString(36);
 
+/**
+ * A build must not fail because the API was asleep.
+ *
+ * The API suspends when idle on its current plan, and a publish triggers this
+ * build immediately after — so the first request of a deploy is very often the
+ * one that pays the wake-up. Without this the deploy fails and the site keeps
+ * serving the previous build, which looks exactly like a publish that did
+ * nothing.
+ */
+const ATTEMPTS = 4;
+const BACKOFF_MS = [0, 5_000, 15_000, 30_000];
+
 async function fetchSiteContent(): Promise<SiteContent> {
   const url = `${API_BASE}/website/content?_build=${BUILD_NONCE}`;
 
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      // MIGRATION SEAM — 'force-cache' is required by static export: 'no-store'
-      // would mark the fetch dynamic and a static export cannot prerender that.
-      // Moving to ISR means replacing this single line with:
-      //   next: { revalidate: REVALIDATE_SECONDS, tags: [SITE_CONTENT_TAG] }
-      cache: 'force-cache',
-      next: { tags: [SITE_CONTENT_TAG] },
-    });
-  } catch (err) {
+  let res: Response | undefined;
+  let lastError = '';
+
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    const wait = BACKOFF_MS[attempt] ?? 0;
+    if (wait > 0) {
+      console.warn(`Site content fetch failed (${lastError}); retrying in ${wait / 1000}s...`);
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+
+    try {
+      res = await fetch(url, {
+        // MIGRATION SEAM — 'force-cache' is required by static export: 'no-store'
+        // would mark the fetch dynamic and a static export cannot prerender that.
+        // Moving to ISR means replacing this single line with:
+        //   next: { revalidate: REVALIDATE_SECONDS, tags: [SITE_CONTENT_TAG] }
+        cache: 'force-cache',
+        next: { tags: [SITE_CONTENT_TAG] },
+      });
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      continue;
+    }
+
+    // A 5xx is the API waking or briefly unwell; a 4xx is a real answer that
+    // retrying cannot change.
+    if (res.ok || res.status < 500) break;
+    lastError = `HTTP ${res.status}`;
+  }
+
+  if (!res) {
     throw new Error(
-      `Site content could not be fetched from ${url}. Is the API running and ` +
-        `NEXT_PUBLIC_API_URL correct? (${err instanceof Error ? err.message : String(err)})`,
+      `Site content could not be fetched from ${url} after ${ATTEMPTS} attempts. ` +
+        `Is the API running and NEXT_PUBLIC_API_URL correct? (${lastError})`,
     );
   }
 

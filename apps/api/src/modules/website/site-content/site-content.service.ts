@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+  Logger,
+} from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { fromJson } from '../../../common/json';
@@ -60,11 +66,21 @@ export class SiteContentService {
     });
 
     if (!version) {
-      // Nothing published yet. Serving the draft keeps a site that predates
-      // versioning working, and makes the first publish an ordinary step
-      // instead of a migration.
-      this.logger.log(`No published version for tenant ${tenantId}; serving the draft.`);
-      return this.getSiteContent(tenantSlug);
+      // Falls over rather than falling back.
+      //
+      // This used to return the draft when nothing was published, which read as
+      // a kindness and was a trapdoor: any state that emptied the version table
+      // would silently put unpublished work in front of visitors, and it would
+      // look like the site working normally. The published path must never be
+      // able to serve a draft, so having nothing to serve is an error.
+      //
+      // Reaching this means the tenant has no published version at all. The
+      // seed creates one (`pnpm --filter @nexuva/api db:seed`), and publishing
+      // from the panel creates one.
+      this.logger.error(`Tenant ${tenantId} has no published content version.`);
+      throw new ServiceUnavailableException(
+        'Bu site için yayınlanmış içerik yok. Yönetim panelinden bir kez yayınlayın.',
+      );
     }
 
     return fromJson<SiteContent>(version.snapshot);

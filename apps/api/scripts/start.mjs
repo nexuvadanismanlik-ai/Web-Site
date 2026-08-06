@@ -22,9 +22,25 @@ import { spawnSync } from 'node:child_process';
 const MIGRATION_STATUS_ENV = 'NEXUVA_MIGRATION_STATUS';
 const MIGRATION_DETAIL_ENV = 'NEXUVA_MIGRATION_DETAIL';
 
+/** Long enough for a real migration, short enough not to outlive a deploy. */
+const MIGRATION_TIMEOUT_MS = 120_000;
+
 function line(text = '') {
   process.stdout.write(`${text}\n`);
 }
+
+// Printed before anything can go wrong, so a deploy log always shows whether
+// this script ran at all. The previous failure produced no output whatsoever
+// between "Deploying..." and the port-scan timeout, which left no way to tell a
+// process that crashed from one that was never started.
+line('');
+line(`Nexuva API başlatılıyor — node ${process.version}`);
+line(`  NODE_ENV=${process.env['NODE_ENV'] ?? '(tanımsız)'}`);
+line(`  APP_ENV=${process.env['APP_ENV'] ?? '(tanımsız)'}`);
+line(`  PORT=${process.env['PORT'] ?? '(tanımsız — 4000 kullanılacak)'}`);
+line(`  DATABASE_URL=${process.env['DATABASE_URL'] ? 'tanımlı' : 'TANIMSIZ'}`);
+line(`  DIRECT_URL=${process.env['DIRECT_URL'] ? 'tanımlı' : 'TANIMSIZ'}`);
+line('');
 
 function runMigrations() {
   if (process.env['SKIP_MIGRATIONS'] === 'true') {
@@ -42,14 +58,36 @@ function runMigrations() {
     };
   }
 
-  line('→ prisma migrate deploy');
+  line(`→ prisma migrate deploy (en fazla ${MIGRATION_TIMEOUT_MS / 1000} sn)`);
   const result = spawnSync('prisma', ['migrate', 'deploy'], {
     stdio: 'inherit',
     shell: true,
     env: process.env,
+    // Prisma takes an advisory lock before applying anything. A previous
+    // process that died holding it leaves the next run waiting forever — and
+    // with the old `migrate && node main` start command that meant the server
+    // never started, the port was never bound, and the platform reported
+    // nothing but a port-scan timeout with no output to explain it.
+    timeout: MIGRATION_TIMEOUT_MS,
   });
 
   if (result.status === 0) return { status: 'ok', detail: 'Migration’lar güncel.' };
+
+  if (result.error && result.error.code === 'ETIMEDOUT') {
+    return {
+      status: 'failed',
+      detail:
+        `prisma migrate deploy ${MIGRATION_TIMEOUT_MS / 1000} saniyede bitmedi ve ` +
+        'durduruldu. Büyük ihtimalle advisory lock bekliyordu.',
+    };
+  }
+
+  if (result.error) {
+    return {
+      status: 'failed',
+      detail: `prisma migrate deploy çalıştırılamadı: ${result.error.message}`,
+    };
+  }
 
   return {
     status: 'failed',
@@ -75,6 +113,8 @@ if (outcome.status === 'failed') {
 
 process.env[MIGRATION_STATUS_ENV] = outcome.status;
 process.env[MIGRATION_DETAIL_ENV] = outcome.detail;
+
+line('→ sunucu başlatılıyor');
 
 // Imported rather than spawned so there is one process: signals, exit codes and
 // the platform's idea of "is it running" all stay attached to the server.

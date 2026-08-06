@@ -5,6 +5,25 @@
 #   3. nexuva-admin — Next.js admin panel
 #
 # Required: set all envVars marked sync:false in the Render dashboard before first deploy.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# THIS FILE IS NOT WHAT IS RUNNING.
+#
+# The live services were created by hand and carry different names:
+#
+#   nexuva-api    →  Web-Site-backend           (Node, Frankfurt)
+#   nexuva-web    →  Nexuva-Web-Site-Frontend   (Static, Global)
+#   nexuva-admin  →  nexuva-admin               (Node, Frankfurt)
+#
+# Render matches blueprint services by name, so nothing here applies to them:
+# their build command, start command and every environment variable live only in
+# the dashboard. Adding a variable to this file changes nothing in production —
+# an hour was spent on exactly that misunderstanding.
+#
+# Keep this file as the definition of a correct deployment, and treat the
+# dashboard as the source of truth for what is actually running, until the two
+# are reconciled.
+# ─────────────────────────────────────────────────────────────────────────────
 
 services:
   # ── Backend API (NestJS + Fastify) ─────────────────────────────────────────

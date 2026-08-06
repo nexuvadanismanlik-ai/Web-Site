@@ -125,6 +125,11 @@ model Tenant {
   websiteState        WebsiteState?
   contentVersions     ContentVersion[]
 
+  // Mail
+  mailSettings  MailSettings?
+  mailTemplates MailTemplate[]
+  mailLogs      MailLog[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -1149,4 +1154,108 @@ model WebsiteState {
   updatedAt DateTime @updatedAt
 
   @@map("website_state")
+}
+
+// ============================================================
+// MAIL — configuration, templates and delivery log
+// ============================================================
+
+/// How this tenant sends email.
+///
+/// In the database rather than the environment because the person who needs to
+/// change it is the one using the panel, and an environment variable means a
+/// redeploy and somebody with access to the hosting dashboard. Environment
+/// values still work as a fallback, so an existing deployment keeps sending.
+///
+/// The secret is write-only over the API: it goes in, and what comes back says
+/// only whether one is set.
+model MailSettings {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// 'resend' | 'smtp' | 'sendgrid'
+  provider String @default("resend")
+
+  fromEmail String
+  fromName  String @default("Nexuva")
+  replyTo   String?
+
+  /// Where new enquiry notifications go. Comma-separated.
+  notifyTo String @default("")
+
+  /// Provider API key (resend, sendgrid).
+  apiKey String?
+
+  /// SMTP, including Gmail and Microsoft, which are ordinary SMTP servers.
+  smtpHost     String?
+  smtpPort     Int?     @default(587)
+  smtpUser     String?
+  smtpPassword String?
+  smtpSecure   Boolean  @default(false)
+
+  /// Outcome of the last test send, so the panel can show it after a reload.
+  lastTestAt      DateTime?
+  lastTestOk      Boolean?
+  lastTestMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("mail_settings")
+}
+
+/// A message the platform sends on its own.
+///
+/// Editable because the words belong to the business, not to the code: the
+/// acknowledgement a customer receives is the company's first written reply,
+/// and changing it should not need a deploy.
+model MailTemplate {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Stable identifier the code sends by, e.g. "lead_received".
+  key         String
+  name        String
+  description String  @default("")
+  subject     String
+  /// Body with {{variable}} placeholders. Wrapped in the branded shell on send.
+  body        String
+  enabled     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@map("mail_templates")
+}
+
+enum MailStatus {
+  SENT
+  FAILED
+}
+
+/// Every send attempt.
+///
+/// Without this, "did the customer get the acknowledgement" is unanswerable —
+/// and it is asked every time somebody complains they heard nothing back.
+model MailLog {
+  id       String  @id @default(cuid())
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  to          String
+  subject     String
+  templateKey String?
+  provider    String
+  status      MailStatus
+  /// Provider message on failure. Kept verbatim: paraphrasing loses the cause.
+  error       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("mail_logs")
 }

@@ -20,6 +20,7 @@ import {
   LayoutList,
   Activity,
   Search,
+  Mail as MailIcon,
   Inbox,
   LogOut,
   Menu,
@@ -65,7 +66,10 @@ const NAV: { section: string; items: NavItem[] }[] = [
   },
   {
     section: 'Sistem',
-    items: [{ label: 'Sistem & Bağlantılar', href: '/system', icon: Activity }],
+    items: [
+      { label: 'Mail', href: '/mail', icon: MailIcon },
+      { label: 'Sistem & Bağlantılar', href: '/system', icon: Activity },
+    ],
   },
 ];
 

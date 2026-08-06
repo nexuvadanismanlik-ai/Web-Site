@@ -3,6 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { EmailService } from '../../email/email.service';
+import { MailSettingsService } from '../../email/mail-settings.service';
+import {
+  MailTemplateService,
+  fillTemplate,
+  renderEmailHtml,
+} from '../../email/mail-template.service';
 import { LeadService } from './lead.service';
 import {
   resolvePagination,
@@ -48,15 +54,6 @@ const MESSAGE_LIST_SELECT = {
   assignedTo: { select: { id: true, firstName: true, lastName: true, email: true } },
 } as const;
 
-/** Everything here goes into an HTML email and is written by the public. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 @Injectable()
 export class ContactService {
   private readonly logger = new Logger(ContactService.name);
@@ -67,6 +64,8 @@ export class ContactService {
     private readonly email: EmailService,
     private readonly config: ConfigService,
     private readonly leads: LeadService,
+    private readonly mailSettings: MailSettingsService,
+    private readonly templates: MailTemplateService,
   ) {}
 
   // ─── Public submission ────────────────────────────────────────────────────
@@ -133,7 +132,7 @@ export class ContactService {
     // Announced, not awaited: the enquiry is already safely stored, and the
     // visitor should not wait on an outbound mail call — or see an error if it
     // fails. Failures are logged, never propagated.
-    void this.announce(dto).catch((error: unknown) => {
+    void this.announce(dto, tenantId, created.id).catch((error: unknown) => {
       this.logger.error(
         `Contact notification failed for message ${created.id}: ${String(error)}`,
       );
@@ -145,44 +144,87 @@ export class ContactService {
   }
 
   /**
-   * Emails the team that a new enquiry arrived. Silently does nothing when no
-   * recipient or no provider key is configured, so an unconfigured environment
-   * still accepts enquiries rather than logging an error on every submission.
+   * The two messages a new enquiry produces.
+   *
+   * One to the team, so somebody knows. One to the person who wrote in, because
+   * silence after filling in a form reads as the form being broken — and that
+   * acknowledgement is the company's first written reply, which is why its
+   * words live in an editable template rather than here.
+   *
+   * Both are best-effort: the enquiry is already stored, and a mail provider
+   * having a bad afternoon must not turn into a lost lead. Every attempt is
+   * recorded in the mail log either way, so "did they get it" has an answer.
    */
-  private async announce(dto: CreateContactMessageDto): Promise<void> {
-    const to = this.config.get<string[]>('email.contactNotifyTo', []);
-    if (to.length === 0) return;
-    if (!this.config.get<string>('email.resendApiKey')) {
-      this.logger.warn('Contact notification skipped: no email provider key configured');
-      return;
+  private async announce(
+    dto: CreateContactMessageDto,
+    tenantId: string,
+    leadId: string,
+  ): Promise<void> {
+    const [settings, lead] = await Promise.all([
+      this.mailSettings.resolve(tenantId),
+      this.prisma.contactMessage.findUnique({
+        where: { id: leadId },
+        select: { requestNo: true },
+      }),
+    ]);
+
+    const values = {
+      ad: dto.name.trim(),
+      firma: dto.company?.trim() ?? '',
+      eposta: dto.email.trim(),
+      telefon: dto.phone?.trim() ?? '',
+      hizmet: dto.service?.trim() || dto.subject?.trim() || 'Belirtilmedi',
+      butce: dto.budget?.trim() ?? '',
+      talep_no: String(lead?.requestNo ?? ''),
+      mesaj: dto.message.trim(),
+      firma_adi: settings.fromName,
+      site_adresi: '',
+    };
+
+    // ── The team ────────────────────────────────────────────────────────────
+    if (settings.notifyTo.length > 0) {
+      await this.sendTemplate(tenantId, 'lead_notify', settings.notifyTo, values);
+    } else {
+      this.logger.warn(
+        'Yeni talep bildirimi gönderilmedi: bildirim adresi tanımlı değil (Panel → Mail).',
+      );
     }
 
-    const subject = dto.subject?.trim() || 'Konu belirtilmedi';
-    const rows: [string, string][] = [
-      ['Ad Soyad', dto.name.trim()],
-      ['E-posta', dto.email.trim()],
-      ['Telefon', dto.phone?.trim() || '—'],
-      ['Konu', subject],
-    ];
+    // ── The person who wrote in ─────────────────────────────────────────────
+    await this.sendTemplate(tenantId, 'lead_received', [dto.email.trim()], values);
+  }
 
-    await this.email.send({
+  /** Renders one template through the shared shell and sends it. */
+  private async sendTemplate(
+    tenantId: string,
+    key: string,
+    to: string[],
+    values: Record<string, string>,
+  ): Promise<void> {
+    const template = await this.templates.findByKey(tenantId, key).catch(() => null);
+    if (!template || !template.enabled) return;
+
+    const brandRow = await this.prisma.websiteSection.findUnique({
+      where: { tenantId_key: { tenantId, key: 'brand' } },
+      select: { data: true },
+    });
+    const brand = (brandRow?.data ?? {}) as {
+      siteName?: string;
+      primaryColor?: string;
+      logoUrl?: string;
+    };
+
+    await this.email.trySend({
+      tenantId,
       to,
-      subject: `Yeni web sitesi talebi: ${subject}`,
-      text: [
-        ...rows.map(([label, value]) => `${label}: ${value}`),
-        '',
-        dto.message.trim(),
-      ].join('\n'),
-      html: [
-        '<h2>Yeni web sitesi talebi</h2>',
-        '<table cellpadding="6" style="border-collapse:collapse">',
-        ...rows.map(
-          ([label, value]) =>
-            `<tr><td style="color:#666">${label}</td><td><strong>${escapeHtml(value)}</strong></td></tr>`,
-        ),
-        '</table>',
-        `<p style="white-space:pre-wrap">${escapeHtml(dto.message.trim())}</p>`,
-      ].join(''),
+      templateKey: key,
+      subject: fillTemplate(template.subject, values),
+      html: renderEmailHtml({
+        body: fillTemplate(template.body, values),
+        brandName: brand.siteName || values['firma_adi'] || 'Nexuva',
+        brandColor: brand.primaryColor || '#6366f1',
+        logoUrl: brand.logoUrl ?? null,
+      }),
     });
   }
 

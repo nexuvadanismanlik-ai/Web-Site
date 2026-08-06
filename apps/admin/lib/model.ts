@@ -169,3 +169,62 @@ export interface MediaList {
   total: number;
   usedBytes: number;
 }
+
+// ─── Mail ───────────────────────────────────────────────────────────────────
+
+export const MAIL_PROVIDERS = [
+  { value: 'resend', label: 'Resend' },
+  { value: 'smtp', label: 'SMTP (Gmail, Microsoft, kendi sunucun)' },
+  { value: 'sendgrid', label: 'SendGrid' },
+] as const;
+
+/**
+ * Mail configuration as the panel may see it.
+ *
+ * Secrets are absent by design: they go in and never come back, so the two
+ * `has…` flags are all the screen knows and all it needs.
+ */
+export interface MailSettings {
+  provider: string;
+  fromEmail: string;
+  fromName: string;
+  replyTo: string;
+  notifyTo: string;
+  hasApiKey: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  hasSmtpPassword: boolean;
+  smtpSecure: boolean;
+  /** False when the values still come from the server environment. */
+  fromDatabase: boolean;
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestMessage: string | null;
+}
+
+export interface MailTemplate {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  subject: string;
+  body: string;
+  enabled: boolean;
+}
+
+export interface MailVariable {
+  key: string;
+  label: string;
+}
+
+export interface MailLogEntry {
+  id: string;
+  to: string;
+  subject: string;
+  templateKey: string | null;
+  provider: string;
+  status: 'SENT' | 'FAILED';
+  error: string | null;
+  createdAt: string;
+}

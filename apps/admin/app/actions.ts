@@ -24,6 +24,13 @@ import {
   readPipelineCounts,
   readLeadSummary,
   readConnections,
+  readMailSettings,
+  saveMailSettingsViaApi,
+  sendTestMailViaApi,
+  readMailTemplates,
+  saveMailTemplateViaApi,
+  readMailPreview,
+  readMailLogs,
   createLeadViaApi,
   readAssignees,
   readLeadDetail,
@@ -41,6 +48,10 @@ import {
   type LeadStatus,
   type LeadSummary,
   type SystemStatus,
+  type MailSettings,
+  type MailTemplate,
+  type MailVariable,
+  type MailLogEntry,
   type AppNotification,
   type MediaList,
   type MediaFile,
@@ -492,4 +503,94 @@ export async function markAllMessagesRead(): Promise<{ ok: boolean; error?: stri
   }
   revalidatePath(adminPath('/messages'));
   return { ok: true };
+}
+
+// ─── Mail ───────────────────────────────────────────────────────────────────
+
+export async function getMailSettings(): Promise<MailSettings | null> {
+  await requireAuth();
+  try {
+    return await readMailSettings();
+  } catch {
+    return null;
+  }
+}
+
+export async function saveMailSettings(
+  payload: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string; settings?: MailSettings }> {
+  await requireAuth();
+  try {
+    const settings = await saveMailSettingsViaApi(payload);
+    revalidatePath(adminPath('/mail'));
+    return { ok: true, settings };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Kaydedilemedi.' };
+  }
+}
+
+/**
+ * Sends a real message and reports what the provider said.
+ *
+ * The error text is passed through untouched: "domain is not verified" is the
+ * answer, and any paraphrase of it is worse.
+ */
+export async function sendTestMail(
+  to: string,
+  templateKey?: string,
+): Promise<{ ok: boolean; detail: string }> {
+  await requireAuth();
+  try {
+    const result = await sendTestMailViaApi(to, templateKey);
+    revalidatePath(adminPath('/mail'));
+    return { ok: result.ok, detail: result.detail };
+  } catch (err) {
+    return { ok: false, detail: err instanceof Error ? err.message : 'Gönderilemedi.' };
+  }
+}
+
+export async function getMailTemplates(): Promise<{
+  templates: MailTemplate[];
+  variables: MailVariable[];
+}> {
+  await requireAuth();
+  try {
+    return await readMailTemplates();
+  } catch {
+    return { templates: [], variables: [] };
+  }
+}
+
+export async function saveMailTemplate(
+  key: string,
+  payload: { subject?: string; body?: string; enabled?: boolean },
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  try {
+    await saveMailTemplateViaApi(key, payload);
+    revalidatePath(adminPath('/mail'));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Kaydedilemedi.' };
+  }
+}
+
+export async function getMailPreview(
+  key: string,
+): Promise<{ subject: string; html: string } | null> {
+  await requireAuth();
+  try {
+    return await readMailPreview(key);
+  } catch {
+    return null;
+  }
+}
+
+export async function getMailLogs(): Promise<{ items: MailLogEntry[]; failed: number }> {
+  await requireAuth();
+  try {
+    return await readMailLogs();
+  } catch {
+    return { items: [], failed: 0 };
+  }
 }

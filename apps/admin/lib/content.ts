@@ -9,6 +9,10 @@ import type {
   LeadStatus,
   LeadSummary,
   Connection,
+  MailSettings,
+  MailTemplate,
+  MailVariable,
+  MailLogEntry,
   AppNotification,
   MediaFile,
   MediaFolder,
@@ -476,4 +480,54 @@ export async function changePasswordViaApi(
     method: 'POST',
     body: JSON.stringify({ currentPassword, newPassword }),
   });
+}
+
+// ─── Mail ───────────────────────────────────────────────────────────────────
+
+export async function readMailSettings(): Promise<MailSettings> {
+  return apiFetch<MailSettings>('/mail/settings');
+}
+
+export async function saveMailSettingsViaApi(
+  payload: Record<string, unknown>,
+): Promise<MailSettings> {
+  return apiFetch<MailSettings>('/mail/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function sendTestMailViaApi(
+  to: string,
+  templateKey?: string,
+): Promise<{ ok: boolean; provider: string; detail: string }> {
+  return apiFetch<{ ok: boolean; provider: string; detail: string }>('/mail/test', {
+    method: 'POST',
+    body: JSON.stringify({ to, ...(templateKey ? { templateKey } : {}) }),
+  });
+}
+
+export async function readMailTemplates(): Promise<{
+  templates: MailTemplate[];
+  variables: MailVariable[];
+}> {
+  return apiFetch<{ templates: MailTemplate[]; variables: MailVariable[] }>('/mail/templates');
+}
+
+export async function saveMailTemplateViaApi(
+  key: string,
+  payload: { subject?: string; body?: string; enabled?: boolean },
+): Promise<MailTemplate> {
+  return apiFetch<MailTemplate>(`/mail/templates/${key}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function readMailPreview(key: string): Promise<{ subject: string; html: string }> {
+  return apiFetch<{ subject: string; html: string }>(`/mail/templates/${key}/preview`);
+}
+
+export async function readMailLogs(): Promise<{ items: MailLogEntry[]; failed: number }> {
+  return apiFetch<{ items: MailLogEntry[]; failed: number }>('/mail/logs');
 }

@@ -143,6 +143,7 @@ export class SiteContentService {
 
     return {
       brand: section('brand'),
+      seo: section('seo'),
       nav: navItems.map((item) => ({
         label: item.label,
         href: item.href,

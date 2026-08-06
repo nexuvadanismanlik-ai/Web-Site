@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { getSiteContent } from '../lib/content';
+import { siteOrigin } from '../lib/origin';
 import { t, getUi } from '../lib/i18n';
 import { Header } from '../components/site/header';
 import { Footer } from '../components/site/footer';
@@ -16,16 +17,73 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
+/**
+ * Everything the panel's SEO screen controls, with the fallbacks it promises.
+ *
+ * The site had a title and a description and nothing else: no canonical, no
+ * OpenGraph, no Twitter card, no icons. A link to it shared anywhere rendered
+ * as a bare URL with no image, and the browser tab carried the default globe.
+ *
+ * Every field falls back to something derived from brand and hero content, so
+ * an SEO section that has never been filled in leaves the site exactly as it
+ * was rather than stripping what it already said.
+ */
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent();
+  const seo = content.seo ?? ({} as Partial<NonNullable<typeof content.seo>>);
+
+  const origin = siteOrigin(content);
+  const fallbackTitle = `${content.brand.siteName} — ${t(content.brand.tagline)}`;
+  const title = seo.title?.trim() || fallbackTitle;
+  const description = seo.description?.trim() || t(content.hero.subtitle);
+  const canonical = seo.canonical?.trim() || origin;
+  const ogTitle = seo.ogTitle?.trim() || title;
+  const ogDescription = seo.ogDescription?.trim() || description;
+  const ogImage = seo.ogImage?.trim();
+
+  const icons: NonNullable<Metadata['icons']> = {};
+  if (seo.favicon?.trim()) icons.icon = seo.favicon.trim();
+  if (seo.appleTouchIcon?.trim()) icons.apple = seo.appleTouchIcon.trim();
+
   return {
+    // metadataBase resolves any relative image path in the tags below. Without
+    // it Next emits a warning and social networks receive a relative URL they
+    // cannot fetch.
+    ...(origin ? { metadataBase: new URL(origin) } : {}),
     title: {
-      default: `${content.brand.siteName} — ${t(content.brand.tagline)}`,
+      default: title,
       template: `%s | ${content.brand.siteName}`,
     },
-    description: t(content.hero.subtitle),
+    description,
+    ...(seo.keywords && seo.keywords.length > 0 ? { keywords: seo.keywords } : {}),
+    ...(canonical ? { alternates: { canonical } } : {}),
+    // noIndex is off unless somebody deliberately turns it on, and the panel
+    // says in as many words what turning it on does.
+    robots: seo.noIndex
+      ? { index: false, follow: false }
+      : { index: true, follow: true },
+    openGraph: {
+      type: 'website',
+      siteName: content.brand.siteName,
+      title: ogTitle,
+      description: ogDescription,
+      ...(canonical ? { url: canonical } : {}),
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+      locale: 'tr_TR',
+    },
+    twitter: {
+      card: (seo.twitterCard === 'summary' ? 'summary' : 'summary_large_image') as
+        | 'summary'
+        | 'summary_large_image',
+      title: ogTitle,
+      description: ogDescription,
+      ...(seo.twitterSite?.trim() ? { site: seo.twitterSite.trim() } : {}),
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    ...(Object.keys(icons).length > 0 ? { icons } : {}),
   };
 }
+
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const content = await getSiteContent();

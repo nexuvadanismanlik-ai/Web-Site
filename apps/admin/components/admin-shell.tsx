@@ -19,6 +19,7 @@ import {
   Phone,
   LayoutList,
   Activity,
+  Search,
   Inbox,
   LogOut,
   Menu,
@@ -59,6 +60,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { label: 'Süreç', href: '/process', icon: ListChecks },
       { label: 'İletişim', href: '/contact', icon: Phone },
       { label: 'Menü & Footer', href: '/navigation', icon: LayoutList },
+      { label: 'SEO', href: '/seo', icon: Search },
     ],
   },
   {

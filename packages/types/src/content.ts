@@ -140,6 +140,41 @@ export interface FooterContent {
   copyright: Localized;
 }
 
+/**
+ * Everything the site puts in <head>.
+ *
+ * One document rather than a field per page, because the site is five pages
+ * and a per-page table would be five rows that are empty nine times out of ten.
+ * Per-page titles come from the page itself through the title template; what is
+ * here is the site-wide answer and the defaults every page inherits.
+ *
+ * Every field is optional and every field has a sensible fallback derived from
+ * the brand and hero content, so an empty SEO section leaves the site exactly
+ * as it was rather than stripping its title.
+ */
+export interface SeoContent {
+  /** Overrides the generated "Brand — tagline". */
+  title: string;
+  description: string;
+  /** Comma-separated in the panel, an array on the wire. */
+  keywords: string[];
+  canonical: string;
+  /** true adds noindex,nofollow. Off by default, and loudly labelled. */
+  noIndex: boolean;
+
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  /** 'summary' | 'summary_large_image' */
+  twitterCard: string;
+  twitterSite: string;
+
+  favicon: string;
+  appleTouchIcon: string;
+  /** Colour the browser paints its chrome with on mobile. */
+  themeColor: string;
+}
+
 export interface SectionMeta {
   badge: Localized;
   title: Localized;
@@ -148,6 +183,7 @@ export interface SectionMeta {
 
 export interface SiteContent {
   brand: BrandConfig;
+  seo: SeoContent;
   nav: NavItem[];
   hero: HeroContent;
   logos: string[];

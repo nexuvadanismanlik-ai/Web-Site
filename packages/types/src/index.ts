@@ -45,6 +45,7 @@ export type {
   FooterColumn,
   FooterContent,
   SectionMeta,
+  SeoContent,
   SiteContent,
   ContactMessage,
 } from './content';

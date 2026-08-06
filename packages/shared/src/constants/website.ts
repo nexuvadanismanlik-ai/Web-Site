@@ -26,6 +26,10 @@ export const WEBSITE_SECTION_KEYS = [
   'referencesMeta',
   'testimonialsMeta',
   'processMeta',
+  // Everything the site puts in <head>: search, sharing, icons. Stored like any
+  // other section so it versions, publishes and rolls back with the content it
+  // describes — a title that changes without its page is worse than no title.
+  'seo',
 ] as const;
 
 export type WebsiteSectionKey = (typeof WEBSITE_SECTION_KEYS)[number];

@@ -28,6 +28,21 @@ services:
         value: production
       - key: DATABASE_URL
         sync: false
+      # Migrations cannot run through Supabase's transaction pooler — pgbouncer
+      # will not execute DDL — so schema.prisma declares a directUrl and the
+      # deploy needs a session-mode connection string (port 5432) as well as the
+      # pooled one. Absent, `prisma migrate deploy` fails at startup, and while
+      # the old start command chained it with && that meant the server never
+      # started at all.
+      - key: DIRECT_URL
+        sync: false
+      # Names the environment this process belongs to, so it refuses to run
+      # against a database marked as a different one.
+      - key: APP_ENV
+        value: production
+      # Lets the API check that a publish actually reached visitors.
+      - key: SITE_URL
+        sync: false
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

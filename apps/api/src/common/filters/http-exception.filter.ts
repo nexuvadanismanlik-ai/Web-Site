@@ -78,9 +78,55 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
       errors,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: request?.url ?? '',
     };
 
-    void reply.status(statusCode).send(body);
+    this.send(reply, statusCode, body);
+  }
+
+  /**
+   * Answers with whatever object Nest handed us.
+   *
+   * An exception raised inside middleware reaches this filter before Fastify's
+   * reply decorators are attached, so `reply` is Node's own ServerResponse and
+   * `reply.status` does not exist. Calling it threw a TypeError out of the
+   * filter itself — an unhandled error with no handler left above it, which
+   * killed the process.
+   *
+   * That is how a database blip became a crash loop: every request went through
+   * a middleware that queried the database, the query failed, the filter threw
+   * while reporting it, the process died, the platform restarted it, and the
+   * next request did the same. From outside it looked like an API that simply
+   * would not come up.
+   *
+   * So: use the Fastify reply when it is one, fall back to the raw response
+   * when it is not, and let nothing in here throw.
+   */
+  private send(reply: unknown, statusCode: number, body: ApiError): void {
+    try {
+      const fastify = reply as Partial<FastifyReply>;
+      if (typeof fastify?.status === 'function' && typeof fastify.send === 'function') {
+        void fastify.status(statusCode).send(body);
+        return;
+      }
+
+      const raw = reply as {
+        writeHead?: (status: number, headers: Record<string, string>) => unknown;
+        end?: (chunk: string) => unknown;
+        headersSent?: boolean;
+      };
+      if (raw?.headersSent) return;
+      if (typeof raw?.writeHead === 'function' && typeof raw.end === 'function') {
+        raw.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
+        raw.end(JSON.stringify(body));
+        return;
+      }
+
+      this.logger.error(`Hata yanıtı gönderilemedi: tanınmayan yanıt nesnesi (${statusCode}).`);
+    } catch (err) {
+      // The last line of defence. A filter that throws takes the process with
+      // it, so this one swallows and records instead.
+      this.logger.error(`Hata yanıtı gönderilirken hata: ${String(err)}`);
+    }
   }
 }

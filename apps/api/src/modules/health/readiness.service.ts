@@ -41,6 +41,7 @@ export class ReadinessService {
   async report(): Promise<{ connections: ConnectionReport[]; checkedAt: string }> {
     const connections = await Promise.all([
       this.database(),
+      Promise.resolve(this.migrations()),
       this.storage(),
       this.deploy(),
       this.email(),
@@ -68,6 +69,55 @@ export class ReadinessService {
         detail: err instanceof Error ? err.message.split('\n')[0] ?? 'Bağlanılamadı' : 'Bağlanılamadı',
       };
     }
+  }
+
+  /**
+   * How the schema migration went at startup.
+   *
+   * Reported because it is now allowed to fail without stopping the server.
+   * That trade is only defensible if the failure is visible somewhere a person
+   * looks — otherwise the API runs happily against a schema it does not match
+   * and the first symptom is a query blowing up hours later.
+   *
+   * The value is left in the environment by scripts/start.mjs, which is the
+   * same process, so no channel is needed between them.
+   */
+  private migrations(): ConnectionReport {
+    const status = process.env['NEXUVA_MIGRATION_STATUS'];
+    const detail = process.env['NEXUVA_MIGRATION_DETAIL'] ?? '';
+
+    if (status === 'failed') {
+      return {
+        key: 'migrations',
+        label: 'Veritabanı Şeması',
+        state: 'broken',
+        detail: `${detail} Şema beklenenden geride olabilir.`,
+      };
+    }
+    if (status === 'skipped') {
+      return {
+        key: 'migrations',
+        label: 'Veritabanı Şeması',
+        state: 'missing',
+        detail: `Migration atlandı (${detail}).`,
+      };
+    }
+    if (status === 'ok') {
+      return {
+        key: 'migrations',
+        label: 'Veritabanı Şeması',
+        state: 'connected',
+        detail: detail || 'Migration’lar güncel.',
+      };
+    }
+    return {
+      key: 'migrations',
+      label: 'Veritabanı Şeması',
+      state: 'missing',
+      detail:
+        'Bu süreç migration adımından geçmeden başlatılmış, bu yüzden şemanın güncel ' +
+        'olduğu doğrulanamıyor.',
+    };
   }
 
   private storage(): ConnectionReport {

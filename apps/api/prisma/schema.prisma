@@ -507,6 +507,10 @@ model StorageFile {
   leadId String?
   lead   ContactMessage? @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
+  /// Present when the bytes live in this database rather than in object
+  /// storage. See StorageBlob.
+  blob StorageBlob?
+
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 
@@ -515,6 +519,29 @@ model StorageFile {
   @@index([uploadedById])
   @@index([leadId])
   @@map("storage_files")
+}
+
+/// File contents, when there is nowhere else to put them.
+///
+/// Object storage is the right home for uploads and stays the default whenever
+/// it is configured. But it needs credentials somebody has to go and create,
+/// and until they exist the panel cannot accept a logo, a favicon or a share
+/// image — which blocks most of what the CMS is for. A corporate site's brand
+/// assets are a handful of files measured in kilobytes, and Postgres holds
+/// those perfectly well.
+///
+/// Separate from StorageFile so listing the library never drags the bytes: the
+/// media screen reads names and sizes, and a query that also returned every
+/// image would be unusable by the tenth upload.
+model StorageBlob {
+  id     String      @id @default(cuid())
+  fileId String      @unique
+  file   StorageFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("storage_blobs")
 }
 
 // ============================================================

@@ -3,7 +3,7 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
-  ServiceUnavailableException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
@@ -37,6 +37,15 @@ const FILE_WITH_TENANT_SELECT = {
 } as const;
 
 // Safe projection for list / upload responses (no tenant details)
+/**
+ * Largest file the database driver accepts.
+ *
+ * Object storage takes ten megabytes; the database takes two. Brand assets —
+ * a logo, a favicon, a share image — are measured in kilobytes, and a table
+ * that also holds photo galleries would turn every backup into a chore.
+ */
+const DB_BLOB_MAX_BYTES = 2 * 1024 * 1024;
+
 const FILE_SELECT = {
   id: true,
   key: true,
@@ -79,7 +88,9 @@ export class StorageService {
     const missing = this.missingConfig();
     if (missing.length > 0) {
       this.logger.warn(
-        `Storage is not configured; uploads will be refused. Missing: ${missing.join(', ')}`,
+        `Object storage is not configured (missing: ${missing.join(', ')}). ` +
+          'Uploads will be stored in the database instead, up to ' +
+          `${DB_BLOB_MAX_BYTES / 1024 / 1024} MB per file.`,
       );
     }
   }
@@ -87,10 +98,9 @@ export class StorageService {
   /**
    * Which storage settings are absent.
    *
-   * Reading and deleting records work without them — only putting bytes into
-   * the bucket does not. An unconfigured upload used to reach the S3 client and
-   * come back as a bare 500, which tells an operator nothing about the four
-   * environment variables they are missing.
+   * Their absence is not fatal: it selects the database driver instead. What
+   * it costs is the CDN — files are then served by this API, which is fine for
+   * a handful of brand assets and wrong for anything larger.
    */
   private missingConfig(): string[] {
     const required: [string, string][] = [
@@ -182,6 +192,43 @@ export class StorageService {
     this.logger.log(`R2 delete: ${key}`);
   }
 
+  // ─── Storage driver ──────────────────────────────────────────────────────
+
+  /** True when R2 is fully configured. Otherwise the database holds the bytes. */
+  private get usesObjectStorage(): boolean {
+    return this.missingConfig().length === 0;
+  }
+
+  /**
+   * Where a database-held file is served from.
+   *
+   * Absolute, because the address is baked into a statically exported website
+   * and into emails, neither of which can resolve a path relative to the API.
+   */
+  private blobUrl(fileId: string): string {
+    const base = (this.config.get<string>('storage.apiPublicUrl') ?? '').replace(/\/+$/, '');
+    return `${base}/storage/file/${fileId}`;
+  }
+
+  /**
+   * The bytes of a database-held file.
+   *
+   * Public: these are logos and share images that appear on a public website,
+   * and putting them behind a token would mean no browser could load them.
+   */
+  async readBlob(fileId: string): Promise<{ data: Buffer; mimeType: string; filename: string }> {
+    const file = await this.prisma.storageFile.findFirst({
+      where: { id: fileId, deletedAt: null },
+      select: { mimeType: true, filename: true, blob: { select: { data: true } } },
+    });
+    if (!file?.blob) throw new NotFoundException(`File ${fileId} not found`);
+    return {
+      data: Buffer.from(file.blob.data),
+      mimeType: file.mimeType,
+      filename: file.filename,
+    };
+  }
+
   // ─── Public API ──────────────────────────────────────────────────────────
 
   async uploadFile(params: {
@@ -197,29 +244,68 @@ export class StorageService {
     const { tenantId, uploadedById, actorRole, actorCompanyId, folder, buffer, mimeType, filename } =
       params;
 
-    // 0. Say what is missing rather than failing inside the S3 client, which
-    //    surfaces as a bare 500 and tells an operator nothing.
-    const missing = this.missingConfig();
-    if (missing.length > 0) {
-      throw new ServiceUnavailableException(
-        `Dosya depolama yapılandırılmamış. Sunucuda tanımlanması gereken değişkenler: ${missing.join(', ')}`,
-      );
-    }
-
     // 1. Ownership: caller must belong to the company that owns this tenant
     const { slug: tenantSlug } = await this.assertTenantOwnership(tenantId, actorRole, actorCompanyId);
 
-    // 2. Upload to R2 — if this fails, no DB record is created (no orphan rows)
     const key = this.buildKey(tenantSlug, folder, filename);
-    const url = `${this.publicUrl}/${key}`;
 
-    await this.r2Upload(key, buffer, mimeType);
+    // 2. Store the bytes. Object storage when it is configured; otherwise the
+    //    database, so that a deployment without R2 credentials can still accept
+    //    a logo. Refusing the upload used to block most of what the CMS is for
+    //    on a setting nobody could change from the panel.
+    let file: { id: string; url: string; key: string; mimeType: string; size: number; folder: string; filename: string; tenantId: string; uploadedById: string; createdAt: Date };
 
-    // 3. Create DB record after successful R2 upload
-    const file = await this.prisma.storageFile.create({
-      data: { tenantId, uploadedById, key, url, mimeType, size: buffer.length, folder, filename },
-      select: FILE_SELECT,
-    });
+    if (this.usesObjectStorage) {
+      // If this fails, no DB record is created — no rows pointing at nothing.
+      await this.r2Upload(key, buffer, mimeType);
+      file = await this.prisma.storageFile.create({
+        data: {
+          tenantId,
+          uploadedById,
+          key,
+          url: `${this.publicUrl}/${key}`,
+          mimeType,
+          size: buffer.length,
+          folder,
+          filename,
+        },
+        select: FILE_SELECT,
+      });
+    } else {
+      if (buffer.length > DB_BLOB_MAX_BYTES) {
+        throw new BadRequestException(
+          `Dosya deposu yapılandırılmadığı için dosyalar veritabanında saklanıyor ve ` +
+            `${Math.round(DB_BLOB_MAX_BYTES / 1024 / 1024)} MB sınırı var. Bu dosya ` +
+            `${Math.round(buffer.length / 1024 / 1024)} MB.`,
+        );
+      }
+
+      // The row and its bytes are written together: a record whose file is
+      // missing is worse than no record.
+      const created = await this.prisma.storageFile.create({
+        data: {
+          tenantId,
+          uploadedById,
+          key,
+          // Filled in below — the address contains the id, which does not exist
+          // until the row does.
+          url: '',
+          mimeType,
+          size: buffer.length,
+          folder,
+          filename,
+          blob: { create: { data: buffer } },
+        },
+        select: FILE_SELECT,
+      });
+
+      file = await this.prisma.storageFile.update({
+        where: { id: created.id },
+        data: { url: this.blobUrl(created.id) },
+        select: FILE_SELECT,
+      });
+      this.logger.log(`Database upload: ${key} (${buffer.length} bytes)`);
+    }
 
     // 4. Audit log
     await this.auditLog.log({
@@ -287,13 +373,24 @@ export class StorageService {
       data: { deletedAt: new Date() },
     });
 
-    // 3. Remove from R2 — failure is logged but does not roll back the soft-delete.
-    //    The file is already inaccessible through the API; the R2 object can be
-    //    reclaimed by a lifecycle rule on the bucket if needed.
-    try {
-      await this.r2Delete(file.key);
-    } catch (err) {
-      this.logger.error(`R2 delete failed for key "${file.key}": ${(err as Error).message}`);
+    // 3. Remove the bytes — failure is logged but does not roll back the
+    //    soft-delete. The file is already inaccessible through the API.
+    if (this.usesObjectStorage) {
+      // An orphaned R2 object can be reclaimed by a lifecycle rule on the bucket.
+      try {
+        await this.r2Delete(file.key);
+      } catch (err) {
+        this.logger.error(`R2 delete failed for key "${file.key}": ${(err as Error).message}`);
+      }
+    } else {
+      // A database blob has no lifecycle rule to catch it, so leaving it would
+      // keep the storage figure wrong forever. Deleting the row is enough —
+      // the record stays soft-deleted and auditable, only the bytes go.
+      try {
+        await this.prisma.storageBlob.deleteMany({ where: { fileId } });
+      } catch (err) {
+        this.logger.error(`Blob delete failed for file "${fileId}": ${(err as Error).message}`);
+      }
     }
 
     // 4. Audit log

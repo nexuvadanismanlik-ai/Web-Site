@@ -7,14 +7,16 @@ import {
   Param,
   BadRequestException,
   Req,
+  Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StorageService } from './storage.service';
 import { WebsiteTenantService } from '../website/website-tenant.service';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ResponseMessage } from '../../common/decorators/response.decorator';
+import { NoEnvelope, ResponseMessage } from '../../common/decorators/response.decorator';
 import type { UserRole } from '@nexuva/types';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -118,9 +120,35 @@ export class StorageController {
   }
 
   /**
-   * List active (non-deleted) files for a tenant.
-   * Results are paginated and ownership-checked.
-   * Also returns total active storage usage for the tenant.
+   * Serves a file whose bytes live in the database.
+   *
+   * Public, and it has to be: these are logos, favicons and share images that
+   * appear on a public website and in link previews. A browser fetching them
+   * carries no token, and neither does Facebook's crawler.
+   *
+   * Only files stored in the database are served here — when object storage is
+   * configured the address points at the CDN instead and this route is never
+   * reached.
+   */
+  @Get('file/:id')
+  @Public()
+  @NoEnvelope()
+  @ApiOperation({ summary: 'Serve a database-held file. Public.' })
+  async serveFile(@Param('id') id: string, @Res() reply: FastifyReply) {
+    const file = await this.storageService.readBlob(id);
+    void reply
+      .header('Content-Type', file.mimeType)
+      .header('Content-Disposition', `inline; filename="${encodeURIComponent(file.filename)}"`)
+      // Immutable: the address contains a record id that is never reused, so a
+      // cached copy can never be the wrong file. Uploading a replacement
+      // produces a new id and therefore a new address.
+      .header('Cache-Control', 'public, max-age=31536000, immutable')
+      .send(file.data);
+  }
+
+  /**
+   * List active (non-deleted) files for a tenant, paginated and
+   * ownership-checked, with the tenant's total usage.
    */
   @Get('files')
   @Roles('CONTENT_EDITOR')

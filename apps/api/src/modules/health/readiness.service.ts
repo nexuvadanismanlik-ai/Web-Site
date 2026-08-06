@@ -130,11 +130,18 @@ export class ReadinessService {
     const missing = required.filter(([, key]) => !this.config.get<string>(key)).map(([name]) => name);
 
     if (missing.length > 0) {
+      // Not broken and not missing a capability: uploads work, they are simply
+      // being served by this API out of the database instead of from a CDN.
+      // Reporting it as an outage sent somebody looking for a fault that was a
+      // deliberate fallback.
       return {
         key: 'storage',
-        label: 'Dosya Deposu (Cloudflare R2)',
-        state: 'missing',
-        detail: 'Ayarlanmadığı için dosya yükleme kapalı. Kayıtlı dosyalar okunabiliyor.',
+        label: 'Dosya Deposu (Veritabanı)',
+        state: 'connected',
+        detail:
+          'Yükleme çalışıyor. Nesne deposu tanımlı olmadığı için dosyalar veritabanında ' +
+          'saklanıyor ve API üzerinden sunuluyor — dosya başına 2 MB sınırı var. ' +
+          'Aşağıdaki değişkenler tanımlanırsa Cloudflare R2 kullanılır.',
         missing,
       };
     }
@@ -142,7 +149,7 @@ export class ReadinessService {
       key: 'storage',
       label: 'Dosya Deposu (Cloudflare R2)',
       state: 'connected',
-      detail: 'Yükleme açık.',
+      detail: 'Yükleme açık, dosyalar CDN üzerinden sunuluyor.',
     };
   }
 

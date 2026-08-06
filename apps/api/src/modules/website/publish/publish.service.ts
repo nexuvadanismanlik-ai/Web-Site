@@ -21,6 +21,21 @@ export interface PublishResult {
   actor: string | null;
   /** Content version this publish carried, once one was frozen. */
   version: number | null;
+
+  /** When the attempt began. Distinct from "at", which is when it settled. */
+  startedAt: string;
+  /** Null while a build is still running. */
+  finishedAt: string | null;
+  /**
+   * How long the whole publish took, in milliseconds. Null while running.
+   *
+   * Reported because "the site has not changed yet" and "the build is still
+   * going" look identical from the panel, and telling them apart is the first
+   * thing anybody wants.
+   */
+  durationMs: number | null;
+  /** Identifier from the deploy provider, for looking the build up directly. */
+  deployId: string | null;
 }
 
 export interface PublishStatus {
@@ -404,6 +419,7 @@ export class PublishService {
     state: string;
     detail: string;
     version?: number | null;
+    deployId?: string | null;
     startedAt: Date;
     finishedAt: Date | null;
     actor?: { firstName: string | null; lastName: string | null; email: string } | null;
@@ -426,6 +442,12 @@ export class PublishService {
       id: row.id,
       actor: name,
       version: row.version ?? null,
+      startedAt: row.startedAt.toISOString(),
+      finishedAt: row.finishedAt?.toISOString() ?? null,
+      durationMs: row.finishedAt
+        ? row.finishedAt.getTime() - row.startedAt.getTime()
+        : null,
+      deployId: row.deployId ?? null,
     };
   }
 }

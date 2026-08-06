@@ -293,6 +293,13 @@ export interface PublishResult {
   actor: string | null;
   /** Content version this publish carried, once one was frozen. */
   version: number | null;
+  /** When the attempt began; `at` is when it settled. */
+  startedAt: string;
+  finishedAt: string | null;
+  /** Null while the build is still running. */
+  durationMs: number | null;
+  /** Identifier from the deploy provider, for finding the build directly. */
+  deployId: string | null;
 }
 
 export interface PublishStatus {

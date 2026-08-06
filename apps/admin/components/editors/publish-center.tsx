@@ -8,10 +8,11 @@ import {
   History,
   Loader2,
   RotateCcw,
+  ScrollText,
   X,
 } from 'lucide-react';
 import { publishSite, restoreVersion } from '../../app/actions';
-import type { ContentVersion, PublishStatus } from '../../lib/content';
+import type { ContentVersion, PublishResult, PublishStatus } from '../../lib/content';
 import { Panel } from '../fields';
 
 /**
@@ -234,8 +235,87 @@ export function PublishCenter({
           </p>
         )}
       </div>
+
+      {/* ── Publish log ────────────────────────────────────────────────── */}
+      <div className="mt-8">
+        <h2 className="mb-4 flex items-center gap-2 font-heading text-lg font-semibold text-fg">
+          <ScrollText className="h-4 w-4" /> Yayın Kayıtları
+        </h2>
+
+        {!status || status.history.length === 0 ? (
+          <Panel className="p-8">
+            <p className="text-center text-sm text-faint">Henüz yayın denemesi yok.</p>
+          </Panel>
+        ) : (
+          <Panel className="divide-y divide-overlay/5">
+            {status.history.map((entry) => (
+              <PublishLogRow key={entry.id ?? entry.at} entry={entry} />
+            ))}
+          </Panel>
+        )}
+
+        <p className="mt-3 text-xs text-faint">
+          Bu kayıtlar silinmez. Bir yayının başarısız olduğu, ne kadar sürdüğü ve kimin
+          yaptığı sonradan da sorulabilmeli.
+        </p>
+      </div>
     </div>
   );
+}
+
+/** How a publish ended, in the panel's own words. */
+const STATE_STYLE: Record<string, { label: string; tone: string }> = {
+  SUCCEEDED: { label: 'Yayınlandı', tone: 'border-green-500/30 bg-green-500/10 text-green-600' },
+  FAILED: { label: 'Başarısız', tone: 'border-red-500/30 bg-red-500/10 text-red-500' },
+  PENDING: { label: 'Derleniyor', tone: 'border-amber-500/30 bg-amber-500/10 text-amber-500' },
+};
+
+/**
+ * One publish attempt, with everything needed to reason about it afterwards.
+ *
+ * The duration matters more than it looks: "the site has not changed yet" and
+ * "the build is still running" are the same picture from the panel, and this
+ * is what tells them apart. The deploy id is here so a build can be found in
+ * the hosting provider's own logs without guessing from timestamps.
+ */
+function PublishLogRow({ entry }: { entry: PublishResult }) {
+  const style = STATE_STYLE[entry.state] ?? {
+    label: entry.state,
+    tone: 'border-overlay/20 text-muted',
+  };
+
+  return (
+    <div className="p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${style.tone}`}>
+          {style.label}
+        </span>
+        {entry.version !== null && (
+          <span className="text-sm font-medium text-fg">Sürüm {entry.version}</span>
+        )}
+        <span className="text-xs text-faint">{formatWhen(entry.startedAt)}</span>
+        {entry.actor && <span className="text-xs text-muted">· {entry.actor}</span>}
+        {entry.durationMs !== null && (
+          <span className="text-xs text-faint">· {formatDuration(entry.durationMs)}</span>
+        )}
+      </div>
+
+      <p className="mt-1.5 text-sm text-muted">{entry.detail}</p>
+
+      {entry.deployId && (
+        <p className="mt-1.5 font-mono text-[11px] text-faint">deploy: {entry.deployId}</p>
+      )}
+    </div>
+  );
+}
+
+/** Seconds under a minute, minutes above — nobody reads "138000 ms". */
+function formatDuration(ms: number): string {
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds} sn`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return rest === 0 ? `${minutes} dk` : `${minutes} dk ${rest} sn`;
 }
 
 const STRATEGY_LABEL = {

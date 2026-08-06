@@ -139,6 +139,13 @@ export async function publishSite(): Promise<PublishResult> {
       id: null,
       actor: null,
       version: null,
+      // The attempt never reached the API, so it has no recorded span and no
+      // deploy behind it. Reported as zero rather than omitted, so the screen
+      // does not have to special-case a result that failed before it started.
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      durationMs: 0,
+      deployId: null,
     };
   }
 }

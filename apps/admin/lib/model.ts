@@ -251,9 +251,27 @@ export interface MailLogEntry {
 
 // ─── Analytics ──────────────────────────────────────────────────────────────
 
+/** The ranges the analytics screen offers, and what each means in days. */
+export const ANALYTICS_RANGES = [
+  { value: 'today', label: 'Bugün' },
+  { value: 'yesterday', label: 'Dün' },
+  { value: '7', label: 'Son 7 gün' },
+  { value: '30', label: 'Son 30 gün' },
+  { value: '90', label: 'Son 90 gün' },
+  { value: 'custom', label: 'Özel aralık' },
+] as const;
+
+export type AnalyticsRange = (typeof ANALYTICS_RANGES)[number]['value'];
+
 export interface AnalyticsSummary {
-  visitors: { today: number; week: number; month: number };
-  views: { today: number; week: number; month: number };
+  /** The window the figures below were measured over. */
+  range: { from: string; to: string; days: number };
+  /**
+   * `today`/`week`/`month` are fixed reference points, so "bugün" means today
+   * whatever range is selected. `selected` is the chosen range.
+   */
+  visitors: { today: number; week: number; month: number; selected: number };
+  views: { today: number; week: number; month: number; selected: number };
   /** Null when nobody has visited yet — a rate over no visitors is unknown. */
   conversionRate: number | null;
   formSubmits: number;

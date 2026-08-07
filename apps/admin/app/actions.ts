@@ -603,10 +603,13 @@ export async function getMailLogs(): Promise<{ items: MailLogEntry[]; failed: nu
 // ─── Analytics ──────────────────────────────────────────────────────────────
 
 /** Zeros rather than a crash: an empty chart is a truer answer than an error. */
-export async function getAnalytics(): Promise<AnalyticsSummary | null> {
+export async function getAnalytics(
+  from?: string,
+  to?: string,
+): Promise<AnalyticsSummary | null> {
   await requireAuth();
   try {
-    return await readAnalytics();
+    return await readAnalytics(from, to);
   } catch {
     return null;
   }

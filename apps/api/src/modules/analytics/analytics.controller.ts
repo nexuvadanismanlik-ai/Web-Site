@@ -8,6 +8,8 @@ import {
   Post,
   Query,
   Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
@@ -30,6 +32,12 @@ export class CollectViewDto {
   @IsOptional() @IsString() @MaxLength(160) utmCampaign?: string;
   @IsOptional() @IsString() @MaxLength(160) utmContent?: string;
   @IsOptional() @IsString() @MaxLength(160) utmTerm?: string;
+
+  // The page the visit started on. Sent by the tracker alongside the campaign
+  // and not stored on the view itself — the view already knows its own path —
+  // but it has to be *accepted*: validation runs with forbidNonWhitelisted, so
+  // one unlisted property makes the whole request a 400 and the view is lost.
+  @IsOptional() @IsString() @MaxLength(200) landingPath?: string;
 }
 
 export class CollectEventDto {
@@ -39,6 +47,27 @@ export class CollectEventDto {
   @IsString() @MaxLength(200) path!: string;
   @IsOptional() @IsString() @MaxLength(120) label?: string;
 }
+
+/**
+ * Validation for the two endpoints a visitor's browser posts to.
+ *
+ * Unknown properties are dropped rather than rejected. The application-wide
+ * rule is the opposite — an unrecognised field is a 400, which is right for an
+ * endpoint a person is waiting on, because it turns a typo into an error
+ * message instead of a silently ignored setting.
+ *
+ * It is wrong here, and expensively so. The tracker is fire-and-forget: it
+ * discards every response by design, since a visitor must never see a
+ * measurement failure. So when the site began sending one field the DTO did
+ * not list, every page view became a 400 that nothing reported, and traffic
+ * measurement stopped dead while the panel showed a plausible-looking zero.
+ * Strict validation only protects a caller that can hear the complaint.
+ */
+const BEACON_VALIDATION = new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: false,
+  transform: true,
+});
 
 @ApiTags('analytics')
 @Controller('analytics')
@@ -58,6 +87,7 @@ export class AnalyticsController {
    */
   @Post('collect')
   @Public()
+  @UsePipes(BEACON_VALIDATION)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Record a page view. Public; sent by the website.' })
   @ApiQuery({ name: 'tenant', required: false })
@@ -92,6 +122,7 @@ export class AnalyticsController {
 
   @Post('event')
   @Public()
+  @UsePipes(BEACON_VALIDATION)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Record an interaction. Public; sent by the website.' })
   @ApiQuery({ name: 'tenant', required: false })
@@ -142,10 +173,32 @@ export class AnalyticsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Traffic, sources, pages and conversions' })
   @ApiQuery({ name: 'tenant', required: false })
-  async summary(@Query('tenant') tenant?: string) {
+  async summary(
+    @Query('tenant') tenant?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
     const tenantId = await this.tenants.resolveTenantId(tenant);
-    return this.analytics.summary(tenantId);
+    return this.analytics.summary(tenantId, {
+      ...(parseDay(from, 'start') ? { from: parseDay(from, 'start') as Date } : {}),
+      ...(parseDay(to, 'end') ? { to: parseDay(to, 'end') as Date } : {}),
+    });
   }
+}
+
+/**
+ * A `YYYY-MM-DD` query parameter as a moment.
+ *
+ * The end of a range is the end of that day, not its midnight: a person
+ * picking today as the last day means everything up to now, and a naive
+ * `<= 2026-08-07T00:00:00Z` silently excludes the entire day they asked for.
+ * Anything unparseable is ignored rather than rejected, so a stale bookmark
+ * shows the default month instead of an error.
+ */
+function parseDay(value: string | undefined, edge: 'start' | 'end'): Date | undefined {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const date = new Date(`${value}T${edge === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`);
+  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 function readHeader(req: FastifyRequest, name: string): string {

@@ -105,43 +105,53 @@ export class AnalyticsService {
    * Counted in the database rather than pulled into memory: a month of traffic
    * is exactly the size that works in development and falls over in production.
    */
-  async summary(tenantId: string) {
+  async summary(tenantId: string, range?: { from?: Date; to?: Date }) {
     const now = Date.now();
     const since = (days: number) => new Date(now - days * 86_400_000);
     const base = { tenantId };
 
-    const [today_, week, month, monthViews, topPages, sources, devices, events, avgDuration] =
+    // The window everything below the tiles is measured over. Thirty days when
+    // nobody asked for anything else, which is what the screen used to be.
+    const from = range?.from ?? since(30);
+    const to = range?.to ?? new Date(now);
+    const period = { gte: from, lte: to };
+    const days = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 86_400_000));
+
+    const [today_, week, month, selected, periodViews, topPages, sources, devices, events, avgDuration] =
       await Promise.all([
+        // The three tiles are fixed reference points on purpose: "bugün" has to
+        // mean today whatever range is being read below it.
         this.window(tenantId, since(1)),
         this.window(tenantId, since(7)),
         this.window(tenantId, since(30)),
-        this.prisma.pageView.count({ where: { ...base, createdAt: { gte: since(30) } } }),
+        this.window(tenantId, from, to),
+        this.prisma.pageView.count({ where: { ...base, createdAt: period } }),
         this.prisma.pageView.groupBy({
           by: ['path'],
-          where: { ...base, createdAt: { gte: since(30) } },
+          where: { ...base, createdAt: period },
           _count: { _all: true },
           orderBy: { _count: { path: 'desc' } },
           take: 10,
         }),
         this.prisma.pageView.groupBy({
           by: ['source'],
-          where: { ...base, createdAt: { gte: since(30) } },
+          where: { ...base, createdAt: period },
           _count: { _all: true },
           orderBy: { _count: { source: 'desc' } },
           take: 10,
         }),
         this.prisma.pageView.groupBy({
           by: ['device'],
-          where: { ...base, createdAt: { gte: since(30) } },
+          where: { ...base, createdAt: period },
           _count: { _all: true },
         }),
         this.prisma.analyticsEvent.groupBy({
           by: ['name'],
-          where: { ...base, createdAt: { gte: since(30) } },
+          where: { ...base, createdAt: period },
           _count: { _all: true },
         }),
         this.prisma.pageView.aggregate({
-          where: { ...base, createdAt: { gte: since(30) }, durationSeconds: { not: null } },
+          where: { ...base, createdAt: period, durationSeconds: { not: null } },
           _avg: { durationSeconds: true },
         }),
       ]);
@@ -154,26 +164,41 @@ export class AnalyticsService {
     // that answer lives in the CRM, which is in the same database.
     const [leads, won, lost] = await Promise.all([
       this.prisma.contactMessage.count({
-        where: { tenantId, deletedAt: null, createdAt: { gte: since(30) } },
+        where: { tenantId, deletedAt: null, createdAt: period },
       }),
       this.prisma.contactMessage.count({
-        where: { tenantId, deletedAt: null, status: 'WON', lastActionAt: { gte: since(30) } },
+        where: { tenantId, deletedAt: null, status: 'WON', lastActionAt: period },
       }),
       this.prisma.contactMessage.count({
-        where: { tenantId, deletedAt: null, status: 'LOST', lastActionAt: { gte: since(30) } },
+        where: { tenantId, deletedAt: null, status: 'LOST', lastActionAt: period },
       }),
     ]);
 
-    const daily = await this.dailySeries(tenantId, 30);
-    const campaigns = await this.campaignReport(tenantId, since(30));
+    const daily = await this.dailySeries(tenantId, from, to);
+    const campaigns = await this.campaignReport(tenantId, from, to);
 
     return {
-      visitors: { today: today_.visitors, week: week.visitors, month: month.visitors },
-      views: { today: today_.views, week: week.views, month: monthViews },
+      // What the range currently reads, echoed back so the screen can label
+      // its own numbers rather than assuming they are the last thirty days.
+      range: { from: from.toISOString(), to: to.toISOString(), days },
+      visitors: {
+        today: today_.visitors,
+        week: week.visitors,
+        month: month.visitors,
+        selected: selected.visitors,
+      },
+      views: {
+        today: today_.views,
+        week: week.views,
+        month: month.views,
+        selected: periodViews,
+      },
       // Conversion over visitors, not views: one person filling in the form
       // after reading four pages is one conversion, not a quarter of one.
       conversionRate:
-        month.visitors > 0 ? Math.round((formSubmits / month.visitors) * 1000) / 10 : null,
+        selected.visitors > 0
+          ? Math.round((formSubmits / selected.visitors) * 1000) / 10
+          : null,
       formSubmits,
       ctaClicks,
       averageSeconds: Math.round(avgDuration._avg.durationSeconds ?? 0),
@@ -192,7 +217,9 @@ export class AnalyticsService {
         winRate: won + lost > 0 ? Math.round((won / (won + lost)) * 100) : null,
         // What a visit is ultimately worth: visitors in, enquiries out.
         leadRate:
-          month.visitors > 0 ? Math.round((leads / month.visitors) * 1000) / 10 : null,
+          selected.visitors > 0
+            ? Math.round((leads / selected.visitors) * 1000) / 10
+            : null,
       },
     };
   }
@@ -208,7 +235,7 @@ export class AnalyticsService {
    * Grouped by source and campaign together: the same campaign name run on two
    * platforms is two lines of spend and has to be two lines here.
    */
-  private async campaignReport(tenantId: string, since: Date) {
+  private async campaignReport(tenantId: string, since: Date, until: Date) {
     const [visits, leads] = await Promise.all([
       this.prisma.$queryRaw<
         { source: string | null; campaign: string | null; visitors: bigint; views: bigint }[]
@@ -218,7 +245,9 @@ export class AnalyticsService {
                count(DISTINCT "visitorHash") AS visitors,
                count(*) AS views
         FROM page_views
-        WHERE "tenantId" = ${tenantId} AND "createdAt" >= ${since}
+        WHERE "tenantId" = ${tenantId}
+          AND "createdAt" >= ${since}
+          AND "createdAt" <= ${until}
         GROUP BY 1, 2
         ORDER BY 3 DESC
         LIMIT 20
@@ -234,6 +263,7 @@ export class AnalyticsService {
         WHERE "tenantId" = ${tenantId}
           AND "deletedAt" IS NULL
           AND "createdAt" >= ${since}
+          AND "createdAt" <= ${until}
         GROUP BY 1, 2
       `,
     ]);
@@ -316,9 +346,7 @@ export class AnalyticsService {
    * produces no row, and a chart that silently skips those days draws a
    * flattering line through the gaps.
    */
-  private async dailySeries(tenantId: string, days: number) {
-    const since = new Date(Date.now() - days * 86_400_000);
-
+  private async dailySeries(tenantId: string, from: Date, to: Date) {
     const rows = await this.prisma.$queryRaw<
       { day: Date; views: bigint; visitors: bigint }[]
     >`
@@ -326,7 +354,9 @@ export class AnalyticsService {
              count(*) AS views,
              count(DISTINCT "visitorHash") AS visitors
       FROM page_views
-      WHERE "tenantId" = ${tenantId} AND "createdAt" >= ${since}
+      WHERE "tenantId" = ${tenantId}
+        AND "createdAt" >= ${from}
+        AND "createdAt" <= ${to}
       GROUP BY 1
       ORDER BY 1
     `;
@@ -338,21 +368,32 @@ export class AnalyticsService {
       ]),
     );
 
+    // Walked day by day from the start of the range rather than back from now,
+    // so a range that ends in the past draws its own days and not today's.
     const series: { date: string; views: number; visitors: number }[] = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    const cursor = new Date(from);
+    cursor.setUTCHours(0, 0, 0, 0);
+    const last = new Date(to);
+    last.setUTCHours(0, 0, 0, 0);
+
+    // A guard, not a policy: a year of daily bars is unreadable long before
+    // it is slow, and an unbounded loop here is a request that never returns.
+    for (let guard = 0; cursor <= last && guard < 400; guard++) {
+      const date = cursor.toISOString().slice(0, 10);
       const found = byDay.get(date);
       series.push({ date, views: found?.views ?? 0, visitors: found?.visitors ?? 0 });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
     return series;
   }
 
   /** Views and distinct visitors since a moment. */
-  private async window(tenantId: string, since: Date) {
+  private async window(tenantId: string, since: Date, until?: Date) {
+    const createdAt = until ? { gte: since, lte: until } : { gte: since };
     const [views, distinct] = await Promise.all([
-      this.prisma.pageView.count({ where: { tenantId, createdAt: { gte: since } } }),
+      this.prisma.pageView.count({ where: { tenantId, createdAt } }),
       this.prisma.pageView.findMany({
-        where: { tenantId, createdAt: { gte: since } },
+        where: { tenantId, createdAt },
         distinct: ['visitorHash'],
         select: { visitorHash: true },
       }),

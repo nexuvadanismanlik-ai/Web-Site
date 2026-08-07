@@ -1,6 +1,23 @@
 import { BarChart3, MousePointerClick, Send, Timer, Users } from 'lucide-react';
 import { getAnalytics } from '../../actions';
 import { Panel } from '../../../components/fields';
+import { AnalyticsRangePicker } from '../../../components/editors/analytics-range';
+import { ANALYTICS_RANGES, type AnalyticsRange } from '../../../lib/model';
+
+/** An axis label: "07 Ağu". Empty for a missing day rather than "Invalid Date". */
+function shortDay(iso: string | undefined): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+}
+
+/** A day as somebody would read it, not as the API stores it. */
+function formatDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('tr-TR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +42,46 @@ const DEVICE_LABELS: Record<string, string> = {
   tablet: 'Tablet',
 };
 
-export default async function AnalyticsPage() {
-  const data = await getAnalytics();
+/**
+ * Turns the selected range into the two dates the API takes.
+ *
+ * Days are counted inclusively: "Son 7 gün" is today and the six before it,
+ * which is what somebody comparing against last week means. Anything the API
+ * cannot parse is ignored there, so a mangled address falls back to a month.
+ */
+function resolveRange(range: AnalyticsRange, from?: string, to?: string) {
+  const day = (offset: number) =>
+    new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10);
+
+  switch (range) {
+    case 'today':
+      return { from: day(0), to: day(0) };
+    case 'yesterday':
+      return { from: day(1), to: day(1) };
+    case '7':
+      return { from: day(6), to: day(0) };
+    case '90':
+      return { from: day(89), to: day(0) };
+    case 'custom':
+      return { from: from ?? day(29), to: to ?? day(0) };
+    case '30':
+    default:
+      return { from: day(29), to: day(0) };
+  }
+}
+
+const RANGE_VALUES = new Set(ANALYTICS_RANGES.map((entry) => entry.value as string));
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: { range?: string; from?: string; to?: string };
+}) {
+  const range: AnalyticsRange = RANGE_VALUES.has(searchParams.range ?? '')
+    ? (searchParams.range as AnalyticsRange)
+    : '30';
+  const window = resolveRange(range, searchParams.from, searchParams.to);
+  const data = await getAnalytics(window.from, window.to);
 
   if (!data) {
     return (
@@ -41,11 +96,17 @@ export default async function AnalyticsPage() {
     );
   }
 
-  const empty = data.views.month === 0;
+  const empty = data.views.selected === 0;
+  const rangeLabel = ANALYTICS_RANGES.find((entry) => entry.value === range)?.label ?? 'Son 30 gün';
 
   const tiles = [
-    { label: 'Bugün', value: data.visitors.today, hint: `${data.views.today} sayfa görüntüleme`, icon: Users },
-    { label: 'Bu hafta', value: data.visitors.week, hint: `${data.views.week} görüntüleme`, icon: Users },
+    {
+      label: rangeLabel,
+      value: data.visitors.selected,
+      hint: `${data.views.selected} sayfa görüntüleme`,
+      icon: Users,
+    },
+    { label: 'Bugün', value: data.visitors.today, hint: `${data.views.today} görüntüleme`, icon: Users },
     { label: 'Bu ay', value: data.visitors.month, hint: `${data.views.month} görüntüleme`, icon: Users },
     {
       label: 'Dönüşüm',
@@ -57,18 +118,25 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="font-heading text-2xl font-bold text-fg">Ziyaretçiler</h1>
         <p className="mt-0.5 text-sm text-muted">
-          Son 30 gün. Kendi ölçümümüz — çerez yok, IP saklanmıyor, veri üçüncü bir tarafa
-          gitmiyor.
+          Kendi ölçümümüz — çerez yok, IP saklanmıyor, veri üçüncü bir tarafa gitmiyor.
+        </p>
+      </div>
+
+      <div className="mb-5">
+        <AnalyticsRangePicker selected={range} from={window.from} to={window.to} />
+        <p className="mt-2 text-xs text-faint">
+          {formatDay(data.range.from)} – {formatDay(data.range.to)}
+          {data.range.days > 1 ? ` · ${data.range.days} gün` : ''}
         </p>
       </div>
 
       {empty && (
         <p className="mb-6 rounded-xl border border-overlay/15 bg-overlay/[0.03] px-4 py-3 text-sm text-muted">
-          Henüz ziyaretçi kaydı yok. Ölçüm, sitenin bir sonraki yayınından itibaren
-          başlar — yayınla, sonra siteyi bir kez ziyaret et.
+          Seçilen aralıkta ziyaretçi kaydı yok. Daha geniş bir aralık seçebilir ya da
+          siteyi bir kez ziyaret edip tekrar bakabilirsin.
         </p>
       )}
 
@@ -299,14 +367,12 @@ function DailyChart({ series }: { series: { date: string; views: number; visitor
           </div>
         ))}
       </div>
+      {/* Both ends are read off the series. The right-hand label used to say
+          "Bugün" unconditionally, which was a lie for any range ending in the
+          past — and the ranges can now end in the past. */}
       <div className="mt-2 flex justify-between text-[11px] text-faint">
-        <span>
-          {new Date(series[0]?.date ?? '').toLocaleDateString('tr-TR', {
-            day: '2-digit',
-            month: 'short',
-          })}
-        </span>
-        <span>Bugün</span>
+        <span>{shortDay(series[0]?.date)}</span>
+        <span>{shortDay(series[series.length - 1]?.date)}</span>
       </div>
     </>
   );

@@ -61,6 +61,7 @@ async function main() {
   // ---- 1. A visitor arrives from an ad --------------------------------
   console.log('1. Reklamdan ziyaret');
   const views = 3;
+  let accepted = 0;
   for (let i = 0; i < views; i++) {
     const res = await api('/analytics/collect', {
       method: 'POST',
@@ -72,11 +73,29 @@ async function main() {
         landingPath: '/',
       }),
     });
-    if (res.status !== 204) {
-      check(false, `Sayfa görüntüleme ${i + 1}`, `HTTP ${res.status}`);
-    }
+    if (res.status === 204) accepted++;
+    else check(false, `Sayfa görüntüleme ${i + 1}`, `HTTP ${res.status}`);
   }
-  check(true, `${views} sayfa görüntüleme gönderildi (utm_source=google)`);
+  check(
+    accepted === views,
+    `${accepted}/${views} sayfa görüntüleme kabul edildi (utm_source=google)`,
+  );
+
+  // The exact payload the live site sends, unknown fields and all. The tracker
+  // discards every response, so an endpoint that rejects a field it has not
+  // learned about yet stops measurement with nobody to hear it — which is
+  // precisely what happened, and why this case is now its own check.
+  const beacon = await api('/analytics/collect', {
+    method: 'POST',
+    body: JSON.stringify({
+      path: '/',
+      utmCampaign: CAMPAIGN,
+      landingPath: '/',
+      referrer: 'https://www.google.com/',
+      thisFieldDoesNotExistYet: 'x',
+    }),
+  });
+  check(beacon.status === 204, 'Bilinmeyen alan ölçümü durdurmuyor', `HTTP ${beacon.status}`);
 
   // ---- 2. The same visit sends the form -------------------------------
   console.log('\n2. Aynı ziyaretten form gönderimi');
@@ -117,7 +136,7 @@ async function main() {
   // ---- 4. The lead knows where it came from ---------------------------
   console.log('\n4. Talep kaynağını taşıyor');
   if (created && leadId) {
-    const lead = await api(`/website/leads/${leadId}?tenant=nexuva`, { headers: auth });
+    const lead = await api(`/website/contact/${leadId}/detail?tenant=nexuva`, { headers: auth });
     check(lead.body?.utmSource === 'google', 'Talepte kaynak: google', String(lead.body?.utmSource));
     check(lead.body?.utmCampaign === CAMPAIGN, 'Talepte kampanya adı', String(lead.body?.utmCampaign));
     check(lead.body?.landingPath === '/', 'Talepte giriş sayfası', String(lead.body?.landingPath));
@@ -150,7 +169,7 @@ async function main() {
   // history is never touched — only what this run created.
   console.log('\n6. Test verisi temizliği');
   if (leadId) {
-    const del = await api(`/website/leads/${leadId}?tenant=nexuva`, {
+    const del = await api(`/website/contact/${leadId}?tenant=nexuva`, {
       method: 'DELETE',
       headers: auth,
     });

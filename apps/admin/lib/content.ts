@@ -547,6 +547,10 @@ export async function readMailLogs(): Promise<{ items: MailLogEntry[]; failed: n
 
 // ─── Analytics ──────────────────────────────────────────────────────────────
 
-export async function readAnalytics(): Promise<AnalyticsSummary> {
-  return apiFetch<AnalyticsSummary>('/analytics/summary');
+export async function readAnalytics(from?: string, to?: string): Promise<AnalyticsSummary> {
+  const query = new URLSearchParams();
+  if (from) query.set('from', from);
+  if (to) query.set('to', to);
+  const suffix = query.toString();
+  return apiFetch<AnalyticsSummary>(`/analytics/summary${suffix ? `?${suffix}` : ''}`);
 }

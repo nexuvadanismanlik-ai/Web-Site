@@ -2,7 +2,6 @@ import Link from 'next/link';
 import {
   Briefcase,
   Star,
-  Quote,
   Inbox,
   Palette,
   Sparkles,
@@ -16,9 +15,20 @@ import {
   CalendarDays,
   Trophy,
   ServerCrash,
+  Bell,
+  CloudUpload,
+  HardDrive,
+  MailWarning,
 } from 'lucide-react';
 import { readSiteContent, readMessages } from '../../lib/content';
-import { getLeadSummary } from '../actions';
+import {
+  getLeadSummary,
+  getMailLogs,
+  getMedia,
+  getNotifications,
+  getPublishStatus,
+} from '../actions';
+import { SystemSummary } from '../../components/editors/system-summary';
 import { adminPath } from '../../lib/routes';
 
 export const dynamic = 'force-dynamic';
@@ -33,15 +43,27 @@ export default async function DashboardHome() {
   // into error.tsx, so the first thing an operator saw when the backend was
   // down was a blank apology with no cause and nowhere to go — while the one
   // screen that could explain it sat one click away, unmentioned.
-  const [content, inbox, crm] = await Promise.all([
+  const [content, inbox, crm, publish, media, mail, notifications] = await Promise.all([
     readSiteContent().catch(() => null),
     readMessages().catch(() => ({ items: [], total: 0, unread: 0 })),
     getLeadSummary(),
+    getPublishStatus(),
+    getMedia(),
+    getMailLogs(),
+    getNotifications(true),
   ]);
 
   if (!content) return <ApiUnreachable />;
 
   const { items: messages, unread } = inbox;
+
+  // Only the last day: a failure from last month is history, not something to
+  // act on this morning.
+  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const mailToday = mail.items.filter((entry) => new Date(entry.createdAt).getTime() > dayAgo);
+  const mailFailedToday = mailToday.filter((entry) => entry.status === 'FAILED').length;
+
+  const lastPublish = publish?.lastPublish ?? null;
 
   // The pipeline, summarised. Unassigned leads come first because they are the
   // only line here that is somebody's job rather than a fact.
@@ -52,11 +74,34 @@ export default async function DashboardHome() {
     { label: 'Kazanıldı', value: crm.won, icon: Trophy, alert: false },
   ];
 
+  // What wants attention today, rather than what the site is made of. The
+  // overview used to count services and references — true, and never once the
+  // reason somebody opened the panel.
   const stats = [
-    { label: 'Hizmet', value: content.services.length, icon: Briefcase },
-    { label: 'Referans', value: content.references.length, icon: Star },
-    { label: 'Görüş', value: content.testimonials.length, icon: Quote },
-    { label: 'Okunmamış Mesaj', value: unread, icon: Inbox, highlight: unread > 0 },
+    {
+      label: 'Okunmamış talep',
+      value: unread,
+      icon: Inbox,
+      highlight: unread > 0,
+    },
+    {
+      label: 'Okunmamış bildirim',
+      value: notifications.length,
+      icon: Bell,
+      highlight: notifications.length > 0,
+    },
+    {
+      label: 'Bekleyen yayın',
+      value: publish?.pendingChanges ? 'Var' : 'Yok',
+      icon: CloudUpload,
+      highlight: publish?.pendingChanges === true,
+    },
+    {
+      label: 'Başarısız mail (24s)',
+      value: mailFailedToday,
+      icon: MailWarning,
+      highlight: mailFailedToday > 0,
+    },
   ];
 
   const quickLinks = [
@@ -133,6 +178,74 @@ export default async function DashboardHome() {
             );
           })}
         </Link>
+      </div>
+
+      {/* Operations */}
+      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <SystemSummary />
+
+        {/* Last publish */}
+        <Link
+          href={adminPath('/publish')}
+          className="panel group flex items-center gap-4 p-5 transition-colors hover:border-overlay/25 hover:bg-overlay/[0.03]"
+        >
+          <span
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+              lastPublish?.state === 'FAILED'
+                ? 'bg-red-500/15 text-red-500'
+                : lastPublish?.state === 'PENDING'
+                  ? 'bg-amber-500/15 text-amber-500'
+                  : 'bg-overlay/5 text-brand-dyn'
+            }`}
+          >
+            <CloudUpload className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-fg">Son Yayın</span>
+            <span className="block truncate text-xs text-muted">
+              {!lastPublish
+                ? 'Henüz yayın yapılmadı'
+                : lastPublish.state === 'FAILED'
+                  ? `Başarısız — ${lastPublish.detail}`
+                  : lastPublish.state === 'PENDING'
+                    ? 'Derleme sürüyor...'
+                    : `Sürüm ${lastPublish.version ?? '—'} · ${formatWhen(lastPublish.at)}${
+                        lastPublish.actor ? ` · ${lastPublish.actor}` : ''
+                      }`}
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-faint transition-transform group-hover:translate-x-1 group-hover:text-fg" />
+        </Link>
+
+        {/* Storage */}
+        <Link
+          href={adminPath('/media')}
+          className="panel group flex items-center gap-4 p-5 transition-colors hover:border-overlay/25 hover:bg-overlay/[0.03]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-overlay/5 text-brand-dyn">
+            <HardDrive className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-fg">Medya</span>
+            <span className="block truncate text-xs text-muted">
+              {media.total} dosya · {formatBytes(media.usedBytes)}
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-faint transition-transform group-hover:translate-x-1 group-hover:text-fg" />
+        </Link>
+
+        {/* Traffic — honest about not existing yet */}
+        <div className="panel flex items-center gap-4 p-5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-overlay/5 text-faint">
+            <BarChart3 className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-fg">Ziyaretçi</span>
+            <span className="block text-xs text-muted">
+              Ölçüm henüz kurulmadı — site hiçbir analitik servise veri göndermiyor.
+            </span>
+          </span>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -236,4 +349,19 @@ function ApiUnreachable() {
       </div>
     </div>
   );
+}
+
+function formatWhen(iso: string): string {
+  return new Date(iso).toLocaleString('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }

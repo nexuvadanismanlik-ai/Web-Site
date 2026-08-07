@@ -47,6 +47,7 @@ export type {
   LogoItem,
   SectionMeta,
   SeoContent,
+  UiText,
   SiteContent,
   ContactMessage,
 } from './content';

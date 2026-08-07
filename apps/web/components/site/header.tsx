@@ -18,9 +18,11 @@ interface HeaderProps {
   logoUrl?: string;
   nav: HeaderNavItem[];
   ctaLabel: string;
+  /** Where the header button goes. Panel-managed like its label. */
+  ctaHref: string;
 }
 
-export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
+export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -110,7 +112,7 @@ export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
               {/* data-cta belongs on the anchor, not on a span inside it: the
                   tracker resolves a click to its nearest a/button, so an
                   attribute on a child is never the element it inspects. */}
-              <Link href={'/contact'} data-cta="header" className="hidden md:inline-flex">
+              <Link href={ctaHref} data-cta="header" className="hidden md:inline-flex">
                 <span className="btn-primary !px-5 !py-2.5 text-sm">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
@@ -176,7 +178,7 @@ export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
                 ))}
               </nav>
               <div className="mt-auto flex flex-col gap-3">
-                <Link href={'/contact'} data-cta="header-mobile" className="btn-primary w-full justify-center">
+                <Link href={ctaHref} data-cta="header-mobile" className="btn-primary w-full justify-center">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>

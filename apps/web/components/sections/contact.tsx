@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
-import type { ContactContent } from '@nexuva/types';
+import type { ContactContent, UiText } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
 import { trackFormSubmit } from '../analytics';
@@ -11,6 +11,7 @@ export function Contact({
   contact,
   services = [],
   budgets = [],
+  uiText,
   hideHeading = false,
 }: {
   contact: ContactContent;
@@ -22,9 +23,11 @@ export function Contact({
    * — zod included — into the browser for the sake of five strings.
    */
   budgets?: string[];
+  /** Panel-managed labels. Falls back to the built-in wording when absent. */
+  uiText?: UiText;
   hideHeading?: boolean;
 }) {
-  const ui = getUi();
+  const ui = getUi(uiText);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [failure, setFailure] = useState<ContactError | null>(null);
 

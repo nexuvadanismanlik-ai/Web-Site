@@ -49,6 +49,9 @@ const service = z.object({
   // Chosen from the media library, so an address is always one this platform
   // produced. Nullish, because clearing the field has to be expressible.
   imageUrl: z.string().url().max(500).nullish(),
+  imageAlt: z.string().max(200).nullish(),
+  ctaLabel: localized.nullish(),
+  ctaHref: z.string().max(300).nullish(),
   ...ordering,
 });
 
@@ -83,6 +86,8 @@ const testimonial = z.object({
 const processStep = z.object({
   title: localized,
   description: localized,
+  icon: z.string().max(60).nullish(),
+  imageUrl: z.string().url().max(500).nullish(),
   ...ordering,
 });
 

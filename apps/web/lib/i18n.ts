@@ -1,4 +1,4 @@
-import type { Localized } from '@nexuva/types';
+import type { Localized, UiText } from '@nexuva/types';
 
 /**
  * The site is Turkish.
@@ -21,8 +21,14 @@ export function t(value: Localized | undefined | null): string {
   return value.tr ?? value.en ?? '';
 }
 
-/** Static UI micro-copy that is not part of the editable content store. */
-const copy = {
+/**
+ * The wording the site falls back to.
+ *
+ * Not a second copy of the content: these are defaults, and the panel writes
+ * over any of them. A field left empty in the panel means "keep this", which
+ * is why an untouched deployment reads exactly as it always has.
+ */
+const FALLBACK = {
     menu: 'Menü',
     close: 'Kapat',
     getStarted: 'Hemen Başla',
@@ -52,9 +58,24 @@ const copy = {
     messagePlaceholder: 'Projeniz hakkında birkaç cümle...',
     trustedBy: 'Bize güvenen markalar',
     backHome: 'Anasayfaya dön',
+    allServices: 'Tüm hizmetleri gör',
 } as const;
 
-/** Static UI micro-copy that is not part of the editable content store. */
-export function getUi() {
-  return copy;
+/**
+ * The site's micro-copy, panel first and fallback second.
+ *
+ * Called with the stored text where the caller has it. The no-argument form
+ * exists for the few places that render before content is available, and
+ * returns the defaults — never a blank label.
+ */
+export function getUi(stored?: UiText | null): typeof FALLBACK {
+  if (!stored) return FALLBACK;
+
+  const merged: Record<string, string> = { ...FALLBACK };
+  for (const [key, value] of Object.entries(stored)) {
+    // An empty string is "not set", not "render nothing": a blank button is a
+    // worse outcome than an unedited one.
+    if (typeof value === 'string' && value.trim()) merged[key] = value;
+  }
+  return merged as typeof FALLBACK;
 }

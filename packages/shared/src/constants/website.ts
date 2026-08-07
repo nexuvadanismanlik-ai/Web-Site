@@ -30,6 +30,9 @@ export const WEBSITE_SECTION_KEYS = [
   // other section so it versions, publishes and rolls back with the content it
   // describes — a title that changes without its page is worse than no title.
   'seo',
+  // Button labels, form fields, empty and error states — the words that are
+  // not part of any one section but appear on every page.
+  'uiText',
 ] as const;
 
 export type WebsiteSectionKey = (typeof WEBSITE_SECTION_KEYS)[number];

@@ -147,6 +147,25 @@ export function BrandEditor({
           </div>
         </Panel>
 
+        <Panel title="Header Butonu">
+          <p className="mb-4 text-xs text-faint">
+            Sitenin üst çubuğundaki buton. Metni boş bırakılırsa varsayılan yazı kullanılır.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <LocalizedField
+              label="Buton Metni"
+              value={brand.headerCta?.label ?? { tr: '', en: '' }}
+              onChange={(v) => set('headerCta', { label: v, href: brand.headerCta?.href ?? '/contact' })}
+            />
+            <TextField
+              label="Buton Bağlantısı"
+              value={brand.headerCta?.href ?? ''}
+              onChange={(v) => set('headerCta', { label: brand.headerCta?.label ?? { tr: '', en: '' }, href: v })}
+              placeholder="/contact"
+            />
+          </div>
+        </Panel>
+
         <Panel title="Sosyal Medya">
           <div className="space-y-3">
             {brand.social.map((s, i) => {

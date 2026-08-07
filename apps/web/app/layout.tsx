@@ -88,7 +88,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const content = await getSiteContent();
-  const ui = getUi();
+  const ui = getUi(content.uiText);
 
   const nav = content.nav.map((item) => ({
     label: t(item.label),
@@ -120,7 +120,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           logoText={content.brand.logoText}
           logoUrl={content.brand.logoUrl ?? ''}
           nav={nav}
-          ctaLabel={ui.getStarted}
+          ctaLabel={content.brand.headerCta?.label?.tr || ui.getStarted}
+          ctaHref={content.brand.headerCta?.href || '/contact'}
         />
         <main className="relative">{children}</main>
         <Footer content={content} />

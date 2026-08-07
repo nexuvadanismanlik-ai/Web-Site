@@ -3,18 +3,24 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ProcessStep, SectionMeta, Localized } from '@nexuva/types';
+import { ImageField, SelectField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import { LocalizedField, Panel, MetaFields, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
 import { DragHandle, useRemoveWithUndo, useSortable } from './list-controls';
 
 const empty: Localized = { tr: '', en: '' };
 
+/** Icons that suit a process step. Same set the site can render. */
+const STEP_ICONS = ['compass', 'search', 'pen-tool', 'code', 'rocket', 'check', 'users', 'target', 'layers', 'zap'];
+
 export function ProcessEditor({
   meta: m0,
   steps: p0,
+  images,
 }: {
   meta: SectionMeta;
   steps: ProcessStep[];
+  images: PickableImage[];
 }) {
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [steps, setSteps] = useState<ProcessStep[]>(p0);
@@ -61,6 +67,19 @@ export function ProcessEditor({
                 </IconButton>
               </div>
               <div className="space-y-4">
+                <SelectField
+                  label="İkon"
+                  value={s.icon ?? ''}
+                  onChange={(v) => patch(s.id, { icon: v })}
+                  options={[{ value: '', label: 'Adım numarası göster' }, ...STEP_ICONS.map((i) => ({ value: i, label: i }))]}
+                />
+                <ImageField
+                  label="Görsel"
+                  value={s.imageUrl ?? ''}
+                  onChange={(url) => patch(s.id, { imageUrl: url })}
+                  images={images}
+                  hint="Seçilirse ikonun ve numaranın yerine geçer."
+                />
                 <LocalizedField label="Başlık" value={s.title} onChange={(v) => patch(s.id, { title: v })} />
                 <LocalizedField label="Açıklama" value={s.description} onChange={(v) => patch(s.id, { description: v })} multiline rows={2} />
               </div>

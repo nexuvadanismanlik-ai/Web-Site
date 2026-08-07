@@ -36,14 +36,17 @@ export function Footer({ content }: { content: SiteContent }) {
             </p>
             {/* The footer is where a reader lands after everything else has
                 failed to convince them. One clear way forward beats none. */}
-            <Link
-              href="/contact"
-              data-cta="footer"
-              className="btn-primary mt-6 inline-flex"
-            >
-              Talep Oluştur
-              <Icon name="arrow-right" className="h-4 w-4" />
-            </Link>
+            {footer.cta?.label?.tr && (
+              <Link
+                href={footer.cta.href || '/contact'}
+                data-cta="footer"
+                data-edit="footer.cta.label"
+                className="btn-primary mt-6 inline-flex"
+              >
+                {t(footer.cta.label)}
+                <Icon name="arrow-right" className="h-4 w-4" />
+              </Link>
+            )}
 
             <div className="mt-6 flex gap-3">
               {brand.social.map((s) => (

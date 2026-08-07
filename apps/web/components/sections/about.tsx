@@ -54,7 +54,7 @@ export function About({
                 <div className="mt-8 overflow-hidden rounded-2xl border border-overlay/10 shadow-card">
                   <img
                     src={about.image}
-                    alt=""
+                    alt={about.imageAlt ?? ''}
                     loading="lazy"
                     className="block h-auto w-full"
                   />

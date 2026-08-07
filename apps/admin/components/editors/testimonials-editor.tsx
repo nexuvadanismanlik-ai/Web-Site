@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { TestimonialItem, SectionMeta, Localized } from '@nexuva/types';
+import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import { TextField, LocalizedField, Panel, MetaFields, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
 import { DragHandle, useRemoveWithUndo, useSortable } from './list-controls';
@@ -12,9 +13,11 @@ const empty: Localized = { tr: '', en: '' };
 export function TestimonialsEditor({
   meta: m0,
   testimonials: t0,
+  images,
 }: {
   meta: SectionMeta;
   testimonials: TestimonialItem[];
+  images: PickableImage[];
 }) {
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [items, setItems] = useState<TestimonialItem[]>(t0);
@@ -56,6 +59,13 @@ export function TestimonialsEditor({
                 </IconButton>
               </div>
               <div className="space-y-4">
+                <ImageField
+                  label="Fotoğraf"
+                  value={t.avatarUrl ?? ''}
+                  onChange={(url) => patch(t.id, { avatarUrl: url })}
+                  images={images}
+                  hint="Boş bırakılırsa baş harfleri gösterilir."
+                />
                 <LocalizedField label="Alıntı" value={t.quote} onChange={(v) => patch(t.id, { quote: v })} multiline rows={3} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextField label="Kişi" value={t.author} onChange={(v) => patch(t.id, { author: v })} />

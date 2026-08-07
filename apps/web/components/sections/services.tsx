@@ -10,11 +10,14 @@ export function Services({
   services,
   showAll = false,
   hideHeading = false,
+  allServicesLabel = 'Tüm hizmetleri gör',
 }: {
   meta: SectionMeta;
   services: ServiceItem[];
   showAll?: boolean;
   hideHeading?: boolean;
+  /** Panel-managed. The default keeps the link working before it is set. */
+  allServicesLabel?: string;
 }) {
   if (services.length === 0) return null;
 
@@ -37,7 +40,7 @@ export function Services({
                   <div className="relative aspect-[16/10] overflow-hidden border-b border-overlay/10 bg-overlay/5">
                     <img
                       src={svc.imageUrl}
-                      alt=""
+                      alt={svc.imageAlt ?? ''}
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                     />
@@ -73,6 +76,17 @@ export function Services({
                     </li>
                   ))}
                 </ul>
+
+                {svc.cta?.label?.tr && (
+                  <Link
+                    href={svc.cta.href || '/contact'}
+                    data-cta={`service-${svc.id}`}
+                    className="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-brand-dyn transition-opacity hover:opacity-75"
+                  >
+                    {t(svc.cta.label)}
+                    <Icon name="arrow-right" className="h-3.5 w-3.5" />
+                  </Link>
+                )}
                 </div>
               </div>
             </StaggerItem>
@@ -82,7 +96,7 @@ export function Services({
         {!showAll && (
           <Reveal className="mt-12 text-center" delay={0.1}>
             <Link href={'/services'} className="btn-ghost">
-              {'Tüm hizmetleri gör'}
+              {allServicesLabel}
               <Icon name="arrow-right" className="h-4 w-4" />
             </Link>
           </Reveal>

@@ -838,6 +838,10 @@ model WebsiteService {
   /// Illustration for the service card and its detail. Chosen from the media
   /// library; an icon alone reads as a template.
   imageUrl    String?
+  imageAlt    String?
+  /// Optional per-service call to action. Hidden when the label is empty.
+  ctaLabel    Json?
+  ctaHref     String?
   position    Int     @default(0)
   isActive    Boolean @default(true)
 
@@ -926,6 +930,9 @@ model WebsiteProcessStep {
 
   title       Json
   description Json
+  /// lucide-react icon name. The step number stands in without one.
+  icon        String?
+  imageUrl    String?
   position    Int     @default(0)
   isActive    Boolean @default(true)
 

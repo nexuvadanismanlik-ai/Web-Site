@@ -46,6 +46,8 @@ export interface BrandConfig {
   phone: string;
   address: Localized;
   social: SocialLink[];
+  /** The button in the header. Part of the site chrome, like the logo. */
+  headerCta?: LinkItem;
 }
 
 export interface HeroMetric {
@@ -67,6 +69,8 @@ export interface HeroContent {
    * is what every template looks like.
    */
   image?: string;
+  /** What the image shows, for screen readers and for a failed load. */
+  imageAlt?: string;
   /** Optional atmospheric backdrop behind the whole section. */
   backgroundImage?: string;
 }
@@ -80,6 +84,9 @@ export interface ServiceItem {
   features: Localized[];
   /** Chosen from the media library. Optional: the icon remains the fallback. */
   imageUrl?: string;
+  imageAlt?: string;
+  /** Sends a reader somewhere specific. Hidden when the label is empty. */
+  cta?: LinkItem;
 }
 
 export interface StatItem {
@@ -103,6 +110,9 @@ export interface AboutContent {
   highlights: AboutHighlight[];
   /** The team, the office, the work — anything that is not another paragraph. */
   image?: string;
+  imageAlt?: string;
+  /** Optional way forward from the section. Hidden when the label is empty. */
+  cta?: LinkItem;
 }
 
 export interface ReferenceItem {
@@ -126,12 +136,17 @@ export interface TestimonialItem {
   role: Localized;
   company: string;
   rating: number;
+  /** Their photograph. Initials stand in until there is one. */
+  avatarUrl?: string;
 }
 
 export interface ProcessStep {
   id: string;
   title: Localized;
   description: Localized;
+  /** lucide-react icon name. Falls back to the step number. */
+  icon?: string;
+  imageUrl?: string;
 }
 
 export interface CtaContent {
@@ -158,6 +173,8 @@ export interface FooterContent {
   about: Localized;
   columns: FooterColumn[];
   copyright: Localized;
+  /** The last way forward on the page. Hidden when the label is empty. */
+  cta?: LinkItem;
 }
 
 /**
@@ -215,6 +232,7 @@ export interface SectionMeta {
 export interface SiteContent {
   brand: BrandConfig;
   seo: SeoContent;
+  uiText: UiText;
   nav: NavItem[];
   hero: HeroContent;
   logos: LogoItem[];
@@ -242,4 +260,50 @@ export interface ContactMessage {
   message: string;
   createdAt: string;
   read: boolean;
+}
+
+/**
+ * The site's own words that are not part of any section: button labels,
+ * form fields, the empty and error states.
+ *
+ * These were written into the code, which meant the sentence a visitor reads
+ * when their message fails to send could only be changed by a developer. They
+ * live in one document rather than scattered across the sections that use
+ * them, because they are chrome — the same words appear on several pages.
+ *
+ * Every field is optional and the site keeps its current wording as the
+ * fallback, so an empty document changes nothing and a half-filled one changes
+ * only what was filled in.
+ */
+export interface UiText {
+  menu?: string;
+  close?: string;
+  /** The header button. Its destination lives on brand.headerCta. */
+  getStarted?: string;
+  trustedBy?: string;
+  backHome?: string;
+  allServices?: string;
+
+  formName?: string;
+  formEmail?: string;
+  formPhone?: string;
+  formSubject?: string;
+  formCompany?: string;
+  formService?: string;
+  formBudget?: string;
+  formMessage?: string;
+  formSubmit?: string;
+  formSending?: string;
+  formSuccess?: string;
+  formError?: string;
+  formInvalid?: string;
+  formRateLimit?: string;
+  formConsent?: string;
+
+  namePlaceholder?: string;
+  emailPlaceholder?: string;
+  phonePlaceholder?: string;
+  subjectPlaceholder?: string;
+  companyPlaceholder?: string;
+  messagePlaceholder?: string;
 }

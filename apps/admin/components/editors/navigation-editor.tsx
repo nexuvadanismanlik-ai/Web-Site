@@ -173,6 +173,23 @@ export function NavigationEditor({
           <div className="space-y-4">
             <LocalizedField label="Hakkında Metni" value={footer.about} onChange={(v) => setFooter((f) => ({ ...f, about: v }))} multiline rows={3} />
             <LocalizedField label="Telif Metni" value={footer.copyright} onChange={(v) => setFooter((f) => ({ ...f, copyright: v }))} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <LocalizedField
+                label="Footer Buton Metni"
+                value={footer.cta?.label ?? { ...empty }}
+                onChange={(v) => setFooter((f) => ({ ...f, cta: { label: v, href: f.cta?.href ?? '/contact' } }))}
+                placeholder="Boş bırakılırsa buton görünmez"
+              />
+              <div>
+                <label className="field-label">Footer Buton Bağlantısı</label>
+                <input
+                  value={footer.cta?.href ?? ''}
+                  onChange={(e) => setFooter((f) => ({ ...f, cta: { label: f.cta?.label ?? { ...empty }, href: e.target.value } }))}
+                  placeholder="/contact"
+                  className="field-input"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="mt-6 space-y-4">

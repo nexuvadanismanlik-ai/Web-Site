@@ -14,7 +14,7 @@ import { Contact } from '../components/sections/contact';
 
 export default async function HomePage() {
   const content = await getSiteContent();
-  const ui = getUi();
+  const ui = getUi(content.uiText);
 
   return (
     <>
@@ -34,6 +34,7 @@ export default async function HomePage() {
         contact={content.contact}
         services={content.services.map((s) => t(s.title))}
         budgets={[...LEAD_BUDGET_BANDS]}
+        uiText={content.uiText}
       />
     </>
   );

@@ -22,6 +22,7 @@ export default async function ContactPage() {
         contact={content.contact}
         services={content.services.map((s) => t(s.title))}
         budgets={[...LEAD_BUDGET_BANDS]}
+        uiText={content.uiText}
         hideHeading
       />
     </>

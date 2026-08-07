@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ReferencesPage() {
   const content = await getSiteContent();
-  const ui = getUi();
+  const ui = getUi(content.uiText);
   return (
     <>
       <PageHero

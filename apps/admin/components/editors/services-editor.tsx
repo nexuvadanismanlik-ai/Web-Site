@@ -6,6 +6,7 @@ import type { ServiceItem, SectionMeta, Localized } from '@nexuva/types';
 import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import {
+  TextField,
   LocalizedField,
   MetaFields,
   EditorHeader,
@@ -122,8 +123,28 @@ export function ServicesEditor({
                       images={images}
                       hint="Kartta ikonun yerine geçer. Boş bırakılırsa ikon kullanılır."
                     />
+                    <TextField
+                      label="Görsel Alt Metni"
+                      value={svc.imageAlt ?? ''}
+                      onChange={(v) => patch(svc.id, { imageAlt: v })}
+                    />
                     <LocalizedField label="Başlık" value={svc.title} onChange={(v) => patch(svc.id, { title: v })} />
                     <LocalizedField label="Açıklama" value={svc.description} onChange={(v) => patch(svc.id, { description: v })} multiline rows={2} />
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <LocalizedField
+                        label="Buton Metni"
+                        value={svc.cta?.label ?? { ...empty }}
+                        onChange={(v) => patch(svc.id, { cta: { label: v, href: svc.cta?.href ?? '/contact' } })}
+                        placeholder="Boş bırakılırsa buton görünmez"
+                      />
+                      <TextField
+                        label="Buton Bağlantısı"
+                        value={svc.cta?.href ?? ''}
+                        onChange={(v) => patch(svc.id, { cta: { label: svc.cta?.label ?? { ...empty }, href: v } })}
+                        placeholder="/contact"
+                      />
+                    </div>
 
                     <ServiceFeatures
                       features={svc.features}

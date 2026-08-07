@@ -87,6 +87,12 @@ export function HeroEditor({
               images={images}
               hint="Başlığın yanında duran görsel — ürün ekranı, fotoğraf ya da mockup. Boş bırakılırsa ilk ekran yalnızca metin olur."
             />
+            <TextField
+              label="Görsel Alt Metni"
+              value={hero.imageAlt ?? ''}
+              onChange={(v) => setH('imageAlt', v)}
+              placeholder="Görselin ne gösterdiği — ekran okuyucular ve yüklenemediğinde"
+            />
             <ImageField
               label="Arkaplan Görseli"
               value={hero.backgroundImage ?? ''}

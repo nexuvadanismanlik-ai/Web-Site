@@ -144,6 +144,7 @@ export class SiteContentService {
     return {
       brand: section('brand'),
       seo: section('seo'),
+      uiText: section('uiText'),
       nav: navItems.map((item) => ({
         label: item.label,
         href: item.href,
@@ -161,6 +162,10 @@ export class SiteContentService {
         description: item.description,
         features: item.features,
         ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
+        ...(item.imageAlt ? { imageAlt: item.imageAlt } : {}),
+        ...(item.ctaLabel && item.ctaHref
+          ? { cta: { label: item.ctaLabel, href: item.ctaHref } }
+          : {}),
       })),
       stats: stats.map((item) => ({
         id: item.id,
@@ -188,12 +193,15 @@ export class SiteContentService {
         role: item.role,
         company: item.company,
         rating: item.rating,
+        ...(item.avatarUrl ? { avatarUrl: item.avatarUrl } : {}),
       })),
       processMeta: section('processMeta'),
       process: processSteps.map((item) => ({
         id: item.id,
         title: item.title,
         description: item.description,
+        ...(item.icon ? { icon: item.icon } : {}),
+        ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
       })),
       cta: section('cta'),
       contact: section('contact'),

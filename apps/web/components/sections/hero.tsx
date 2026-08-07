@@ -177,7 +177,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
               <div className="overflow-hidden rounded-2xl border border-overlay/15 bg-card shadow-2xl ring-1 ring-black/5">
                 <img
                   src={hero.image}
-                  alt=""
+                  alt={hero.imageAlt ?? ''}
                   className="block h-auto w-full"
                   loading="eager"
                   // Told to the browser so the layout does not jump while it

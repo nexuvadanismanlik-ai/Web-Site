@@ -6,12 +6,14 @@ import {
   Query,
   Param,
   BadRequestException,
+  ConflictException,
   Req,
   Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StorageService } from './storage.service';
+import { MediaUsageService } from './media-usage.service';
 import { WebsiteTenantService } from '../website/website-tenant.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -45,6 +47,7 @@ interface AuthUser {
 export class StorageController {
   constructor(
     private readonly storageService: StorageService,
+    private readonly mediaUsage: MediaUsageService,
     private readonly tenants: WebsiteTenantService,
   ) {}
 
@@ -177,8 +180,19 @@ export class StorageController {
       offset,
     });
 
+    // Where each file is used, resolved for the page rather than per file: the
+    // library needs it to warn before a delete, and asking one file at a time
+    // turned a fifty-file page into a hundred queries.
+    const usedAt = await this.mediaUsage.findUsage(
+      tenantId,
+      result.files.map((file) => file.url).filter((url): url is string => Boolean(url)),
+    );
+
     return {
-      files: result.files,
+      files: result.files.map((file) => ({
+        ...file,
+        usedAt: file.url ? usedAt[file.url] ?? [] : [],
+      })),
       pagination: { total: result.total, limit, offset },
       usage: {
         totalBytes: result.usage,
@@ -198,7 +212,26 @@ export class StorageController {
   async deleteFile(
     @Param('id') fileId: string,
     @CurrentUser() user: AuthUser,
+    @Query('force') force?: string,
   ) {
+    // A file that is on the site is not deleted by accident. The panel asks
+    // first and sends force=true when somebody has read the list of places it
+    // will disappear from; refusing here means a script or a stray request
+    // cannot take the logo off the header either.
+    if (force !== 'true') {
+      const file = await this.storageService.getFile(fileId, user.role, user.companyId);
+      const usage = file.url
+        ? (await this.mediaUsage.findUsage(file.tenantId, [file.url]))[file.url] ?? []
+        : [];
+
+      if (usage.length > 0) {
+        throw new ConflictException({
+          message: `Bu dosya ${usage.length} yerde kullanılıyor. Silmeden önce oradan kaldır.`,
+          usedAt: usage,
+        });
+      }
+    }
+
     await this.storageService.deleteFile({
       fileId,
       actorId: user.id,

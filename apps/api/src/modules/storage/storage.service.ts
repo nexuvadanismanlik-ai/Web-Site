@@ -356,6 +356,14 @@ export class StorageService {
     return { files, total, usage };
   }
 
+  /**
+   * One file, ownership-checked. Needed before a delete so the caller can ask
+   * where the file is used without reaching past the ownership rules.
+   */
+  async getFile(fileId: string, actorRole: UserRole, actorCompanyId?: string | null) {
+    return this.assertFileOwnership(fileId, actorRole, actorCompanyId);
+  }
+
   async deleteFile(params: {
     fileId: string;
     actorId: string;

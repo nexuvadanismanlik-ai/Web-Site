@@ -436,8 +436,13 @@ export async function readMedia(limit = 100, offset = 0): Promise<MediaList> {
   };
 }
 
-export async function deleteMediaViaApi(id: string): Promise<void> {
-  await apiFetch(`/storage/files/${id}`, { method: 'DELETE' });
+/**
+ * Deletes a file. The API refuses when the file is still on the site, so
+ * `force` is what the panel sends after somebody has read the list of places
+ * it will vanish from and said yes anyway.
+ */
+export async function deleteMediaViaApi(id: string, force = false): Promise<void> {
+  await apiFetch(`/storage/files/${id}${force ? '?force=true' : ''}`, { method: 'DELETE' });
 }
 
 export async function uploadMediaViaApi(file: File, folder: MediaFolder): Promise<MediaFile> {

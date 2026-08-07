@@ -428,10 +428,13 @@ export async function uploadMedia(
   }
 }
 
-export async function deleteMedia(id: string): Promise<{ ok: boolean; error?: string }> {
+export async function deleteMedia(
+  id: string,
+  force = false,
+): Promise<{ ok: boolean; error?: string }> {
   await requireAuth();
   try {
-    await deleteMediaViaApi(id);
+    await deleteMediaViaApi(id, force);
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Silinemedi.' };
   }

@@ -2,7 +2,16 @@
 
 import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, Download, HardDrive, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
+import {
+  AlertTriangle,
+  Copy,
+  Download,
+  HardDrive,
+  Image as ImageIcon,
+  Link2,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { ConfirmDialog, EmptyState, SearchBar, SelectField, useToast } from '@nexuva/ui';
 import { uploadMedia, deleteMedia } from '../../app/actions';
 import { MEDIA_FOLDERS, type MediaFile, type MediaFolder, type MediaList } from '../../lib/model';
@@ -78,11 +87,22 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
     });
   }
 
+  /** The files the open dialog is about, so it can name where they are used. */
+  const doomed: MediaFile[] =
+    confirming === 'selection'
+      ? initial.files.filter((file) => selected.has(file.id))
+      : confirming
+        ? [confirming]
+        : [];
+
+  // force: the API refuses to delete a file that is still on the site. By the
+  // time this runs, the dialog has listed every page it will vanish from and
+  // somebody said yes anyway — which is the only thing force means.
   function removeMany(ids: string[]) {
     startTransition(async () => {
       let ok = 0;
       for (const id of ids) {
-        const result = await deleteMedia(id);
+        const result = await deleteMedia(id, true);
         if (result.ok) ok++;
         else toast.error(result.error ?? 'Silinemedi.');
       }
@@ -241,6 +261,22 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
                     {formatSize(file.size)}
                   </div>
 
+                  {/* Visible on the card, not only in the delete dialog: knowing
+                      which files are live is what stops the tidy-up starting. */}
+                  {(file.usedAt?.length ?? 0) > 0 && (
+                    <div
+                      className="mt-1.5 flex items-center gap-1 text-[11px] text-brand-dyn"
+                      title={(file.usedAt ?? [])
+                        .map((use) => use.label + (use.detail ? ` → ${use.detail}` : ''))
+                        .join('\n')}
+                    >
+                      <Link2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {(file.usedAt ?? []).map((use) => use.label).join(', ')}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="mt-2 flex gap-1.5">
                     <button
                       onClick={() => void copyUrl(file.url)}
@@ -285,12 +321,42 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
       <ConfirmDialog
         open={confirming !== null}
         title={confirming === 'selection' ? 'Seçilen dosyaları sil' : 'Dosyayı sil'}
+        confirmLabel={doomed.some((file) => (file.usedAt?.length ?? 0) > 0) ? 'Yine de sil' : 'Sil'}
         body={
-          confirming === 'selection'
-            ? `${selected.size} dosya kalıcı olarak silinecek. Sitede kullanılıyorlarsa görselleri kaybolur.`
-            : confirming
-              ? `${confirming.filename} kalıcı olarak silinecek. Sitede kullanılıyorsa görseli kaybolur.`
-              : undefined
+          confirming === null ? undefined : (
+            <div className="space-y-3">
+              <p>
+                {confirming === 'selection'
+                  ? `${selected.size} dosya kalıcı olarak silinecek.`
+                  : `${confirming.filename} kalıcı olarak silinecek.`}
+              </p>
+
+              {/* Naming the pages is the whole point. "May be in use somewhere"
+                  is a warning nobody can act on, so it gets ignored — and then
+                  the header logo disappears with nothing to connect it to. */}
+              {doomed.some((file) => (file.usedAt?.length ?? 0) > 0) ? (
+                <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3">
+                  <p className="flex items-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Şu anda sitede kullanılıyor — silersen oradan kaybolur:
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-muted">
+                    {doomed.flatMap((file) =>
+                      (file.usedAt ?? []).map((use) => (
+                        <li key={`${file.id}-${use.href}-${use.detail ?? ''}`}>
+                          • {use.label}
+                          {use.detail ? ` → ${use.detail}` : ''}
+                          {confirming === 'selection' ? ` (${file.filename})` : ''}
+                        </li>
+                      )),
+                    )}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-xs text-faint">Sitede hiçbir yerde kullanılmıyor.</p>
+              )}
+            </div>
+          )
         }
         busy={pending}
         onCancel={() => setConfirming(null)}

@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
@@ -103,6 +113,28 @@ export class AnalyticsController {
     } catch {
       // Swallowed on purpose.
     }
+  }
+
+  /**
+   * Deletes the measurement a verification run left behind.
+   *
+   * ADMIN, and refuses any campaign name that is not marked as test data — see
+   * the service. Real analytics history is not deletable through the API at
+   * all, which is the point.
+   */
+  @Delete('test-data')
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove page views created by a verification run' })
+  @ApiQuery({ name: 'campaign', required: true, description: 'Must start with zz-test-' })
+  @ApiQuery({ name: 'tenant', required: false })
+  async purgeTestData(
+    @Query('campaign') campaign: string,
+    @Query('tenant') tenant?: string,
+  ) {
+    const tenantId = await this.tenants.resolveTenantId(tenant);
+    const deleted = await this.analytics.purgeTestViews(tenantId, campaign ?? '');
+    return { deleted };
   }
 
   @Get('summary')

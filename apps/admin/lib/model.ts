@@ -161,6 +161,16 @@ export interface SystemStatus {
 export const MEDIA_FOLDERS = ['images', 'logos', 'documents', 'attachments', 'uploads'] as const;
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number];
 
+/** One place on the site that points at a file. */
+export interface MediaUsage {
+  /** What the panel calls that screen. */
+  label: string;
+  /** Where to go to change it. */
+  href: string;
+  /** Which row, when the place is a list. */
+  detail?: string;
+}
+
 export interface MediaFile {
   id: string;
   url: string;
@@ -169,6 +179,8 @@ export interface MediaFile {
   size: number;
   folder: string;
   createdAt: string;
+  /** Everywhere this file appears on the site. Empty means safe to delete. */
+  usedAt?: MediaUsage[];
 }
 
 export interface MediaList {

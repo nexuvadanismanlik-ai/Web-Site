@@ -1,6 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/**
+ * The mark a verification run puts on everything it creates, so its rows can
+ * be found and removed afterwards without touching anybody's real traffic.
+ */
+export const TEST_CAMPAIGN_PREFIX = 'zz-test-';
 
 /**
  * Traffic measurement that keeps nothing it should not.
@@ -232,8 +238,11 @@ export class AnalyticsService {
       `,
     ]);
 
+    // JSON rather than a joined string: a campaign name is whatever the
+    // advertiser typed, and any separator character you pick is one they are
+    // allowed to have used — at which point two campaigns silently merge.
     const key = (source: string | null, campaign: string | null) =>
-      `${source ?? 'direct'} ${campaign ?? ''}`;
+      JSON.stringify([source ?? 'direct', campaign ?? '']);
 
     const rows = new Map<
       string,
@@ -276,6 +285,28 @@ export class AnalyticsService {
           row.visitors > 0 ? Math.round((row.leads / row.visitors) * 1000) / 10 : null,
       }))
       .sort((a, b) => b.leads - a.leads || b.visitors - a.visitors);
+  }
+
+  /**
+   * Removes the page views a verification run created.
+   *
+   * Scoped to campaign names beginning `zz-test-`, which is the marker the
+   * verification scripts stamp on everything they make. Deliberately narrow:
+   * an endpoint that can delete arbitrary measurement is a foot-gun, and the
+   * only thing anybody legitimately needs to delete is the noise a test made.
+   * Real traffic has no campaign name a person would type as `zz-test-`.
+   */
+  async purgeTestViews(tenantId: string, campaign: string): Promise<number> {
+    if (!campaign.startsWith(TEST_CAMPAIGN_PREFIX)) {
+      throw new BadRequestException(
+        `Yalnızca "${TEST_CAMPAIGN_PREFIX}" ile başlayan test kampanyaları silinebilir.`,
+      );
+    }
+
+    const result = await this.prisma.pageView.deleteMany({
+      where: { tenantId, utmCampaign: campaign },
+    });
+    return result.count;
   }
 
   /**

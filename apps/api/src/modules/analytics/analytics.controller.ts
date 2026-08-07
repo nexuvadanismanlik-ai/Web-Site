@@ -16,6 +16,8 @@ import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { WebsiteTenantService } from '../website/website-tenant.service';
 import { AnalyticsService } from './analytics.service';
+import { SitePreferencesService } from '../website/preferences/site-preferences.service';
+import { zonedDayBounds } from './timezone';
 
 export class CollectViewDto {
   // See AppValidationPipe. The tracker discards every response by design, so a
@@ -58,6 +60,7 @@ export class AnalyticsController {
   constructor(
     private readonly analytics: AnalyticsService,
     private readonly tenants: WebsiteTenantService,
+    private readonly preferences: SitePreferencesService,
   ) {}
 
   /**
@@ -160,26 +163,20 @@ export class AnalyticsController {
     @Query('to') to?: string,
   ) {
     const tenantId = await this.tenants.resolveTenantId(tenant);
+
+    // The dates arrive as plain days — "2026-08-07" — and a day is only a
+    // range once you know where somebody is standing. Resolved against the
+    // tenant's own timezone, so "bugün" starts when their day does.
+    const { timezone } = await this.preferences.getForTenant(tenantId);
+    const start = from ? zonedDayBounds(from, timezone) : null;
+    const end = to ? zonedDayBounds(to, timezone) : null;
+
     return this.analytics.summary(tenantId, {
-      ...(parseDay(from, 'start') ? { from: parseDay(from, 'start') as Date } : {}),
-      ...(parseDay(to, 'end') ? { to: parseDay(to, 'end') as Date } : {}),
+      timeZone: timezone,
+      ...(start ? { from: start.from } : {}),
+      ...(end ? { to: end.to } : {}),
     });
   }
-}
-
-/**
- * A `YYYY-MM-DD` query parameter as a moment.
- *
- * The end of a range is the end of that day, not its midnight: a person
- * picking today as the last day means everything up to now, and a naive
- * `<= 2026-08-07T00:00:00Z` silently excludes the entire day they asked for.
- * Anything unparseable is ignored rather than rejected, so a stale bookmark
- * shows the default month instead of an error.
- */
-function parseDay(value: string | undefined, edge: 'start' | 'end'): Date | undefined {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
-  const date = new Date(`${value}T${edge === 'start' ? '00:00:00.000' : '23:59:59.999'}Z`);
-  return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
 function readHeader(req: FastifyRequest, name: string): string {

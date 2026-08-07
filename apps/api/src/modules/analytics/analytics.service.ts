@@ -105,7 +105,12 @@ export class AnalyticsService {
    * Counted in the database rather than pulled into memory: a month of traffic
    * is exactly the size that works in development and falls over in production.
    */
-  async summary(tenantId: string, range?: { from?: Date; to?: Date }) {
+  async summary(
+    tenantId: string,
+    range?: { from?: Date; to?: Date; timeZone?: string },
+  ) {
+    // Days are bucketed where the reader is, not at Greenwich. See timezone.ts.
+    const timeZone = range?.timeZone ?? 'UTC';
     const now = Date.now();
     const since = (days: number) => new Date(now - days * 86_400_000);
     const base = { tenantId };
@@ -174,13 +179,16 @@ export class AnalyticsService {
       }),
     ]);
 
-    const daily = await this.dailySeries(tenantId, from, to);
-    const campaigns = await this.campaignReport(tenantId, from, to);
+    const [daily, campaigns, extra] = await Promise.all([
+      this.dailySeries(tenantId, from, to, timeZone),
+      this.campaignReport(tenantId, from, to),
+      this.breakdowns(tenantId, from, to),
+    ]);
 
     return {
       // What the range currently reads, echoed back so the screen can label
       // its own numbers rather than assuming they are the last thirty days.
-      range: { from: from.toISOString(), to: to.toISOString(), days },
+      range: { from: from.toISOString(), to: to.toISOString(), days, timeZone },
       visitors: {
         today: today_.visitors,
         week: week.visitors,
@@ -207,6 +215,10 @@ export class AnalyticsService {
       devices: devices.map((row) => ({ device: row.device, views: row._count._all })),
       daily,
       campaigns,
+      browsers: extra.browsers,
+      countries: extra.countries,
+      landingPages: extra.landingPages,
+      averageScroll: extra.averageScroll,
       crm: {
         leads,
         won,
@@ -346,11 +358,14 @@ export class AnalyticsService {
    * produces no row, and a chart that silently skips those days draws a
    * flattering line through the gaps.
    */
-  private async dailySeries(tenantId: string, from: Date, to: Date) {
+  private async dailySeries(tenantId: string, from: Date, to: Date, timeZone: string) {
+    // Grouped in the reader's own timezone. Truncating in UTC put the last
+    // hours of every evening — often the busiest — on the next day's bar for
+    // anybody east of Greenwich, and nothing about the chart said so.
     const rows = await this.prisma.$queryRaw<
       { day: Date; views: bigint; visitors: bigint }[]
     >`
-      SELECT date_trunc('day', "createdAt") AS day,
+      SELECT date_trunc('day', "createdAt" AT TIME ZONE ${timeZone}) AS day,
              count(*) AS views,
              count(DISTINCT "visitorHash") AS visitors
       FROM page_views
@@ -385,6 +400,68 @@ export class AnalyticsService {
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
     return series;
+  }
+
+  /**
+   * The dimensions the screen never showed.
+   *
+   * Browser and country have been collected since the tracker was written and
+   * reported nowhere, which is the worst of both: the data was gathered and
+   * nobody could see it. Landing pages are derived rather than stored — the
+   * first page each visit touched, which is the one an advert paid for.
+   */
+  private async breakdowns(tenantId: string, from: Date, to: Date) {
+    const period = { gte: from, lte: to };
+
+    const [browsers, countries, landings, engagement] = await Promise.all([
+      this.prisma.pageView.groupBy({
+        by: ['browser'],
+        where: { tenantId, createdAt: period },
+        _count: { _all: true },
+        orderBy: { _count: { browser: 'desc' } },
+        take: 8,
+      }),
+      this.prisma.pageView.groupBy({
+        by: ['country'],
+        where: { tenantId, createdAt: period },
+        _count: { _all: true },
+        orderBy: { _count: { country: 'desc' } },
+        take: 8,
+      }),
+      // The earliest view of each visitor in the window. DISTINCT ON is the
+      // one place raw SQL is genuinely shorter than the query builder.
+      this.prisma.$queryRaw<{ path: string; visits: bigint }[]>`
+        SELECT path, count(*) AS visits
+        FROM (
+          SELECT DISTINCT ON ("visitorHash") "visitorHash", path
+          FROM page_views
+          WHERE "tenantId" = ${tenantId}
+            AND "createdAt" >= ${from}
+            AND "createdAt" <= ${to}
+          ORDER BY "visitorHash", "createdAt" ASC
+        ) AS first_pages
+        GROUP BY path
+        ORDER BY visits DESC
+        LIMIT 10
+      `,
+      this.prisma.pageView.aggregate({
+        where: { tenantId, createdAt: period, scrollDepth: { not: null } },
+        _avg: { scrollDepth: true },
+      }),
+    ]);
+
+    return {
+      // Empty strings mean the tracker could not tell. Reported as "bilinmiyor"
+      // rather than dropped, so the percentages still add up to what was seen.
+      browsers: browsers
+        .filter((row) => row._count._all > 0)
+        .map((row) => ({ browser: row.browser || 'bilinmiyor', views: row._count._all })),
+      countries: countries
+        .filter((row) => row._count._all > 0)
+        .map((row) => ({ country: row.country || 'bilinmiyor', views: row._count._all })),
+      landingPages: landings.map((row) => ({ path: row.path, visits: Number(row.visits) })),
+      averageScroll: Math.round(engagement._avg.scrollDepth ?? 0),
+    };
   }
 
   /** Views and distinct visitors since a moment. */

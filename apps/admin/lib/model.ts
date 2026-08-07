@@ -284,8 +284,8 @@ export const ANALYTICS_RANGES = [
 export type AnalyticsRange = (typeof ANALYTICS_RANGES)[number]['value'];
 
 export interface AnalyticsSummary {
-  /** The window the figures below were measured over. */
-  range: { from: string; to: string; days: number };
+  /** The window the figures below were measured over, and where its days start. */
+  range: { from: string; to: string; days: number; timeZone: string };
   /**
    * `today`/`week`/`month` are fixed reference points, so "bugün" means today
    * whatever range is selected. `selected` is the chosen range.
@@ -300,6 +300,12 @@ export interface AnalyticsSummary {
   topPages: { path: string; views: number }[];
   sources: { source: string; views: number }[];
   devices: { device: string; views: number }[];
+  browsers: { browser: string; views: number }[];
+  countries: { country: string; views: number }[];
+  /** The first page of each visit — the one an advert paid for. */
+  landingPages: { path: string; visits: number }[];
+  /** Average furthest scroll reached, as a percentage. */
+  averageScroll: number;
   /** One entry per day, gaps filled with zeros. */
   daily: { date: string; views: number; visitors: number }[];
   /** What each campaign produced: visits, enquiries, won work. */

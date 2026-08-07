@@ -1,5 +1,15 @@
-import { BarChart3, MousePointerClick, Send, Timer, Users } from 'lucide-react';
-import { getAnalytics } from '../../actions';
+import {
+  BarChart3,
+  Globe,
+  LogIn,
+  MapPin,
+  MousePointerClick,
+  MoveVertical,
+  Send,
+  Timer,
+  Users,
+} from 'lucide-react';
+import { getAnalytics, getSitePreferences } from '../../actions';
 import { Panel } from '../../../components/fields';
 import { AnalyticsRangePicker } from '../../../components/editors/analytics-range';
 import { ANALYTICS_RANGES, type AnalyticsRange } from '../../../lib/model';
@@ -36,6 +46,18 @@ const SOURCE_LABELS: Record<string, string> = {
   tiktok: 'TikTok',
 };
 
+/** Countries the tracker sees often enough to be worth naming. */
+const COUNTRY_LABELS: Record<string, string> = {
+  TR: 'Türkiye',
+  DE: 'Almanya',
+  US: 'ABD',
+  GB: 'Birleşik Krallık',
+  NL: 'Hollanda',
+  FR: 'Fransa',
+  AZ: 'Azerbaycan',
+  bilinmiyor: 'Bilinmiyor',
+};
+
 const DEVICE_LABELS: Record<string, string> = {
   desktop: 'Masaüstü',
   mobile: 'Telefon',
@@ -46,12 +68,26 @@ const DEVICE_LABELS: Record<string, string> = {
  * Turns the selected range into the two dates the API takes.
  *
  * Days are counted inclusively: "Son 7 gün" is today and the six before it,
- * which is what somebody comparing against last week means. Anything the API
- * cannot parse is ignored there, so a mangled address falls back to a month.
+ * which is what somebody comparing against last week means.
+ *
+ * Counted in the business's own timezone, not the server's. This page renders
+ * on a host that runs in UTC, so at eleven at night in Istanbul "today" here
+ * was still yesterday's date — and the API, which now resolves days correctly,
+ * would have faithfully returned the wrong day.
  */
-function resolveRange(range: AnalyticsRange, from?: string, to?: string) {
+function resolveRange(
+  range: AnalyticsRange,
+  timeZone: string,
+  from?: string,
+  to?: string,
+) {
   const day = (offset: number) =>
-    new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10);
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(Date.now() - offset * 86_400_000));
 
   switch (range) {
     case 'today':
@@ -80,7 +116,13 @@ export default async function AnalyticsPage({
   const range: AnalyticsRange = RANGE_VALUES.has(searchParams.range ?? '')
     ? (searchParams.range as AnalyticsRange)
     : '30';
-  const window = resolveRange(range, searchParams.from, searchParams.to);
+
+  // The zone has to be known before the dates can be worked out, so this one
+  // read is genuinely sequential rather than lazily written that way.
+  const preferences = await getSitePreferences();
+  const timeZone = preferences?.timezone ?? 'Europe/Istanbul';
+
+  const window = resolveRange(range, timeZone, searchParams.from, searchParams.to);
   const data = await getAnalytics(window.from, window.to);
 
   if (!data) {
@@ -246,6 +288,27 @@ export default async function AnalyticsPage({
             value: row.views,
           }))}
         />
+        {/* The page a visit started on, not the page most often seen. For
+            anybody paying for traffic those are different questions: one says
+            what people read, the other says what the money bought. */}
+        <Bars
+          title="Giriş sayfaları"
+          icon={<LogIn className="h-4 w-4" />}
+          rows={data.landingPages.map((row) => ({ label: row.path, value: row.visits }))}
+        />
+        <Bars
+          title="Tarayıcı"
+          icon={<Globe className="h-4 w-4" />}
+          rows={data.browsers.map((row) => ({ label: row.browser, value: row.views }))}
+        />
+        <Bars
+          title="Ülke"
+          icon={<MapPin className="h-4 w-4" />}
+          rows={data.countries.map((row) => ({
+            label: COUNTRY_LABELS[row.country] ?? row.country,
+            value: row.views,
+          }))}
+        />
         <Panel title="Etkileşim">
           <dl className="space-y-3 text-sm">
             <Row icon={<Timer className="h-3.5 w-3.5" />} label="Ortalama sayfa süresi">
@@ -256,6 +319,9 @@ export default async function AnalyticsPage({
             </Row>
             <Row icon={<Send className="h-3.5 w-3.5" />} label="Form gönderimi">
               {data.formSubmits}
+            </Row>
+            <Row icon={<MoveVertical className="h-3.5 w-3.5" />} label="Ortalama kaydırma">
+              {data.averageScroll > 0 ? `%${data.averageScroll}` : '—'}
             </Row>
           </dl>
         </Panel>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   Check,
@@ -31,12 +32,29 @@ export function PublishCenter({
   status: PublishStatus | null;
   versions: ContentVersion[];
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirming, setConfirming] = useState<number | null>(null);
 
   const live = versions.find((v) => v.isPublished) ?? null;
   const inProgress = pending || (status?.publishInProgress ?? false);
+
+  // While a build is running, this screen refreshes itself.
+  //
+  // Without it the page showed "Derleniyor" until somebody reloaded — so the
+  // one screen dedicated to watching a publish was the one place that never
+  // told you it had finished. The header button already polled; the page you
+  // would actually be looking at did not.
+  //
+  // Server-side refresh rather than a client fetch: the whole page is rendered
+  // from the API, so re-rendering it is what brings the new state, the history
+  // row and the duration together.
+  useEffect(() => {
+    if (!status?.publishInProgress) return;
+    const timer = setInterval(() => router.refresh(), 5000);
+    return () => clearInterval(timer);
+  }, [status?.publishInProgress, router]);
 
   function onPublish() {
     setMessage(null);

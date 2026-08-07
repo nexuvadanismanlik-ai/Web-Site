@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { dayBefore, zonedDayBounds } from './timezone';
 
 /**
  * The mark a verification run puts on everything it creates, so its rows can
@@ -115,10 +116,14 @@ export class AnalyticsService {
     const since = (days: number) => new Date(now - days * 86_400_000);
     const base = { tenantId };
 
-    // The window everything below the tiles is measured over. Thirty days when
-    // nobody asked for anything else, which is what the screen used to be.
-    const from = range?.from ?? since(30);
-    const to = range?.to ?? new Date(now);
+    // The window everything below the tiles is measured over.
+    //
+    // The default is thirty *calendar* days ending today, not the instant
+    // thirty times twenty-four hours ago — those differ, and the second one
+    // touches thirty-one days on the chart while claiming to be thirty.
+    const defaults = defaultRange(timeZone, now);
+    const from = range?.from ?? defaults.from;
+    const to = range?.to ?? defaults.to;
     const period = { gte: from, lte: to };
     const days = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 86_400_000));
 
@@ -383,13 +388,24 @@ export class AnalyticsService {
       ]),
     );
 
-    // Walked day by day from the start of the range rather than back from now,
-    // so a range that ends in the past draws its own days and not today's.
+    // Filled day by day across the same calendar the rows were grouped by.
+    //
+    // This walked UTC midnights while the query grouped by local days, so for
+    // anybody east of Greenwich a one-day range drew two bars — yesterday's,
+    // empty, and today's — and a thirty-day range drew thirty-one. The gap was
+    // in the labels, not the data: both were right about different calendars.
+    const label = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
     const series: { date: string; views: number; visitors: number }[] = [];
-    const cursor = new Date(from);
-    cursor.setUTCHours(0, 0, 0, 0);
-    const last = new Date(to);
-    last.setUTCHours(0, 0, 0, 0);
+    // Plain calendar arithmetic on the local date strings. No conversion is
+    // involved once the ends are named, so daylight saving cannot shift a step.
+    const cursor = new Date(`${label.format(from)}T00:00:00Z`);
+    const last = new Date(`${label.format(to)}T00:00:00Z`);
 
     // A guard, not a policy: a year of daily bars is unreadable long before
     // it is slow, and an unbounded loop here is a request that never returns.
@@ -538,4 +554,26 @@ export function classifyBrowser(userAgent: string): string {
   if (ua.includes('firefox')) return 'Firefox';
   if (ua.includes('safari')) return 'Safari';
   return 'Diğer';
+}
+
+/**
+ * The last thirty calendar days in the reader's own timezone.
+ *
+ * Used when nobody asked for a range. Counted in days rather than in hours,
+ * because "son 30 gün" means thirty rows on a chart, and `now - 30 × 24h`
+ * starts partway through a thirty-first.
+ */
+function defaultRange(timeZone: string, now: number): { from: Date; to: Date } {
+  const today = dayBefore(0, timeZone, new Date(now));
+  const start = dayBefore(29, timeZone, new Date(now));
+
+  const first = zonedDayBounds(start, timeZone);
+  const last = zonedDayBounds(today, timeZone);
+
+  // Both are well-formed dates from the formatter, so the fallback is only
+  // here because the types allow null — it cannot be reached in practice.
+  return {
+    from: first?.from ?? new Date(now - 30 * 86_400_000),
+    to: last?.to ?? new Date(now),
+  };
 }

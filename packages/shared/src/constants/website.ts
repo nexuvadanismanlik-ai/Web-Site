@@ -35,6 +35,9 @@ export const WEBSITE_SECTION_KEYS = [
   'uiText',
   // Measurement and advertising tags. Public identifiers only.
   'integrations',
+  // The LogiOps product page. A page rather than a service entry, so it gets
+  // its own document — see LogiOpsContent.
+  'logiops',
 ] as const;
 
 export type WebsiteSectionKey = (typeof WEBSITE_SECTION_KEYS)[number];

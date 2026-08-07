@@ -175,6 +175,7 @@ export class SiteContentService {
         suffix: item.suffix,
         label: item.label,
       })),
+      logiops: section('logiops'),
       about: section('about'),
       referencesMeta: section('referencesMeta'),
       references: references.map((item) => ({

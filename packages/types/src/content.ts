@@ -229,6 +229,43 @@ export interface SectionMeta {
   subtitle: Localized;
 }
 
+/**
+ * LogiOps — the product page.
+ *
+ * A section of its own rather than another service entry, because a product
+ * needs a page that argues for it: the problem it addresses, how it works,
+ * what it reports. Everything here is panel-managed, and deliberately so: the
+ * temptation with a product page is to write capability claims into the code,
+ * and a claim in code is a claim nobody can correct without a deploy.
+ */
+export interface LogiOpsContent {
+  badge: Localized;
+  titleLead: Localized;
+  titleHighlight: Localized;
+  subtitle: Localized;
+  primaryCta: LinkItem;
+  secondaryCta: LinkItem;
+
+  /** What is difficult before anything changes. */
+  problemsTitle: Localized;
+  problems: { title: Localized; body: Localized }[];
+
+  /** The approach, in the order somebody would meet it. */
+  approachTitle: Localized;
+  approach: { title: Localized; body: Localized }[];
+
+  /** How the work runs once it is in place. */
+  flowTitle: Localized;
+  flow: { title: Localized; body: Localized }[];
+
+  /** A screenshot or diagram, from the media library. */
+  image?: string;
+  imageAlt?: string;
+
+  closingTitle: Localized;
+  closingBody: Localized;
+}
+
 export interface SiteContent {
   brand: BrandConfig;
   seo: SeoContent;
@@ -247,6 +284,7 @@ export interface SiteContent {
   testimonials: TestimonialItem[];
   processMeta: SectionMeta;
   process: ProcessStep[];
+  logiops: LogiOpsContent;
   cta: CtaContent;
   contact: ContactContent;
   footer: FooterContent;

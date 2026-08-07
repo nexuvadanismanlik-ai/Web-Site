@@ -6,6 +6,7 @@ import { ArrowUpRight } from 'lucide-react';
 import type { HeroContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
 import { CampaignVisual } from './campaign-visual';
+import { Magnetic, WordReveal } from '../motion';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -84,12 +85,20 @@ export function Hero({ hero }: { hero: HeroContent }) {
             </motion.div>
 
             <motion.h1 {...enter(0.08)} className="display-1 mt-7 text-fg">
-              <span data-edit="hero.titleLead">{t(hero.titleLead)}</span>{' '}
+              {/* The one place on the site with a word-by-word entrance. A
+                  stagger is a way of saying "read this first", and a page that
+                  says it about six things has said it about none. */}
+              <span data-edit="hero.titleLead">
+                <WordReveal text={t(hero.titleLead)} delay={0.1} />
+              </span>{' '}
               {/* Italic serif rather than a gradient fill. A gradient on a
                   headline is decoration applied to type; an italic is the type
                   itself doing the emphasis, which is what the wordmark does. */}
               <span className="italic" style={{ color: 'var(--gold)' }} data-edit="hero.titleHighlight">
-                {t(hero.titleHighlight)}
+                <WordReveal
+                  text={t(hero.titleHighlight)}
+                  delay={0.1 + 0.055 * t(hero.titleLead).split(' ').length}
+                />
               </span>
             </motion.h1>
 
@@ -101,15 +110,20 @@ export function Hero({ hero }: { hero: HeroContent }) {
               {...enter(0.24)}
               className="mt-9 flex flex-col gap-3 sm:flex-row"
             >
-              <Link
-                href={hero.primaryCta.href}
-                className="btn-primary group"
-                data-cta="hero-primary"
-                data-edit="hero.primaryCta.label"
-              >
-                {t(hero.primaryCta.label)}
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
+              {/* Six pixels of lean towards the cursor. Meant to be felt
+                  rather than noticed — a button that visibly chases the
+                  pointer is a toy, and this is the page's main action. */}
+              <Magnetic>
+                <Link
+                  href={hero.primaryCta.href}
+                  className="btn-primary group"
+                  data-cta="hero-primary"
+                  data-edit="hero.primaryCta.label"
+                >
+                  {t(hero.primaryCta.label)}
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Link>
+              </Magnetic>
               <Link
                 href={hero.secondaryCta.href}
                 className="btn-ghost group"

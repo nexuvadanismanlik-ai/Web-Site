@@ -10,6 +10,12 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateContactMessageDto {
+  // See AppValidationPipe. The other side of this endpoint is a static site
+  // deployed separately, so the two are routinely out of step — and refusing a
+  // whole submission over a field the API has not learned about yet loses a
+  // real enquiry to show somebody an error they did not cause.
+  static readonly lenientValidation = true;
+
   @ApiProperty({ example: 'Ayşe Yılmaz' })
   @IsString()
   @IsNotEmpty()

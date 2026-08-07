@@ -163,7 +163,7 @@ export function VisualEditor({
   const editorHref = ROOT_TO_EDITOR[rootKey];
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[34rem] flex-col">
+    <div className="flex h-[calc(100dvh-8.5rem)] min-h-[34rem] flex-col">
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div>
@@ -245,7 +245,7 @@ export function VisualEditor({
       </div>
 
       {/* Workspace */}
-      <div className="flex min-h-0 flex-1 gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
         {/* Site preview */}
         <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl border border-overlay/10 bg-white">
           {!frameReady && (
@@ -253,7 +253,7 @@ export function VisualEditor({
               <Loader2 className="h-6 w-6 animate-spin text-brand-dyn" />
             </div>
           )}
-          <div className={`h-full ${mobile ? 'mx-auto w-[390px] border-x border-overlay/10' : 'w-full'}`}>
+          <div className={`h-full ${mobile ? 'mx-auto w-full max-w-[390px] border-x border-overlay/10' : 'w-full'}`}>
             <iframe
               key={iframeSrc}
               src={iframeSrc}
@@ -265,7 +265,7 @@ export function VisualEditor({
 
         {/* Edit drawer */}
         <aside
-          className={`panel w-96 shrink-0 overflow-y-auto p-5 transition-opacity ${
+          className={`panel w-full shrink-0 overflow-y-auto p-5 transition-opacity lg:w-96 ${
             selected ? 'opacity-100' : 'opacity-70'
           }`}
         >

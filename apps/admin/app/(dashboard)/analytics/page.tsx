@@ -158,16 +158,19 @@ export default async function AnalyticsPage({
 
       {/* Daily traffic. Bars rather than a line: with a handful of days a line
           implies a trend that is not there yet. */}
-      <div className="panel mt-6 p-5">
+      <div className="panel mt-6 overflow-hidden p-5">
         <h2 className="mb-4 font-heading text-sm font-semibold text-fg">Günlük Ziyaretçi</h2>
         <DailyChart series={data.daily} />
       </div>
 
       {/* Where traffic meets the business. */}
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Tile label="Gelen talep" value={data.crm.leads} hint="Son 30 gün" />
-        <Tile label="Kazanıldı" value={data.crm.won} hint="Son 30 günde sonuçlanan" />
-        <Tile label="Kaybedildi" value={data.crm.lost} hint="Son 30 günde sonuçlanan" />
+        {/* Labelled with the range that produced them. They said "Son 30 gün"
+            whatever was selected, which is the kind of caption that makes
+            somebody trust a wrong number. */}
+        <Tile label="Gelen talep" value={data.crm.leads} hint={rangeLabel} />
+        <Tile label="Kazanıldı" value={data.crm.won} hint={`${rangeLabel} · sonuçlanan`} />
+        <Tile label="Kaybedildi" value={data.crm.lost} hint={`${rangeLabel} · sonuçlanan`} />
         <Tile
           label="Kazanma oranı"
           value={data.crm.winRate === null ? '—' : `%${data.crm.winRate}`}

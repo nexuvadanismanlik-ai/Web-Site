@@ -8,8 +8,6 @@ import {
   Post,
   Query,
   Req,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
@@ -20,6 +18,10 @@ import { WebsiteTenantService } from '../website/website-tenant.service';
 import { AnalyticsService } from './analytics.service';
 
 export class CollectViewDto {
+  // See AppValidationPipe. The tracker discards every response by design, so a
+  // rejection here is a page view lost with nobody to hear about it.
+  static readonly lenientValidation = true;
+
   @IsString() @MaxLength(200) path!: string;
   @IsOptional() @IsString() @MaxLength(300) referrer?: string;
   @IsOptional() @IsInt() @Min(0) @Max(86_400) durationSeconds?: number;
@@ -41,33 +43,14 @@ export class CollectViewDto {
 }
 
 export class CollectEventDto {
+  static readonly lenientValidation = true;
+
   @IsIn(['cta_click', 'form_start', 'form_submit'])
   name!: string;
 
   @IsString() @MaxLength(200) path!: string;
   @IsOptional() @IsString() @MaxLength(120) label?: string;
 }
-
-/**
- * Validation for the two endpoints a visitor's browser posts to.
- *
- * Unknown properties are dropped rather than rejected. The application-wide
- * rule is the opposite — an unrecognised field is a 400, which is right for an
- * endpoint a person is waiting on, because it turns a typo into an error
- * message instead of a silently ignored setting.
- *
- * It is wrong here, and expensively so. The tracker is fire-and-forget: it
- * discards every response by design, since a visitor must never see a
- * measurement failure. So when the site began sending one field the DTO did
- * not list, every page view became a 400 that nothing reported, and traffic
- * measurement stopped dead while the panel showed a plausible-looking zero.
- * Strict validation only protects a caller that can hear the complaint.
- */
-const BEACON_VALIDATION = new ValidationPipe({
-  whitelist: true,
-  forbidNonWhitelisted: false,
-  transform: true,
-});
 
 @ApiTags('analytics')
 @Controller('analytics')
@@ -87,7 +70,6 @@ export class AnalyticsController {
    */
   @Post('collect')
   @Public()
-  @UsePipes(BEACON_VALIDATION)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Record a page view. Public; sent by the website.' })
   @ApiQuery({ name: 'tenant', required: false })
@@ -122,7 +104,6 @@ export class AnalyticsController {
 
   @Post('event')
   @Public()
-  @UsePipes(BEACON_VALIDATION)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Record an interaction. Public; sent by the website.' })
   @ApiQuery({ name: 'tenant', required: false })

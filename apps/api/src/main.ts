@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AppValidationPipe } from './common/pipes/app-validation.pipe';
 import { resolveTrustProxy, type AppEnvironment } from './config/app.config';
 import { assertEnvironmentMatches } from './common/environment-guard';
 import { PrismaService } from './prisma/prisma.service';
@@ -99,8 +100,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Strict for everything a person is waiting on; see AppValidationPipe for the
+  // two payloads that opt out and why they have to.
   app.useGlobalPipes(
-    new ValidationPipe({
+    new AppValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,

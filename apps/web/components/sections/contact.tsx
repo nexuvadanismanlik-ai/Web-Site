@@ -117,7 +117,9 @@ export function Contact({
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl brand-gradient-bg">
                       <item.icon className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-sm text-fg" data-edit={paths[i]}>{item.label}</span>
+                    <span className="min-w-0 break-all text-sm text-fg" data-edit={paths[i]}>
+                      {item.label}
+                    </span>
                   </div>
                 );
                 return item.href ? (

@@ -126,9 +126,17 @@ export function IntegrationsEditor({ initial }: { initial: Partial<IntegrationsC
   const set = (key: keyof IntegrationsContent, value: string | boolean) =>
     setConfig((current) => ({ ...current, [key]: value }));
 
-  const connected = GROUPS.flatMap((g) => g.fields).filter((f) =>
+  // Counted only when the value is both present and shaped like a real
+  // identifier. A mistyped tag id is not a connection — it loads, reports
+  // nothing, and looks exactly like a working one, so a count that includes it
+  // is the one number on this screen guaranteed to mislead.
+  const filled = GROUPS.flatMap((g) => g.fields).filter((f) =>
     ((config[f.key] as string) ?? '').trim(),
+  );
+  const connected = filled.filter(
+    (f) => !f.pattern || f.pattern.test(((config[f.key] as string) ?? '').trim()),
   ).length;
+  const malformed = filled.length - connected;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -164,9 +172,15 @@ export function IntegrationsEditor({ initial }: { initial: Partial<IntegrationsC
               </p>
               <p className="mt-0.5 text-sm text-muted">
                 {config.enabled
-                  ? `${connected} bağlantı tanımlı. Kapatırsan hiçbir üçüncü taraf script'i yüklenmez.`
+                  ? `${connected} kimlik tanımlı. Kapatırsan hiçbir üçüncü taraf script'i yüklenmez.`
                   : 'Hiçbir üçüncü taraf script’i yüklenmiyor. Bilgileri girip buradan açabilirsin.'}
               </p>
+              {malformed > 0 && (
+                <p className="mt-1 text-sm text-amber-500">
+                  {malformed} kimlik beklenen biçimde değil — yüklenir ama hiçbir şey
+                  raporlamaz.
+                </p>
+              )}
             </div>
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-muted">

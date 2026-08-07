@@ -10,8 +10,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Public } from '../../../common/decorators/public.decorator';
@@ -54,9 +52,6 @@ export class ContactController {
   // rejecting the whole submission over a field the API has not learned about
   // yet loses a real customer's enquiry to show them a validation error they
   // did not cause. Every field that matters is still validated below.
-  @UsePipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }),
-  )
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary:

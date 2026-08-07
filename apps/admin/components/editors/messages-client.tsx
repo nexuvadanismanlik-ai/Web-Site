@@ -113,8 +113,9 @@ export function MessagesClient({
                       <div className="mt-1 truncate text-xs text-faint">{m.message}</div>
                     )}
                     <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-faint">
-                      <span className="flex items-center gap-1">
-                        <Mail className="h-3 w-3" /> {m.email}
+                      <span className="flex min-w-0 items-center gap-1">
+                        <Mail className="h-3 w-3 shrink-0" />{' '}
+                        <span className="truncate">{m.email}</span>
                       </span>
                       {m.phone && (
                         <span className="flex items-center gap-1">

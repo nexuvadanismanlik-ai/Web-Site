@@ -85,7 +85,7 @@ export function NavigationEditor({
                       label={item.label.tr || 'Menü öğesi'}
                     />
                   </div>
-                  <div className="min-w-[14rem] flex-1">
+                  <div className="min-w-0 flex-1 sm:min-w-[14rem]">
                     <LocalizedField label="Etiket" value={item.label} onChange={(v) => patchNav(i, { label: v })} />
                   </div>
                   <div className="w-40">
@@ -142,7 +142,7 @@ export function NavigationEditor({
                       className="field-input"
                     />
                   </div>
-                  <div className="min-w-[16rem] flex-[2]">
+                  <div className="min-w-0 flex-[2] sm:min-w-[16rem]">
                     <ImageField
                       label="Logo"
                       value={logo.imageUrl ?? ''}

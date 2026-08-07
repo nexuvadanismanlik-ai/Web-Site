@@ -59,7 +59,7 @@ export function CrmSummary({ summary }: { summary: LeadSummary }) {
   ];
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="mb-6 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       {tiles.map((tile) => {
         const Icon = tile.icon;
         return (

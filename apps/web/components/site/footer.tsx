@@ -94,7 +94,13 @@ export function Footer({ content }: { content: SiteContent }) {
             <ul className="mt-5 space-y-4 text-sm text-muted">
               <li className="flex items-start gap-3">
                 <Icon name="mail" className="mt-0.5 h-4 w-4 text-brand-dyn" />
-                <a href={`mailto:${brand.email}`} data-edit="brand.email" className="hover:text-fg">{brand.email}</a>
+                <a
+                  href={`mailto:${brand.email}`}
+                  data-edit="brand.email"
+                  className="min-w-0 break-all hover:text-fg"
+                >
+                  {brand.email}
+                </a>
               </li>
               <li className="flex items-start gap-3">
                 <Icon name="phone" className="mt-0.5 h-4 w-4 text-brand-dyn" />

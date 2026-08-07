@@ -291,7 +291,7 @@ function TestSender({
   return (
     <Panel title="Test Gönderimi">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[16rem] flex-1">
+        <div className="min-w-0 flex-1 sm:min-w-[16rem]">
           <TextField
             label="Test maili gönderilecek adres"
             value={to}

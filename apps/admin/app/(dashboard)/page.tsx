@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { readSiteContent, readMessages } from '../../lib/content';
 import {
+  getAnalytics,
   getLeadSummary,
   getMailLogs,
   getMedia,
@@ -43,17 +44,25 @@ export default async function DashboardHome() {
   // into error.tsx, so the first thing an operator saw when the backend was
   // down was a blank apology with no cause and nowhere to go — while the one
   // screen that could explain it sat one click away, unmentioned.
-  const [content, inbox, crm, publish, media, mail, notifications] = await Promise.all([
-    readSiteContent().catch(() => null),
-    readMessages().catch(() => ({ items: [], total: 0, unread: 0 })),
-    getLeadSummary(),
-    getPublishStatus(),
-    getMedia(),
-    getMailLogs(),
-    getNotifications(true),
-  ]);
+  const [content, inbox, crm, publish, media, mail, notifications, analytics] =
+    await Promise.all([
+      readSiteContent().catch(() => null),
+      readMessages().catch(() => ({ items: [], total: 0, unread: 0 })),
+      getLeadSummary(),
+      getPublishStatus(),
+      getMedia(),
+      getMailLogs(),
+      getNotifications(true),
+      getAnalytics(),
+    ]);
 
   if (!content) return <ApiUnreachable />;
+
+  // The campaign that produced the most enquiries, not the most visits: the
+  // whole point of the report is that traffic and results are different things.
+  const topCampaign =
+    analytics?.campaigns.filter((row) => row.leads > 0).sort((a, b) => b.leads - a.leads)[0] ??
+    null;
 
   const { items: messages, unread } = inbox;
 
@@ -234,19 +243,67 @@ export default async function DashboardHome() {
           <ArrowRight className="h-4 w-4 shrink-0 text-faint transition-transform group-hover:translate-x-1 group-hover:text-fg" />
         </Link>
 
-        {/* Traffic — honest about not existing yet */}
-        <div className="panel flex items-center gap-4 p-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-overlay/5 text-faint">
+        {/* Traffic */}
+        <Link
+          href={adminPath('/analytics')}
+          className="panel group flex items-center gap-4 p-5 transition-colors hover:border-overlay/25 hover:bg-overlay/[0.03]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-overlay/5 text-brand-dyn">
             <BarChart3 className="h-5 w-5" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold text-fg">Ziyaretçi</span>
-            <span className="block text-xs text-muted">
-              Ölçüm henüz kurulmadı — site hiçbir analitik servise veri göndermiyor.
+            <span className="block truncate text-xs text-muted">
+              {!analytics
+                ? 'Ziyaretçi verisi okunamadı'
+                : analytics.views.month === 0
+                  ? 'Son 30 günde ziyaret kaydı yok'
+                  : `Bugün ${analytics.visitors.today} · son 30 gün ${analytics.visitors.month} ziyaretçi`}
             </span>
           </span>
-        </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-faint transition-transform group-hover:translate-x-1 group-hover:text-fg" />
+        </Link>
       </div>
+
+      {/* Visits in, enquiries out, work won. The three numbers that say whether
+          the site is doing its job — on the first screen rather than three
+          clicks into a report nobody opens. */}
+      {analytics && analytics.views.month > 0 && (
+        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Figure
+            label="Ziyaretçi"
+            value={analytics.visitors.month}
+            hint="Son 30 gün"
+          />
+          <Figure
+            label="Gelen talep"
+            value={analytics.crm.leads}
+            hint={
+              analytics.crm.leadRate === null
+                ? 'Son 30 gün'
+                : `Ziyaretçilerin %${analytics.crm.leadRate}'i`
+            }
+          />
+          <Figure
+            label="Kazanılan"
+            value={analytics.crm.won}
+            hint={
+              analytics.crm.winRate === null
+                ? 'Henüz sonuçlanan yok'
+                : `Kazanma oranı %${analytics.crm.winRate}`
+            }
+          />
+          <Figure
+            label="En çok getiren"
+            value={topCampaign ? topCampaign.leads : 0}
+            hint={
+              topCampaign
+                ? `${topCampaign.source}${topCampaign.campaign ? ` / ${topCampaign.campaign}` : ''}`
+                : 'Kaynak verisi yok'
+            }
+          />
+        </div>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         {/* Quick links */}
@@ -326,6 +383,27 @@ export default async function DashboardHome() {
  * them doing, and where to look — because the panel is the only window they
  * have onto the system it manages.
  */
+/** One number with what it means under it. */
+function Figure({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number | string;
+  hint: string;
+}) {
+  return (
+    <div className="panel p-5">
+      <div className="font-heading text-2xl font-bold text-fg">{value}</div>
+      <div className="mt-0.5 text-xs font-medium text-muted">{label}</div>
+      <div className="mt-0.5 truncate text-[11px] text-faint" title={hint}>
+        {hint}
+      </div>
+    </div>
+  );
+}
+
 function ApiUnreachable() {
   return (
     <div className="mx-auto max-w-2xl">

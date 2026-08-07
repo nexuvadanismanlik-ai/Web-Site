@@ -127,6 +127,56 @@ export const DEFAULT_TEMPLATES = [
     ].join('\n'),
   },
   {
+    key: 'deal_won',
+    name: 'Anlaşma sağlandı',
+    description: 'Talep "Kazanıldı" olarak işaretlendiğinde müşteriye gönderilir.',
+    subject: 'Birlikte çalışıyoruz — {{talep_no}}',
+    body: [
+      'Merhaba {{ad}},',
+      '',
+      'Anlaştığımız için teşekkür ederiz. {{hizmet}} çalışmasına başlıyoruz.',
+      '',
+      // Says what happens next rather than only thanking them. The first
+      // message after a yes is where a customer decides whether they made the
+      // right call, and "we will be in touch" is not an answer.
+      'Bundan sonraki adımlar:',
+      '',
+      '1. Süreci yürütecek ekip arkadaşımız sizinle iletişime geçecek.',
+      '2. İhtiyaçlarınızı ve önceliklerinizi birlikte netleştireceğiz.',
+      '3. Çalışma planını ve zaman aralığını sizinle paylaşacağız.',
+      '',
+      'Bu arada aklınıza takılan her şey için bu maili yanıtlayabilirsiniz.',
+      '',
+      'Talep numaranız: **{{talep_no}}**',
+      '',
+      '{{firma_adi}}',
+    ].join('\n'),
+  },
+  {
+    key: 'deal_lost',
+    name: 'Bu kez olmadı',
+    description:
+      'Talep "Kaybedildi" olarak işaretlendiğinde gönderilebilir. Varsayılan olarak kapalı.',
+    subject: 'Görüşmemiz için teşekkürler — {{talep_no}}',
+    body: [
+      'Merhaba {{ad}},',
+      '',
+      'Bu çalışmada birlikte ilerlemeyeceğimizi anlıyoruz. Ayırdığınız zaman ve',
+      'bize gösterdiğiniz ilgi için teşekkür ederiz.',
+      '',
+      'İleride {{hizmet}} ya da başka bir konuda yardımcı olabileceğimiz bir şey',
+      'olursa kapımız açık — bu maili yanıtlamanız yeterli.',
+      '',
+      'İşlerinizde başarılar dileriz.',
+      '',
+      '{{firma_adi}}',
+    ].join('\n'),
+    // Off by default. A closing note is the right gesture when a person decides
+    // to send it; sent automatically to everybody who went quiet, it reads as a
+    // system giving up on them.
+    enabled: false,
+  },
+  {
     key: 'thank_you',
     name: 'Teşekkür',
     description: 'İş tamamlandığında gönderilir.',
@@ -247,12 +297,32 @@ export function renderEmailHtml(params: {
   const paragraphs = params.body
     .split(/\n{2,}/)
     .map((block) => {
-      const html = escapeHtml(block)
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n/g, '<br />');
-      return `<p style="margin:0 0 16px;line-height:1.6;color:#1f2937;font-size:15px;">${html}</p>`;
+      const lines = block.split('\n');
+
+      // A block whose every line is numbered becomes a real list. Written as
+      // "1. …" in the editor because that is how somebody types steps; left as
+      // one run-on paragraph it reads as a wall, which is exactly the moment a
+      // customer stops reading — the step list is what they wanted.
+      if (lines.length > 1 && lines.every((line) => /^\s*\d+\.\s+/.test(line))) {
+        const items = lines
+          .map(
+            (line) =>
+              `<li style="margin:0 0 8px;line-height:1.6;">${inline(line.replace(/^\s*\d+\.\s+/, ''))}</li>`,
+          )
+          .join('');
+        return `<ol style="margin:0 0 16px;padding-left:20px;color:#1f2937;font-size:15px;">${items}</ol>`;
+      }
+
+      return `<p style="margin:0 0 16px;line-height:1.6;color:#1f2937;font-size:15px;">${inline(block)}</p>`;
     })
     .join('');
+
+  // The line a phone shows next to the subject. Without it clients pull the
+  // first thing they find, which is usually the logo's alt text.
+  const preheader = escapeHtml(
+    params.body.replace(/\*\*/g, '').split('\n').find((line) => line.trim().length > 0)?.slice(0, 120) ??
+      '',
+  );
 
   const button =
     params.buttonLabel && params.buttonUrl
@@ -263,16 +333,37 @@ export function renderEmailHtml(params: {
     ? `<img src="${escapeHtml(params.logoUrl)}" alt="${escapeHtml(params.brandName)}" style="max-height:40px;" />`
     : `<span style="font-size:20px;font-weight:700;color:${escapeHtml(params.brandColor)};">${escapeHtml(params.brandName)}</span>`;
 
+  // Light only, declared. Without color-scheme some clients invert the whole
+  // message in dark mode and the white card turns dark grey with black text on
+  // it — which is worse than either theme done deliberately.
   return `<!doctype html>
-<html lang="tr"><body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light" />
+<title>${escapeHtml(params.brandName)}</title>
+</head>
+<body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
     <tr><td style="padding:24px 28px;border-bottom:4px solid ${escapeHtml(params.brandColor)};">${header}</td></tr>
     <tr><td style="padding:28px;">${paragraphs}${button}</td></tr>
-    <tr><td style="padding:18px 28px;background:#f9fafb;color:#6b7280;font-size:12px;">
+    <tr><td style="padding:18px 28px;background:#f9fafb;color:#6b7280;font-size:12px;line-height:1.5;">
       ${escapeHtml(params.brandName)}${params.siteUrl ? ` · <a href="${escapeHtml(params.siteUrl)}" style="color:#6b7280;">${escapeHtml(params.siteUrl.replace(/^https?:\/\//, ''))}</a>` : ''}
+      <br />
+      Bu e-postayı ${escapeHtml(params.brandName)} ile iletişime geçtiğiniz için aldınız.
     </td></tr>
   </table>
 </body></html>`;
+}
+
+/** Bold and single line breaks inside one block of text. */
+function inline(text: string): string {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br />');
 }
 
 function escapeHtml(value: string): string {

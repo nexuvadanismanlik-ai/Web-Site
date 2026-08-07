@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { publishSite, restoreVersion } from '../../app/actions';
+import { VersionDiff } from './version-diff';
 import type { ContentVersion, PublishResult, PublishStatus } from '../../lib/content';
 import { Panel } from '../fields';
 
@@ -193,6 +194,19 @@ export function PublishCenter({
                     {formatWhen(version.publishedAt ?? version.createdAt)}
                     {version.createdBy ? ` · ${version.createdBy}` : ''}
                   </div>
+
+                  {/* Compared against the version before it, which is what
+                      "what did this publish change" means. The live version is
+                      compared against the current draft instead — there the
+                      question is what pressing publish would change. */}
+                  {(version.isPublished || version.number > 1) && (
+                    <div className="mt-1.5">
+                      <VersionDiff
+                        from={version.isPublished ? version.number : version.number - 1}
+                        {...(version.isPublished ? {} : { to: version.number })}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {!version.isPublished &&

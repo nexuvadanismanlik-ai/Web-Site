@@ -20,6 +20,29 @@ export class ContentVersionController {
     return this.versions.list(tenant, limit ? Number.parseInt(limit, 10) : undefined);
   }
 
+  /**
+   * Declared before `:number` on purpose — Nest matches routes in order, and
+   * `diff` would otherwise be read as a version number and fail to parse.
+   */
+  @Get('diff')
+  @Roles('CONTENT_EDITOR')
+  @ApiOperation({
+    summary:
+      'What changed between two versions. Omit "to" to compare a version ' +
+      'against the current draft — that is, what publishing would change.',
+  })
+  @ApiQuery({ name: 'from', required: true })
+  @ApiQuery({ name: 'to', required: false })
+  @ApiQuery({ name: 'tenant', required: false })
+  diff(
+    @Query('from', ParseIntPipe) from: number,
+    @Query('to') to?: string,
+    @Query('tenant') tenant?: string,
+  ) {
+    const target = to === undefined || to === '' ? null : Number.parseInt(to, 10);
+    return this.versions.diff(from, Number.isNaN(target as number) ? null : target, tenant);
+  }
+
   @Get(':number')
   @Roles('CONTENT_EDITOR')
   @ApiOperation({ summary: 'The full content document of one version' })

@@ -18,6 +18,7 @@ import type {
   MediaFile,
   MediaFolder,
   MediaList,
+  ContentDiff,
 } from './model';
 
 // Shapes and constants live in lib/model, which imports nothing from the
@@ -469,6 +470,16 @@ export interface ContentVersion {
 
 export async function readVersions(limit = 20): Promise<ContentVersion[]> {
   return apiFetch<ContentVersion[]>(`/website/versions?limit=${limit}`);
+}
+
+/**
+ * What changed between two versions. Omitting `to` compares against the
+ * current draft — that is, what pressing publish would change.
+ */
+export async function readDiff(from: number, to?: number): Promise<ContentDiff> {
+  return apiFetch<ContentDiff>(
+    `/website/versions/diff?from=${from}${to === undefined ? '' : `&to=${to}`}`,
+  );
 }
 
 export async function restoreVersionViaApi(number: number): Promise<ContentVersion> {

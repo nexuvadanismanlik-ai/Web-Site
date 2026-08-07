@@ -157,6 +157,26 @@ export interface SystemStatus {
 
 // ─── Media ──────────────────────────────────────────────────────────────────
 
+/** One field that differs between two versions. */
+export interface ContentChange {
+  /** Where it is, in the panel's words: "Hero → Başlık". */
+  label: string;
+  path: string[];
+  kind: 'added' | 'removed' | 'changed';
+  before: string | null;
+  after: string | null;
+}
+
+export interface ContentDiff {
+  from: number;
+  /** Null means "compared against the current draft". */
+  to: number | null;
+  changes: ContentChange[];
+  /** True when more changed than the list shows. */
+  truncated: boolean;
+  total: number;
+}
+
 /** Folders the API accepts. Anything else is rejected as path traversal. */
 export const MEDIA_FOLDERS = ['images', 'logos', 'documents', 'attachments', 'uploads'] as const;
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number];

@@ -14,6 +14,7 @@ import {
   publishViaApi,
   readPublishStatus,
   changePasswordViaApi,
+  readDiff,
   readVersions,
   restoreVersionViaApi,
   readMedia,
@@ -61,6 +62,7 @@ import {
   type PublishResult,
   type PublishStatus,
   type ContentVersion,
+  type ContentDiff,
 } from '../lib/content';
 
 async function requireAuth() {
@@ -440,6 +442,20 @@ export async function deleteMedia(
   }
   revalidatePath(adminPath('/media'));
   return { ok: true };
+}
+
+/**
+ * What changed between a version and another — or, with no second version,
+ * between it and the current draft. Returns null rather than throwing: the
+ * comparison is extra information on a screen that works without it.
+ */
+export async function getDiff(from: number, to?: number): Promise<ContentDiff | null> {
+  await requireAuth();
+  try {
+    return await readDiff(from, to);
+  } catch {
+    return null;
+  }
 }
 
 /** Publish history: every version, who froze it, and which one is live. */

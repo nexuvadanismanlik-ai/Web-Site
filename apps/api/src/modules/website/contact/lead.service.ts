@@ -33,6 +33,16 @@ const STATUS_TEXT: Record<string, string> = {
 /** Statuses that mean the lead is no longer being worked. */
 const CLOSED: LeadStatus[] = [LeadStatus.WON, LeadStatus.LOST, LeadStatus.ARCHIVED];
 
+/**
+ * The two outcomes that deserve their own message rather than a generic
+ * "your status changed". Archiving is deliberately absent: it is filing, and
+ * nobody wants an email telling them they have been filed.
+ */
+const OUTCOME_TEMPLATES: Partial<Record<LeadStatus, string>> = {
+  [LeadStatus.WON]: 'deal_won',
+  [LeadStatus.LOST]: 'deal_lost',
+};
+
 const LEAD_LIST_SELECT = {
   id: true,
   requestNo: true,
@@ -317,6 +327,14 @@ export class LeadService {
     void this.sendLeadTemplate(tenantId, 'status_changed', id, {
       durum: STATUS_TEXT[status] ?? status,
     });
+
+    // Winning and losing are not "a status changed" — they are the two moments
+    // a customer is actually owed a written word, so each has its own template
+    // with something to say. Both respect the template's own enabled flag, and
+    // the closing note ships off: sent to everyone who went quiet it reads as a
+    // system giving up on them, which is a decision for a person to make.
+    const outcome = OUTCOME_TEMPLATES[status];
+    if (outcome) void this.sendLeadTemplate(tenantId, outcome, id, {});
 
     return this.findOne(id, tenantSlug);
   }

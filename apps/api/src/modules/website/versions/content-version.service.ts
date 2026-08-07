@@ -34,6 +34,150 @@ export interface VersionSummary {
 const DEFAULT_HISTORY_LIMIT = 20;
 
 /**
+ * How many differences are listed before the rest are counted instead.
+ *
+ * A first publish differs from nothing in every field of the site; rendering
+ * eight hundred rows helps nobody and the count is the honest summary.
+ */
+const MAX_DIFF_ENTRIES = 60;
+
+/** What kind of change happened to one field. */
+export type ChangeKind = 'added' | 'removed' | 'changed';
+
+export interface ContentChange {
+  /** Where it is, in the panel's words: "Hero → Başlık". */
+  label: string;
+  /** The raw path, for anything that needs to be precise. */
+  path: string[];
+  kind: ChangeKind;
+  /** Trimmed for display; a whole About page is not a diff line. */
+  before: string | null;
+  after: string | null;
+}
+
+export interface ContentDiff {
+  from: number;
+  to: number | null;
+  changes: ContentChange[];
+  truncated: boolean;
+  total: number;
+}
+
+type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
+/** Section and collection keys as the panel names them. */
+const DIFF_LABELS: Record<string, string> = {
+  brand: 'Marka',
+  hero: 'Hero',
+  about: 'Hakkımızda',
+  cta: 'CTA',
+  contact: 'İletişim',
+  footer: 'Alt Bilgi',
+  seo: 'SEO',
+  uiText: 'Arayüz Metinleri',
+  integrations: 'Entegrasyonlar',
+  servicesMeta: 'Hizmetler başlığı',
+  referencesMeta: 'Referanslar başlığı',
+  testimonialsMeta: 'Yorumlar başlığı',
+  processMeta: 'Süreç başlığı',
+  nav: 'Menü',
+  logos: 'Logolar',
+  services: 'Hizmetler',
+  stats: 'Sayılar',
+  references: 'Referanslar',
+  testimonials: 'Yorumlar',
+  process: 'Süreç',
+  title: 'Başlık',
+  subtitle: 'Alt başlık',
+  description: 'Açıklama',
+  image: 'Görsel',
+  imageUrl: 'Görsel',
+  logoUrl: 'Logo',
+  name: 'Ad',
+  label: 'Etiket',
+  href: 'Bağlantı',
+  body: 'Metin',
+};
+
+/**
+ * Walks two documents together and records where they disagree.
+ *
+ * Recursive rather than a line-based text diff: the panel edits fields, so the
+ * useful answer is "Hero → Başlık changed", not "line 412 changed". Arrays are
+ * compared by position, which is right for the ordered collections the CMS
+ * actually has — reordering a list reports as several changed items, which is
+ * true, if blunter than it could be.
+ */
+function walk(before: Json, after: Json, path: string[], out: ContentChange[]): void {
+  if (out.length > MAX_DIFF_ENTRIES * 4) return; // Cheap runaway guard.
+
+  if (before === after) return;
+
+  const bothObjects =
+    isPlainObject(before) && isPlainObject(after);
+  const bothArrays = Array.isArray(before) && Array.isArray(after);
+
+  if (bothObjects) {
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+    for (const key of keys) {
+      walk(before[key] ?? null, after[key] ?? null, [...path, key], out);
+    }
+    return;
+  }
+
+  if (bothArrays) {
+    const length = Math.max(before.length, after.length);
+    for (let i = 0; i < length; i++) {
+      walk(before[i] ?? null, after[i] ?? null, [...path, String(i + 1)], out);
+    }
+    return;
+  }
+
+  const beforeText = display(before);
+  const afterText = display(after);
+  if (beforeText === afterText) return;
+
+  out.push({
+    label: labelFor(path),
+    path,
+    kind: isEmpty(before) ? 'added' : isEmpty(after) ? 'removed' : 'changed',
+    before: isEmpty(before) ? null : beforeText,
+    after: isEmpty(after) ? null : afterText,
+  });
+}
+
+function isPlainObject(value: Json): value is { [key: string]: Json } {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Absent, null and empty string all mean "there was nothing here". */
+function isEmpty(value: Json): boolean {
+  return value === null || value === undefined || value === '';
+}
+
+/**
+ * A path as somebody would read it.
+ *
+ * `tr`/`en` are dropped: the site is Turkish, and "Hero → Başlık → tr" is
+ * noise. Numbers keep their position so two changed services are two lines.
+ */
+function labelFor(path: string[]): string {
+  const parts = path
+    .filter((segment) => segment !== 'tr' && segment !== 'en')
+    .map((segment) => DIFF_LABELS[segment] ?? segment);
+  return parts.join(' → ');
+}
+
+/** A value as one short line. */
+function display(value: Json): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.length > 160 ? `${value.slice(0, 160)}…` : value;
+  if (typeof value === 'boolean') return value ? 'açık' : 'kapalı';
+  if (typeof value === 'number') return String(value);
+  return JSON.stringify(value).slice(0, 160);
+}
+
+/**
  * How a snapshot entry becomes a database row again.
  *
  * Restoring is the inverse of assembling: getSiteContent projects rows into the
@@ -133,6 +277,37 @@ export class ContentVersionService {
     });
     if (!version) throw new NotFoundException(`Version ${number} not found`);
     return fromJson<SiteContent>(version.snapshot);
+  }
+
+  /**
+   * What changed between two versions.
+   *
+   * The history could say who published and when, but not what they published,
+   * which makes rolling back a guess: you pick a version by its timestamp and
+   * hope. This walks the two documents and reports the fields that differ, in
+   * the panel's own vocabulary rather than as a JSON diff.
+   *
+   * `to` defaults to the current draft, so the common question — "what am I
+   * about to publish?" — is the default answer.
+   */
+  async diff(from: number, to: number | null, tenantSlug?: string): Promise<ContentDiff> {
+    const [before, after] = await Promise.all([
+      this.getSnapshot(from, tenantSlug),
+      to === null ? this.content.getSiteContent(tenantSlug) : this.getSnapshot(to, tenantSlug),
+    ]);
+
+    const changes: ContentChange[] = [];
+    walk(before as unknown as Json, after as unknown as Json, [], changes);
+
+    return {
+      from,
+      to,
+      changes: changes.slice(0, MAX_DIFF_ENTRIES),
+      // Reported rather than silently dropped: a list that stops at fifty and
+      // says nothing reads as "these are all the changes".
+      truncated: changes.length > MAX_DIFF_ENTRIES,
+      total: changes.length,
+    };
   }
 
   /**

@@ -6,6 +6,7 @@ import {
   Check,
   Eye,
   Mail,
+  PlugZap,
   Send,
   ServerCog,
   X,
@@ -16,6 +17,7 @@ import {
   saveMailSettings,
   saveMailTemplate,
   sendTestMail,
+  verifyMailConnection,
 } from '../../app/actions';
 import {
   MAIL_PROVIDERS,
@@ -289,29 +291,59 @@ function TestSender({
   const [result, setResult] = useState<{ ok: boolean; detail: string } | null>(null);
 
   return (
-    <Panel title="Test Gönderimi">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-0 flex-1 sm:min-w-[16rem]">
-          <TextField
-            label="Test maili gönderilecek adres"
-            value={to}
-            onChange={setTo}
-            type="email"
-            placeholder="kendi@adresiniz.com"
-          />
-        </div>
+    <Panel title="Bağlantı ve Test">
+      {/* Two questions, asked separately, because they have different answers.
+          "Is the key right" is settled by a handshake; "does mail arrive" needs
+          an actual message — and finding out the key was wrong by mailing
+          yourself makes your inbox part of the setup. */}
+      <div className="rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
+        <p className="text-sm font-medium text-fg">1. Bağlantıyı kontrol et</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Sağlayıcıya bağlanır, kimlik bilgilerini doğrular ve kapatır. Hiçbir mail
+          gönderilmez.
+        </p>
         <button
           onClick={() =>
             startTransition(async () => {
-              setResult(await sendTestMail(to.trim()));
+              setResult(await verifyMailConnection());
             })
           }
-          disabled={pending || to.trim().length < 5}
-          className="ui-button-primary disabled:opacity-50"
+          disabled={pending}
+          className="ui-button mt-3 disabled:opacity-50"
         >
-          <Send className="h-4 w-4" />
-          {pending ? 'Gönderiliyor...' : 'Test Gönder'}
+          <PlugZap className="h-4 w-4" />
+          {pending ? 'Kontrol ediliyor...' : 'Bağlantıyı Kontrol Et'}
         </button>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-4">
+        <p className="text-sm font-medium text-fg">2. Gerçek bir mail gönder</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Bağlantı çalışıyorsa, mailin gerçekten ulaştığını bu doğrular.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="min-w-0 flex-1 sm:min-w-[16rem]">
+            <TextField
+              label="Test maili gönderilecek adres"
+              value={to}
+              onChange={setTo}
+              type="email"
+              placeholder="kendi@adresiniz.com"
+            />
+          </div>
+          <button
+            onClick={() =>
+              startTransition(async () => {
+                setResult(await sendTestMail(to.trim()));
+              })
+            }
+            disabled={pending || to.trim().length < 5}
+            className="ui-button-primary disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+            {pending ? 'Gönderiliyor...' : 'Test Gönder'}
+          </button>
+        </div>
       </div>
 
       {result && (
@@ -329,7 +361,9 @@ function TestSender({
           )}
           <span>
             {result.ok
-              ? 'Gönderildi. Gelen kutunu ve spam klasörünü kontrol et.'
+              ? result.detail.includes('geçerli') || result.detail.includes('doğrulandı')
+                ? result.detail
+                : 'Gönderildi. Gelen kutunu ve spam klasörünü kontrol et.'
               : result.detail}
           </span>
         </p>

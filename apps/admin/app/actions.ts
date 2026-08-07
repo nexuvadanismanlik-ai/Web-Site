@@ -27,6 +27,7 @@ import {
   readMailSettings,
   saveMailSettingsViaApi,
   sendTestMailViaApi,
+  verifyMailViaApi,
   readMailTemplates,
   saveMailTemplateViaApi,
   readMailPreview,
@@ -564,6 +565,17 @@ export async function saveMailSettings(
  * The error text is passed through untouched: "domain is not verified" is the
  * answer, and any paraphrase of it is worse.
  */
+export async function verifyMailConnection(): Promise<{ ok: boolean; detail: string }> {
+  await requireAuth();
+  try {
+    const result = await verifyMailViaApi();
+    revalidatePath(adminPath('/mail'));
+    return result;
+  } catch (err) {
+    return { ok: false, detail: err instanceof Error ? err.message : 'Kontrol edilemedi.' };
+  }
+}
+
 export async function sendTestMail(
   to: string,
   templateKey?: string,

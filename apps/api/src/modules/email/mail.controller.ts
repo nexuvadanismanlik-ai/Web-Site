@@ -100,6 +100,26 @@ export class MailController {
    * the credentials can still refuse to send — an unverified sender domain is
    * the usual reason — and that only shows up on an actual send.
    */
+  /**
+   * Checks the credentials without sending anything.
+   *
+   * Separate from the test send on purpose: a failed send has several possible
+   * causes with different fixes, and "is the key right" should be answerable
+   * without making somebody's inbox part of the setup.
+   */
+  @Post('verify')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Check the provider credentials without sending a message' })
+  @ApiQuery({ name: 'tenant', required: false })
+  async verify(@Query('tenant') tenant?: string) {
+    const tenantId = await this.tenants.resolveTenantId(tenant);
+    const result = await this.email.verifyConnection(tenantId);
+    // Recorded like a test send, so the screen still shows an outcome after a
+    // reload and the two kinds of check share one place to look.
+    await this.settings.recordTest(tenantId, result.ok, result.detail);
+    return result;
+  }
+
   @Post('test')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Send a test message and report what the provider said' })

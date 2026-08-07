@@ -534,6 +534,14 @@ export async function saveMailSettingsViaApi(
   });
 }
 
+/**
+ * Checks the provider credentials without sending anything. Separate from the
+ * test send because a wrong key and a rejected recipient need different fixes.
+ */
+export async function verifyMailViaApi(): Promise<{ ok: boolean; detail: string }> {
+  return apiFetch<{ ok: boolean; detail: string }>('/mail/verify', { method: 'POST' });
+}
+
 export async function sendTestMailViaApi(
   to: string,
   templateKey?: string,

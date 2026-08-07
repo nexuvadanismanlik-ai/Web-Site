@@ -181,6 +181,105 @@ export class EmailService {
     });
   }
 
+  // ─── Connection check ─────────────────────────────────────────────────────
+
+  /**
+   * Asks the provider whether the credentials work, without sending anything.
+   *
+   * The panel already had "send a test message", and that is the wrong first
+   * question. A failed send has several possible causes — a wrong key, an
+   * unverified sender domain, a rejected recipient, a provider outage — and
+   * they need different fixes. Somebody typing an API key wants to know
+   * immediately whether the key is right, and finding out by mailing themselves
+   * makes their inbox part of the setup process.
+   *
+   * So this checks only the connection: SMTP opens a session and authenticates
+   * and hangs up; the HTTP providers ask a read-only endpoint. A pass here plus
+   * a failed send means the credentials are fine and the problem is the message
+   * or the sender address, which is a far more useful place to start.
+   */
+  async verifyConnection(tenantId: string): Promise<{ ok: boolean; detail: string }> {
+    const settings = await this.settings.resolve(tenantId);
+
+    try {
+      switch (settings.provider) {
+        case 'smtp':
+          return await this.verifySmtp(settings);
+        case 'sendgrid':
+          return await this.verifyHttp(
+            settings.apiKey,
+            'https://api.sendgrid.com/v3/scopes',
+            'SendGrid',
+          );
+        default:
+          return await this.verifyHttp(
+            settings.apiKey,
+            'https://api.resend.com/domains',
+            'Resend',
+          );
+      }
+    } catch (err) {
+      return { ok: false, detail: (err as Error).message };
+    }
+  }
+
+  private async verifySmtp(
+    settings: ResolvedMailSettings,
+  ): Promise<{ ok: boolean; detail: string }> {
+    if (!settings.smtpHost) {
+      return { ok: false, detail: 'SMTP sunucu adresi girilmemiş.' };
+    }
+
+    const nodemailer = await import('nodemailer');
+    const transport = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort,
+      secure: settings.smtpSecure || settings.smtpPort === 465,
+      ...(settings.smtpUser
+        ? { auth: { user: settings.smtpUser, pass: settings.smtpPassword ?? '' } }
+        : {}),
+      connectionTimeout: 15_000,
+      greetingTimeout: 15_000,
+    });
+
+    try {
+      // Opens the session, negotiates TLS and authenticates, then closes.
+      await transport.verify();
+      return {
+        ok: true,
+        detail: `${settings.smtpHost}:${settings.smtpPort} bağlantısı kuruldu ve kimlik doğrulandı.`,
+      };
+    } catch (err) {
+      return { ok: false, detail: explainSmtp(err as Error, settings) };
+    } finally {
+      transport.close();
+    }
+  }
+
+  private async verifyHttp(
+    apiKey: string | null | undefined,
+    url: string,
+    label: string,
+  ): Promise<{ ok: boolean; detail: string }> {
+    if (!apiKey) {
+      return { ok: false, detail: `${label} API anahtarı girilmemiş.` };
+    }
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (res.ok) {
+      return { ok: true, detail: `${label} anahtarı geçerli.` };
+    }
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, detail: `${label} anahtarı reddedildi. Anahtarı yeniden oluşturup gir.` };
+    }
+    const body = await res.text().catch(() => '');
+    return { ok: false, detail: `${label} ${res.status}: ${body.slice(0, 200) || 'ayrıntı yok'}` };
+  }
+
   // ─── Delivery log ─────────────────────────────────────────────────────────
 
   private async record(
@@ -217,4 +316,37 @@ export function formatFrom(settings: {
   fromEmail: string;
 }): string {
   return settings.fromName ? `${settings.fromName} <${settings.fromEmail}>` : settings.fromEmail;
+}
+
+/**
+ * Turns an SMTP failure into something a person can act on.
+ *
+ * Node's networking errors are accurate and useless: "ECONNREFUSED" does not
+ * tell somebody that their provider wants port 587 rather than 465, and
+ * "EAUTH" does not tell a Gmail user that their account password will never
+ * work and they need an app password. Each of these is a mistake people make
+ * once and then spend an hour on.
+ */
+function explainSmtp(err: Error, settings: { smtpHost?: string | null; smtpPort: number }): string {
+  const raw = `${(err as Error & { code?: string }).code ?? ''} ${err.message}`;
+
+  if (/EAUTH|535|Username and Password not accepted/i.test(raw)) {
+    return (
+      'Kullanıcı adı veya şifre reddedildi. Gmail ve Microsoft hesaplarında normal ' +
+      'hesap şifresi çalışmaz — uygulama şifresi (app password) oluşturman gerekir.'
+    );
+  }
+  if (/ECONNREFUSED/i.test(raw)) {
+    return `${settings.smtpHost}:${settings.smtpPort} bağlantıyı reddetti. Port numarası yanlış olabilir — çoğu sağlayıcı 587 (STARTTLS) ya da 465 (SSL) kullanır.`;
+  }
+  if (/ETIMEDOUT|ESOCKET|timeout/i.test(raw)) {
+    return `${settings.smtpHost}:${settings.smtpPort} yanıt vermedi. Sunucu adı yanlış olabilir ya da bu porta çıkış engellenmiş olabilir.`;
+  }
+  if (/ENOTFOUND|EAI_AGAIN/i.test(raw)) {
+    return `"${settings.smtpHost}" adresi çözümlenemedi. Sunucu adında yazım hatası olabilir.`;
+  }
+  if (/self.signed|certificate|SSL|TLS/i.test(raw)) {
+    return `TLS el sıkışması başarısız. Port ${settings.smtpPort} için güvenli bağlantı ayarı yanlış olabilir: 465 doğrudan SSL, 587 STARTTLS bekler.`;
+  }
+  return err.message;
 }

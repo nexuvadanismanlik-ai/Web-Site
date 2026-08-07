@@ -222,14 +222,37 @@ export class SiteContentService {
     });
   }
 
+  /**
+   * One section's document.
+   *
+   * A section that has never been saved reads as empty rather than as a 404.
+   * The key is valid — it is in the registry, checked above — so the honest
+   * answer to "what is in it" is "nothing yet", and 404 means "there is no such
+   * section", which is a different and untrue statement.
+   *
+   * It mattered: the assembled document already treated a missing section as
+   * empty, so the site rendered fine while every screen that reads one section
+   * at a time — the click-to-edit overlay among them — failed on any section
+   * nobody had saved yet. A new section was therefore broken until somebody
+   * saved it, and saving it required the screen that was broken.
+   */
   async getSection(key: string, tenantSlug?: string) {
     this.assertSectionKey(key);
     const tenantId = await this.tenants.resolveTenantId(tenantSlug);
     const row = await this.prisma.websiteSection.findUnique({
       where: { tenantId_key: { tenantId, key } },
     });
-    if (!row) throw new NotFoundException(`Section "${key}" not found`);
-    return row;
+
+    return (
+      row ?? {
+        id: null,
+        tenantId,
+        key,
+        data: {},
+        createdAt: null,
+        updatedAt: null,
+      }
+    );
   }
 
   /** Replaces a section's JSON payload, creating it when absent. */

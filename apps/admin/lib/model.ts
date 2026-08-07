@@ -49,6 +49,14 @@ export interface Lead {
   createdAt: string;
   lastActionAt: string;
   assignedTo: LeadPerson | null;
+  /** How this enquiry found us, from the visitor's own session. */
+  source?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  landingPath?: string | null;
+  referrer?: string | null;
+  device?: string | null;
 }
 
 export interface LeadNote {
@@ -244,6 +252,16 @@ export interface AnalyticsSummary {
   devices: { device: string; views: number }[];
   /** One entry per day, gaps filled with zeros. */
   daily: { date: string; views: number; visitors: number }[];
+  /** What each campaign produced: visits, enquiries, won work. */
+  campaigns: {
+    source: string;
+    campaign: string;
+    visitors: number;
+    views: number;
+    leads: number;
+    won: number;
+    conversionRate: number | null;
+  }[];
   crm: {
     leads: number;
     won: number;

@@ -7,6 +7,7 @@ import {
   FileText,
   Mail,
   MessageSquarePlus,
+  MousePointerClick,
   Phone,
   Tag,
   Trash2,
@@ -212,6 +213,54 @@ export function LeadDrawer({
                   )}
                 </dl>
               </section>
+
+              {/* Where the enquiry came from. Only drawn when the visit carried
+                  something: a panel of five dashes tells nobody anything. */}
+              {(lead.utmSource || lead.utmCampaign || lead.source || lead.referrer) && (
+                <section className="ui-panel p-4">
+                  <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-fg">
+                    <MousePointerClick className="h-3.5 w-3.5" /> Nereden geldi
+                  </h3>
+                  <dl className="space-y-2.5 text-sm">
+                    <Fact
+                      icon={<MousePointerClick className="h-3.5 w-3.5" />}
+                      label="Kaynak"
+                      value={lead.utmSource || lead.source}
+                    />
+                    <Fact
+                      icon={<Tag className="h-3.5 w-3.5" />}
+                      label="Kampanya"
+                      value={lead.utmCampaign}
+                    />
+                    <Fact
+                      icon={<Tag className="h-3.5 w-3.5" />}
+                      label="Ortam"
+                      value={lead.utmMedium}
+                    />
+                    <Fact
+                      icon={<FileText className="h-3.5 w-3.5" />}
+                      label="Giriş sayfası"
+                      value={lead.landingPath}
+                    />
+                    <Fact
+                      icon={<FileText className="h-3.5 w-3.5" />}
+                      label="Yönlendiren"
+                      value={lead.referrer}
+                    />
+                    <Fact
+                      icon={<User className="h-3.5 w-3.5" />}
+                      label="Cihaz"
+                      value={
+                        lead.device
+                          ? { desktop: 'Masaüstü', mobile: 'Telefon', tablet: 'Tablet' }[
+                              lead.device
+                            ] ?? lead.device
+                          : null
+                      }
+                    />
+                  </dl>
+                </section>
+              )}
 
               {/* Message */}
               <section>

@@ -10,6 +10,7 @@ import {
   renderEmailHtml,
 } from '../../email/mail-template.service';
 import { LeadService } from './lead.service';
+import { classifyDevice, classifySource as classifyReferrer } from '../../analytics/analytics.service';
 import {
   resolvePagination,
   paginated,
@@ -119,6 +120,15 @@ export class ContactService {
         service: dto.service?.trim() || null,
         budget: dto.budget?.trim() || null,
         consentAt: dto.consent ? new Date() : null,
+        // Attribution, so a campaign can be followed to a won deal rather than
+        // stopping at the visit that produced the enquiry.
+        source: dto.utmSource?.trim() || classifyReferrer(dto.referrer),
+        utmSource: dto.utmSource?.trim() || null,
+        utmMedium: dto.utmMedium?.trim() || null,
+        utmCampaign: dto.utmCampaign?.trim() || null,
+        landingPath: dto.landingPath?.trim() || null,
+        referrer: dto.referrer?.trim() || null,
+        device: classifyDevice(meta.userAgent ?? ''),
         ipAddress: meta.ip ?? null,
         userAgent: meta.userAgent?.slice(0, 500) ?? null,
       },

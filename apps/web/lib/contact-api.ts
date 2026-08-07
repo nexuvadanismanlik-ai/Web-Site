@@ -18,6 +18,15 @@ export interface ContactInput {
   consent?: boolean;
   /** Honeypot. A real visitor never sees the field that fills this. */
   website?: string;
+
+  /** Attribution, filled by the tracker from the visitor's own session. */
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  landingPath?: string;
+  referrer?: string;
 }
 
 /**
@@ -60,6 +69,14 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
         budget: (input.budget ?? '').trim().slice(0, 60),
         consent: input.consent === true,
         website: (input.website ?? '').slice(0, 200),
+        // Only sent when there is something to send: the API rejects unknown
+        // keys but not absent ones, and an empty string is a value that would
+        // be stored as an answer of "".
+        ...(input.utmSource ? { utmSource: input.utmSource.slice(0, 120) } : {}),
+        ...(input.utmMedium ? { utmMedium: input.utmMedium.slice(0, 120) } : {}),
+        ...(input.utmCampaign ? { utmCampaign: input.utmCampaign.slice(0, 160) } : {}),
+        ...(input.landingPath ? { landingPath: input.landingPath.slice(0, 200) } : {}),
+        ...(input.referrer ? { referrer: input.referrer.slice(0, 300) } : {}),
       }),
     });
 

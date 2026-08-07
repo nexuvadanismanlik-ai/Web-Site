@@ -107,6 +107,52 @@ export default async function AnalyticsPage() {
         />
       </div>
 
+      {/* The report a spend decision is made from. */}
+      <div className="panel mt-6 overflow-hidden">
+        <div className="border-b border-overlay/10 px-5 py-4">
+          <h2 className="font-heading text-sm font-semibold text-fg">Kampanyalar</h2>
+          <p className="mt-0.5 text-xs text-faint">
+            Reklam bağlantılarına <code className="font-mono">?utm_source=google&amp;utm_campaign=…</code>{' '}
+            eklediğinde her kampanyanın kaç ziyaretçi ve kaç talep getirdiği burada ayrışır.
+          </p>
+        </div>
+
+        {data.campaigns.length === 0 ? (
+          <p className="p-6 text-center text-sm text-faint">Henüz kaynak verisi yok.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[34rem] text-sm">
+              <thead>
+                <tr className="border-b border-overlay/10 text-left text-xs text-faint">
+                  <th className="px-5 py-2 font-medium">Kaynak</th>
+                  <th className="px-3 py-2 font-medium">Kampanya</th>
+                  <th className="px-3 py-2 text-right font-medium">Ziyaretçi</th>
+                  <th className="px-3 py-2 text-right font-medium">Talep</th>
+                  <th className="px-3 py-2 text-right font-medium">Kazanılan</th>
+                  <th className="px-5 py-2 text-right font-medium">Dönüşüm</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-overlay/5">
+                {data.campaigns.map((row) => (
+                  <tr key={`${row.source}-${row.campaign}`}>
+                    <td className="px-5 py-2.5 text-fg">
+                      {SOURCE_LABELS[row.source] ?? row.source}
+                    </td>
+                    <td className="px-3 py-2.5 text-muted">{row.campaign || '—'}</td>
+                    <td className="px-3 py-2.5 text-right text-muted">{row.visitors}</td>
+                    <td className="px-3 py-2.5 text-right font-medium text-fg">{row.leads}</td>
+                    <td className="px-3 py-2.5 text-right text-muted">{row.won}</td>
+                    <td className="px-5 py-2.5 text-right text-muted">
+                      {row.conversionRate === null ? '—' : `%${row.conversionRate}`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Bars
           title="En çok ziyaret edilen sayfalar"

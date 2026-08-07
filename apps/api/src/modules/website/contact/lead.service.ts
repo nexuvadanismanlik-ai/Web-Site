@@ -53,6 +53,16 @@ const LEAD_LIST_SELECT = {
 
 const LEAD_DETAIL_SELECT = {
   ...LEAD_LIST_SELECT,
+  // Attribution is on the detail rather than the list: it is what somebody
+  // wants when they open one enquiry, and thirty extra columns on every row of
+  // a hundred-row page is a transfer nobody asked for.
+  source: true,
+  utmSource: true,
+  utmMedium: true,
+  utmCampaign: true,
+  landingPath: true,
+  referrer: true,
+  device: true,
   message: true,
   consentAt: true,
   readAt: true,

@@ -12,6 +12,14 @@ export class CollectViewDto {
   @IsOptional() @IsString() @MaxLength(300) referrer?: string;
   @IsOptional() @IsInt() @Min(0) @Max(86_400) durationSeconds?: number;
   @IsOptional() @IsInt() @Min(0) @Max(100) scrollDepth?: number;
+
+  // Kept verbatim and length-capped rather than validated against a list: a
+  // campaign name is whatever the advertiser typed.
+  @IsOptional() @IsString() @MaxLength(120) utmSource?: string;
+  @IsOptional() @IsString() @MaxLength(120) utmMedium?: string;
+  @IsOptional() @IsString() @MaxLength(160) utmCampaign?: string;
+  @IsOptional() @IsString() @MaxLength(160) utmContent?: string;
+  @IsOptional() @IsString() @MaxLength(160) utmTerm?: string;
 }
 
 export class CollectEventDto {
@@ -59,6 +67,13 @@ export class AnalyticsController {
         country: readHeader(req, 'cf-ipcountry'),
         ...(dto.durationSeconds !== undefined ? { durationSeconds: dto.durationSeconds } : {}),
         ...(dto.scrollDepth !== undefined ? { scrollDepth: dto.scrollDepth } : {}),
+        utm: {
+          ...(dto.utmSource ? { source: dto.utmSource } : {}),
+          ...(dto.utmMedium ? { medium: dto.utmMedium } : {}),
+          ...(dto.utmCampaign ? { campaign: dto.utmCampaign } : {}),
+          ...(dto.utmContent ? { content: dto.utmContent } : {}),
+          ...(dto.utmTerm ? { term: dto.utmTerm } : {}),
+        },
       });
     } catch {
       // Swallowed on purpose. See the note above.

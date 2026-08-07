@@ -42,19 +42,34 @@ export class AnalyticsService {
     country?: string;
     durationSeconds?: number;
     scrollDepth?: number;
+    utm?: {
+      source?: string;
+      medium?: string;
+      campaign?: string;
+      content?: string;
+      term?: string;
+    };
   }): Promise<void> {
     await this.prisma.pageView.create({
       data: {
         tenantId: params.tenantId,
         path: normalisePath(params.path),
         referrer: params.referrer?.slice(0, 300) ?? null,
-        source: classifySource(params.referrer),
+        source: params.utm?.source?.trim() || classifySource(params.referrer),
         device: classifyDevice(params.userAgent),
         browser: classifyBrowser(params.userAgent),
         country: params.country?.slice(0, 2).toUpperCase() ?? '',
         visitorHash: this.visitorHash(params.ip, params.userAgent),
         durationSeconds: params.durationSeconds ?? null,
         scrollDepth: params.scrollDepth ?? null,
+        // An explicit utm_source beats what the referrer implies: an ad click
+        // often arrives with no referrer at all, and the campaign is the only
+        // thing that says where it came from.
+        utmSource: params.utm?.source ?? null,
+        utmMedium: params.utm?.medium ?? null,
+        utmCampaign: params.utm?.campaign ?? null,
+        utmContent: params.utm?.content ?? null,
+        utmTerm: params.utm?.term ?? null,
       },
     });
   }
@@ -144,6 +159,7 @@ export class AnalyticsService {
     ]);
 
     const daily = await this.dailySeries(tenantId, 30);
+    const campaigns = await this.campaignReport(tenantId, since(30));
 
     return {
       visitors: { today: today_.visitors, week: week.visitors, month: month.visitors },
@@ -159,6 +175,7 @@ export class AnalyticsService {
       sources: sources.map((row) => ({ source: row.source, views: row._count._all })),
       devices: devices.map((row) => ({ device: row.device, views: row._count._all })),
       daily,
+      campaigns,
       crm: {
         leads,
         won,
@@ -172,6 +189,93 @@ export class AnalyticsService {
           month.visitors > 0 ? Math.round((leads / month.visitors) * 1000) / 10 : null,
       },
     };
+  }
+
+  /**
+   * What each campaign actually produced.
+   *
+   * The whole point of tagging a link is to answer "was that spend worth it",
+   * and that question is not about visits — it is about visits, enquiries and
+   * won work in the same row. Traffic and the CRM live in the same database,
+   * so this is one query per side rather than an integration.
+   *
+   * Grouped by source and campaign together: the same campaign name run on two
+   * platforms is two lines of spend and has to be two lines here.
+   */
+  private async campaignReport(tenantId: string, since: Date) {
+    const [visits, leads] = await Promise.all([
+      this.prisma.$queryRaw<
+        { source: string | null; campaign: string | null; visitors: bigint; views: bigint }[]
+      >`
+        SELECT COALESCE("utmSource", "source") AS source,
+               "utmCampaign" AS campaign,
+               count(DISTINCT "visitorHash") AS visitors,
+               count(*) AS views
+        FROM page_views
+        WHERE "tenantId" = ${tenantId} AND "createdAt" >= ${since}
+        GROUP BY 1, 2
+        ORDER BY 3 DESC
+        LIMIT 20
+      `,
+      this.prisma.$queryRaw<
+        { source: string | null; campaign: string | null; leads: bigint; won: bigint }[]
+      >`
+        SELECT COALESCE("utmSource", "source") AS source,
+               "utmCampaign" AS campaign,
+               count(*) AS leads,
+               count(*) FILTER (WHERE "status" = 'WON') AS won
+        FROM contact_messages
+        WHERE "tenantId" = ${tenantId}
+          AND "deletedAt" IS NULL
+          AND "createdAt" >= ${since}
+        GROUP BY 1, 2
+      `,
+    ]);
+
+    const key = (source: string | null, campaign: string | null) =>
+      `${source ?? 'direct'} ${campaign ?? ''}`;
+
+    const rows = new Map<
+      string,
+      { source: string; campaign: string; visitors: number; views: number; leads: number; won: number }
+    >();
+
+    for (const row of visits) {
+      rows.set(key(row.source, row.campaign), {
+        source: row.source ?? 'direct',
+        campaign: row.campaign ?? '',
+        visitors: Number(row.visitors),
+        views: Number(row.views),
+        leads: 0,
+        won: 0,
+      });
+    }
+
+    // Enquiries whose campaign produced no recorded visit still belong here —
+    // the visit may predate measurement, and dropping the row would hide the
+    // very conversions the report exists to show.
+    for (const row of leads) {
+      const id = key(row.source, row.campaign);
+      const existing = rows.get(id) ?? {
+        source: row.source ?? 'direct',
+        campaign: row.campaign ?? '',
+        visitors: 0,
+        views: 0,
+        leads: 0,
+        won: 0,
+      };
+      existing.leads = Number(row.leads);
+      existing.won = Number(row.won);
+      rows.set(id, existing);
+    }
+
+    return [...rows.values()]
+      .map((row) => ({
+        ...row,
+        conversionRate:
+          row.visitors > 0 ? Math.round((row.leads / row.visitors) * 1000) / 10 : null,
+      }))
+      .sort((a, b) => b.leads - a.leads || b.visitors - a.visitors);
   }
 
   /**

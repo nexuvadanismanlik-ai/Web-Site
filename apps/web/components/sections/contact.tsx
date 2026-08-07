@@ -5,7 +5,7 @@ import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent, IntegrationsContent, UiText } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
-import { trackFormSubmit } from '../analytics';
+import { readAttribution, trackFormSubmit } from '../analytics';
 import { reportConversion } from '../integrations';
 
 export function Contact({
@@ -51,6 +51,9 @@ export function Contact({
       budget: String(data.get('budget') ?? ''),
       consent: data.get('consent') === 'on',
       website: String(data.get('website') ?? ''),
+      // How this visitor found us, from their own session. Without it a
+      // campaign report stops at the visit and never reaches the enquiry.
+      ...readAttribution(),
     });
     if (res.ok) {
       setFailure(null);

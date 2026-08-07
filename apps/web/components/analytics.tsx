@@ -17,6 +17,66 @@ const API_BASE = (process.env['NEXT_PUBLIC_API_URL'] ?? '').replace(/\/+$/, '');
  * measurement problem, and a tracker that can break a page is a tracker that
  * should not be on it.
  */
+/** Where sessionStorage keeps the campaign that started this visit. */
+const ATTRIBUTION_KEY = 'nexuva.attribution';
+
+export interface Attribution {
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  landingPath?: string;
+  referrer?: string;
+}
+
+/**
+ * The campaign that brought this visitor, remembered for the visit.
+ *
+ * Read from the address on the first page and kept in sessionStorage, because
+ * the form is usually several clicks after the landing page and the parameters
+ * are long gone by then. Session-scoped on purpose: it dies with the tab, which
+ * is the whole point — this identifies a visit, never a person.
+ *
+ * The first campaign of the visit wins. Someone who arrives from an ad and then
+ * comes back through a bookmark was still won by the ad.
+ */
+export function readAttribution(): Attribution {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const stored = sessionStorage.getItem(ATTRIBUTION_KEY);
+    if (stored) return JSON.parse(stored) as Attribution;
+
+    const params = new URLSearchParams(window.location.search);
+    const attribution: Attribution = {};
+    const get = (name: string) => params.get(name)?.slice(0, 160) || undefined;
+
+    const source = get('utm_source');
+    const medium = get('utm_medium');
+    const campaign = get('utm_campaign');
+    const content = get('utm_content');
+    const term = get('utm_term');
+
+    if (source) attribution.utmSource = source;
+    if (medium) attribution.utmMedium = medium;
+    if (campaign) attribution.utmCampaign = campaign;
+    if (content) attribution.utmContent = content;
+    if (term) attribution.utmTerm = term;
+
+    attribution.landingPath = window.location.pathname;
+    if (document.referrer && !document.referrer.includes(location.host)) {
+      attribution.referrer = document.referrer.slice(0, 300);
+    }
+
+    sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(attribution));
+    return attribution;
+  } catch {
+    // Private browsing can refuse storage. Measurement is not worth an error.
+    return {};
+  }
+}
+
 export function Analytics() {
   const pathname = usePathname();
 
@@ -44,11 +104,17 @@ export function Analytics() {
       });
     };
 
+    const attribution = readAttribution();
+
     send('/analytics/collect', {
       path: pathname,
       ...(document.referrer && !document.referrer.includes(location.host)
         ? { referrer: document.referrer }
         : {}),
+      // Sent on every page of the visit, not just the landing page: a report
+      // that only counts the first page understates a campaign by however many
+      // pages people read.
+      ...attribution,
     });
 
     const onScroll = () => {

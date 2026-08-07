@@ -1016,6 +1016,17 @@ model ContactMessage {
   isRead Boolean   @default(false)
   readAt DateTime?
 
+  /// How this enquiry found us. Filled from the visitor's own session, so a
+  /// campaign can be followed all the way to a won deal rather than stopping
+  /// at the visit.
+  source       String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  landingPath  String?
+  referrer     String?
+  device       String?
+
   /// Request metadata retained for abuse investigation.
   ipAddress String?
   userAgent String?
@@ -1305,6 +1316,15 @@ model PageView {
   referrer String?
   /// Where the visit came from, reduced to a name: Google, Instagram, Direct.
   source   String  @default("direct")
+
+  /// Advertising parameters, as the visitor arrived with them. Kept verbatim
+  /// because a campaign name is what the advertiser typed, not something to
+  /// normalise — two spellings are two campaigns to whoever set them up.
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
 
   device  String @default("desktop")
   browser String @default("")

@@ -78,4 +78,32 @@ export class CreateContactMessageDto {
   @IsString()
   @MaxLength(200)
   website?: string;
+
+  /**
+   * Where this visitor came from, as their own session recorded it.
+   *
+   * Sent by the site rather than derived here: the campaign that brought
+   * somebody in is on the landing page they arrived at, which may be several
+   * clicks before the form. Untrusted like every other field from a browser,
+   * so it is length-capped and never used for anything but reporting.
+   */
+  @ApiPropertyOptional()
+  @IsOptional() @IsString() @MaxLength(120)
+  utmSource?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional() @IsString() @MaxLength(120)
+  utmMedium?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional() @IsString() @MaxLength(160)
+  utmCampaign?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional() @IsString() @MaxLength(200)
+  landingPath?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional() @IsString() @MaxLength(300)
+  referrer?: string;
 }

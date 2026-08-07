@@ -22,6 +22,21 @@ interface HeaderProps {
   ctaHref: string;
 }
 
+/**
+ * Which nav entry is a product rather than a page.
+ *
+ * Matched on the address rather than a flag on the record, so nothing about
+ * the content model changes: the label, the order and whether the item exists
+ * at all stay panel-managed, and only the styling rule lives here. Point the
+ * entry somewhere else and it becomes an ordinary link, which is the correct
+ * behaviour — the emphasis belongs to the product, not to the position.
+ */
+const PRODUCT_ROUTES = new Set(['/logiops']);
+
+function isProduct(href: string): boolean {
+  return PRODUCT_ROUTES.has(href.replace(/\/+$/, '') || '/');
+}
+
 export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -73,38 +88,76 @@ export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProp
                 <img src={logoUrl} alt={logoText} className="h-8 w-auto max-w-[10rem] object-contain" />
               ) : (
                 <>
-                  <span className="relative flex h-8 w-8 items-center justify-center rounded-xl brand-gradient-bg text-sm font-bold text-white shadow-glow-brand">
-                    {logoText.charAt(0)}
-                    <span className="absolute inset-0 rounded-xl brand-gradient-bg opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-70" />
+                  {/* Stands in until the real mark is uploaded in the panel.
+                      Drawn as a ringed serif initial because that is what the
+                      actual logo is — a gradient-filled rounded square was
+                      standing in for a classical monogram and looked like a
+                      different company. */}
+                  <span
+                    className="relative flex h-9 w-9 items-center justify-center rounded-full font-heading text-sm"
+                    style={{
+                      border: '1px solid var(--gold)',
+                      color: 'var(--gold)',
+                      boxShadow: 'inset 0 0 0 3px rgb(var(--c-page))',
+                    }}
+                    aria-hidden
+                  >
+                    <span
+                      className="absolute inset-[3px] rounded-full"
+                      style={{ border: '1px solid color-mix(in srgb, var(--gold) 55%, transparent)' }}
+                    />
+                    <span className="relative">{logoText.charAt(0)}</span>
                   </span>
-                  <span className="font-heading text-lg font-bold text-fg">{logoText}</span>
+                  <span className="font-heading text-lg tracking-wide text-fg">{logoText}</span>
                 </>
               )}
             </Link>
 
             {/* Desktop nav */}
             <nav className="hidden items-center gap-1 lg:flex">
-              {nav.map((item, i) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  data-edit={`nav.${i}.label`}
-                  className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-fg'
-                      : 'text-muted hover:text-fg'
-                  }`}
-                >
-                  {isActive(item.href) && (
-                    <motion.span
-                      layoutId="nav-active"
-                      className="absolute inset-0 -z-10 rounded-full bg-overlay/10"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              {nav.map((item, i) =>
+                isProduct(item.href) ? (
+                  /* LogiOps is a product, not a service page, and the nav has
+                     to say so before somebody clicks. A gold dot and a border
+                     is enough — a coloured pill among plain links would read
+                     as the active tab, which is a different meaning. */
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-edit={`nav.${i}.label`}
+                    className={`group ml-1 flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'border-[color:var(--gold)] text-fg'
+                        : 'border-overlay/15 text-muted hover:border-[color:var(--gold)] hover:text-fg'
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: 'var(--gold)' }}
                     />
-                  )}
-                  {item.label}
-                </Link>
-              ))}
+                    {item.label}
+                  </Link>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-edit={`nav.${i}.label`}
+                    className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive(item.href) ? 'text-fg' : 'text-muted hover:text-fg'
+                    }`}
+                  >
+                    {isActive(item.href) && (
+                      <motion.span
+                        layoutId="nav-active"
+                        className="absolute inset-0 -z-10 rounded-full bg-overlay/10"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    {item.label}
+                  </Link>
+                ),
+              )}
             </nav>
 
             {/* Right actions */}
@@ -168,10 +221,17 @@ export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProp
                     <Link
                       href={item.href}
                       data-edit={`nav.${i}.label`}
-                      className={`block rounded-2xl px-4 py-4 font-heading text-2xl font-semibold transition-colors ${
-                        isActive(item.href) ? 'gradient-text' : 'text-fg hover:text-muted'
+                      className={`flex items-center gap-3 rounded-2xl px-4 py-4 font-heading text-2xl transition-colors ${
+                        isActive(item.href) ? 'text-fg' : 'text-muted hover:text-fg'
                       }`}
                     >
+                      {isProduct(item.href) && (
+                        <span
+                          aria-hidden
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: 'var(--gold)' }}
+                        />
+                      )}
                       {item.label}
                     </Link>
                   </motion.div>

@@ -22,6 +22,41 @@
     --brand-2: #6366f1;
     --accent: #a855f7;
 
+    /* ------------------------------------------------------------
+       Gold, from the logo.
+       The mark is champagne gold on charcoal; the site was entirely
+       indigo and purple, so the one thing carrying the brand's actual
+       identity looked like a guest on its own website. Used sparingly
+       and never for interaction — rules, small marks, the eyebrow above
+       a heading. Indigo remains the colour of everything clickable,
+       because two competing action colours is one too many.
+       ------------------------------------------------------------ */
+    --gold: #d9b380;
+    --gold-soft: #f0d5ab;
+
+    /* ------------------------------------------------------------
+       One scale, used everywhere.
+       Before this there were eleven radius values and five shadows
+       across the sections, which is what makes a site feel assembled
+       rather than designed.
+       ------------------------------------------------------------ */
+    --r-sm: 0.5rem;
+    --r-md: 0.875rem;
+    --r-lg: 1.25rem;
+    --r-xl: 1.75rem;
+
+    /* Two elevations. A third is almost always a fourth in disguise. */
+    --shadow-raise: 0 1px 2px rgb(var(--c-overlay) / 0.04),
+      0 12px 32px -20px rgb(var(--c-overlay) / 0.14);
+    --shadow-float: 0 2px 4px rgb(var(--c-overlay) / 0.05),
+      0 32px 72px -32px rgb(var(--c-overlay) / 0.24);
+
+    /* One timing curve and two durations, so hovers across the site feel
+       like the same hand made them. */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --t-fast: 180ms;
+    --t-slow: 420ms;
+
     --c-page: 250 251 255; /* near-white page background */
     --c-card: 255 255 255; /* card surfaces */
     --c-overlay: 18 19 31; /* dark ink used at low alpha for borders/tints */
@@ -141,31 +176,126 @@
     transform: translateY(-4px);
   }
 
+  /**
+   * The line above a heading.
+   *
+   * A gold rule and small caps rather than a pill. The pill is the badge every
+   * SaaS template opens with; a rule is what an editorial page uses, and it is
+   * the cheapest place on the site to show the brand's own colour.
+   */
   .eyebrow {
-    @apply inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium uppercase tracking-widest;
-    border: 1px solid rgb(var(--c-overlay) / 0.1);
-    background: rgb(var(--c-overlay) / 0.04);
+    @apply inline-flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.18em];
+    color: rgb(var(--c-muted));
+  }
+  .eyebrow::before {
+    content: '';
+    width: 1.75rem;
+    height: 1px;
+    background: var(--gold);
+    flex: none;
+  }
+
+  /**
+   * Display headings.
+   *
+   * `text-balance` on every one: a two-line Turkish headline with one orphaned
+   * word is the difference between typeset and typed, and Turkish words are
+   * long enough that it happens constantly.
+   */
+  .display-1 {
+    @apply text-balance text-[2.5rem] font-normal leading-[1.05] tracking-[-0.02em] sm:text-6xl lg:text-[4.25rem];
+    font-family: var(--font-heading);
+  }
+  .display-2 {
+    @apply text-balance text-3xl font-normal leading-[1.12] tracking-[-0.015em] sm:text-4xl lg:text-5xl;
+    font-family: var(--font-heading);
+  }
+  .display-3 {
+    @apply text-balance text-2xl font-normal leading-[1.18] tracking-[-0.01em] sm:text-3xl;
+    font-family: var(--font-heading);
+  }
+
+  /** Body copy at a length the eye can track — around 70 characters. */
+  .lede {
+    @apply max-w-[38ch] text-base leading-relaxed sm:text-lg;
+    color: rgb(var(--c-muted));
+  }
+  .prose-measure {
+    @apply max-w-[62ch] leading-relaxed;
     color: rgb(var(--c-muted));
   }
 
   .btn-primary {
-    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-transform duration-300;
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-7 py-3.5 text-sm font-semibold text-white;
     background-image: linear-gradient(120deg, var(--brand), var(--accent));
     box-shadow: 0 12px 32px -14px color-mix(in srgb, var(--brand) 75%, transparent);
+    transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
   }
   .btn-primary:hover {
-    transform: translateY(-2px) scale(1.02);
+    /* Lift only. The old rule also scaled, which on a wide button reads as the
+       text growing rather than the button rising. */
+    transform: translateY(-2px);
+    box-shadow: 0 18px 44px -16px color-mix(in srgb, var(--brand) 85%, transparent);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-colors duration-300;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold;
     border: 1px solid rgb(var(--c-overlay) / 0.15);
     background: rgb(var(--c-overlay) / 0.04);
     color: rgb(var(--c-fg));
+    transition: border-color var(--t-fast) var(--ease-out),
+      background-color var(--t-fast) var(--ease-out);
   }
   .btn-ghost:hover {
     border-color: rgb(var(--c-overlay) / 0.3);
     background: rgb(var(--c-overlay) / 0.08);
+  }
+
+  /**
+   * A link that reads as an action without competing with a button.
+   *
+   * The underline grows from the left on hover — the one motion used for every
+   * text link on the site, so the interaction language stays singular.
+   */
+  .link-arrow {
+    @apply inline-flex items-center gap-1.5 text-sm font-semibold;
+    color: rgb(var(--c-fg));
+  }
+  .link-arrow > span:first-child {
+    position: relative;
+  }
+  .link-arrow > span:first-child::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 1px;
+    width: 0;
+    background: currentColor;
+    transition: width var(--t-fast) var(--ease-out);
+  }
+  .link-arrow:hover > span:first-child::after {
+    width: 100%;
+  }
+  .link-arrow svg {
+    transition: transform var(--t-fast) var(--ease-out);
+  }
+  .link-arrow:hover svg {
+    transform: translate(2px, -2px);
+  }
+
+  /** A hairline in the brand's gold, for separating editorial blocks. */
+  .rule-gold {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      var(--gold),
+      color-mix(in srgb, var(--gold) 20%, transparent) 60%,
+      transparent
+    );
   }
 
   .marquee-mask {

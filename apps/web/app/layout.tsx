@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Inter, Playfair_Display } from 'next/font/google';
 import { getSiteContent } from '../lib/content';
 import { siteOrigin } from '../lib/origin';
 import { t, getUi } from '../lib/i18n';
@@ -11,10 +11,35 @@ import { Analytics } from '../components/analytics';
 import { Integrations } from '../components/integrations';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
+/**
+ * The type system, chosen from the logo rather than from fashion.
+ *
+ * Nexuva's mark is a high-contrast classical serif — a fine-stroked N in a
+ * double ring, with NEXUVA set in the same letterforms beneath. The site was
+ * setting every headline in Space Grotesk, a geometric sans, which is the
+ * typeface every AI-generated landing page in the world is currently wearing.
+ * That single choice is most of why the site read as a template: it looked
+ * like nobody's brand in particular, least of all this one.
+ *
+ * Playfair Display is the closest widely available match to the wordmark, and
+ * pairing a classical serif headline with a neutral sans body is what makes
+ * editorial and consultancy work look expensive. Inter stays for body text
+ * because a display serif at 15px is a readability problem, not a statement.
+ *
+ * `latin-ext` on both, and this is not optional: ğ, ş, İ and ı live there.
+ * Without it the browser silently substitutes another face for those letters
+ * and Turkish words come out in two different typefaces.
+ */
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
   variable: '--font-heading',
   display: 'swap',
 });
@@ -132,7 +157,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html
       lang="tr"
       data-theme={theme}
-      className={`${inter.variable} ${spaceGrotesk.variable}`}
+      className={`${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
       <body style={brandStyle}>

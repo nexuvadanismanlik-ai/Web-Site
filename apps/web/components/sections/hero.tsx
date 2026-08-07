@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight, Sparkles } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import type { HeroContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
+import { CampaignVisual } from './campaign-visual';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -28,7 +29,12 @@ export function Hero({ hero }: { hero: HeroContent }) {
   // visitor would be shown moving. Collapsed to zero rather than removed, which
   // keeps one code path.
   const rise = useReducedMotion() ? 0 : 1;
-  const hasImage = Boolean(hero.image);
+
+  // There is always something to look at now: an uploaded picture when the
+  // panel has one, and an interface illustration otherwise. The section used
+  // to fall back to a centred column of text over two coloured blurs, which is
+  // what a page looks like when it has nothing to show — and every reader can
+  // tell.
 
   const enter = (delay: number) => ({
     initial: { opacity: 0, y: 22 * rise },
@@ -65,49 +71,35 @@ export function Hero({ hero }: { hero: HeroContent }) {
       </div>
 
       <div className="container-x">
-        <div
-          className={
-            hasImage
-              ? 'grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16'
-              : 'mx-auto max-w-4xl text-center'
-          }
-        >
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
           {/* ── Words ──────────────────────────────────────────────────── */}
-          <div className={hasImage ? 'text-left' : ''}>
+          <div>
             <motion.div {...enter(0)}>
+              {/* A gold rule and small caps. The pill-with-a-sparkle is the
+                  badge every generated landing page opens with, and it was the
+                  first thing on the page saying "template". */}
               <span className="eyebrow" data-edit="hero.badge">
-                <Sparkles className="h-3.5 w-3.5 text-brand-dyn" />
                 {t(hero.badge)}
               </span>
             </motion.div>
 
-            <motion.h1
-              {...enter(0.08)}
-              className={`mt-6 font-heading font-bold leading-[1.06] text-fg text-balance ${
-                hasImage ? 'text-4xl sm:text-5xl xl:text-6xl' : 'text-4xl sm:text-6xl md:text-7xl'
-              }`}
-            >
+            <motion.h1 {...enter(0.08)} className="display-1 mt-7 text-fg">
               <span data-edit="hero.titleLead">{t(hero.titleLead)}</span>{' '}
-              <span className="gradient-text" data-edit="hero.titleHighlight">
+              {/* Italic serif rather than a gradient fill. A gradient on a
+                  headline is decoration applied to type; an italic is the type
+                  itself doing the emphasis, which is what the wordmark does. */}
+              <span className="italic" style={{ color: 'var(--gold)' }} data-edit="hero.titleHighlight">
                 {t(hero.titleHighlight)}
               </span>
             </motion.h1>
 
-            <motion.p
-              {...enter(0.16)}
-              className={`mt-6 text-lg leading-relaxed text-muted ${
-                hasImage ? 'max-w-xl' : 'mx-auto max-w-2xl'
-              }`}
-              data-edit="hero.subtitle"
-            >
+            <motion.p {...enter(0.16)} className="lede mt-7" data-edit="hero.subtitle">
               {t(hero.subtitle)}
             </motion.p>
 
             <motion.div
               {...enter(0.24)}
-              className={`mt-9 flex flex-col gap-3 sm:flex-row ${
-                hasImage ? '' : 'items-center justify-center'
-              }`}
+              className="mt-9 flex flex-col gap-3 sm:flex-row"
             >
               <Link
                 href={hero.primaryCta.href}
@@ -136,14 +128,12 @@ export function Hero({ hero }: { hero: HeroContent }) {
             {hero.metrics.length > 0 && (
               <motion.dl
                 {...enter(0.34)}
-                className={`mt-12 flex flex-wrap gap-x-10 gap-y-6 ${
-                  hasImage ? '' : 'justify-center'
-                }`}
+                className="mt-12 flex flex-wrap gap-x-10 gap-y-6"
               >
                 {hero.metrics.map((m, i) => (
                   <div key={i}>
                     <dt
-                      className="font-heading text-3xl font-bold text-fg"
+                      className="font-heading text-3xl text-fg"
                       data-edit={`hero.metrics.${i}.value`}
                     >
                       {m.value}
@@ -161,8 +151,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
           </div>
 
           {/* ── Composition ────────────────────────────────────────────── */}
-          {hasImage && (
-            <motion.div
+          <motion.div
               initial={{ opacity: 0, y: 34 * rise, scale: 1 - 0.02 * rise }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
@@ -174,20 +163,26 @@ export function Hero({ hero }: { hero: HeroContent }) {
                 aria-hidden="true"
                 className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_22%,transparent),transparent)] blur-2xl"
               />
-              <div className="overflow-hidden rounded-2xl border border-overlay/15 bg-card shadow-2xl ring-1 ring-black/5">
-                <img
-                  src={hero.image}
-                  alt={hero.imageAlt ?? ''}
-                  className="block h-auto w-full"
-                  loading="eager"
-                  // Told to the browser so the layout does not jump while it
-                  // loads. Overridden by the aspect the file actually has.
-                  width={1200}
-                  height={800}
-                />
-              </div>
-            </motion.div>
-          )}
+              {hero.image ? (
+                <div className="overflow-hidden rounded-[var(--r-lg)] border border-overlay/15 bg-card shadow-[var(--shadow-float)]">
+                  <img
+                    src={hero.image}
+                    alt={hero.imageAlt ?? ''}
+                    className="block h-auto w-full"
+                    loading="eager"
+                    // Told to the browser so the layout does not jump while it
+                    // loads. Overridden by the aspect the file actually has.
+                    width={1200}
+                    height={800}
+                  />
+                </div>
+              ) : (
+                /* Replaced the moment a picture is uploaded in the panel —
+                   the chain is untouched, this is only what stands there
+                   until then. */
+                <CampaignVisual />
+              )}
+          </motion.div>
         </div>
       </div>
     </section>

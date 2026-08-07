@@ -444,8 +444,12 @@ export class PublishService {
       version: row.version ?? null,
       startedAt: row.startedAt.toISOString(),
       finishedAt: row.finishedAt?.toISOString() ?? null,
+      // Never negative. startedAt is stamped by the database and finishedAt by
+      // this process, so a few milliseconds of clock skew between them is
+      // normal — and a publish that reports "-1 ms" reads as a bug in
+      // everything else on the screen.
       durationMs: row.finishedAt
-        ? row.finishedAt.getTime() - row.startedAt.getTime()
+        ? Math.max(0, row.finishedAt.getTime() - row.startedAt.getTime())
         : null,
       deployId: row.deployId ?? null,
     };

@@ -49,7 +49,7 @@ export class ReadinessService {
       this.website(),
       this.domain(),
       this.certificate(),
-      Promise.resolve(this.analytics()),
+      this.analytics(),
     ]);
     return { connections, checkedAt: new Date().toISOString() };
   }
@@ -453,21 +453,45 @@ export class ReadinessService {
   }
 
   /**
-   * Traffic measurement, which does not exist yet.
+   * Is traffic actually being measured?
    *
-   * Listed rather than hidden: the panel promises a system screen that covers
-   * every connection, and a capability that has not been built is a truer
-   * answer than an absent row somebody has to notice is missing.
+   * Answered by counting rows, not by checking that the feature exists. The
+   * tracker ships with the website, so it only starts reporting after the next
+   * publish — and "built but never published" looks exactly like "working" from
+   * inside the API. The row count is the only thing that tells them apart.
    */
-  private analytics(): ConnectionReport {
-    return {
-      key: 'analytics',
-      label: 'Analytics',
-      state: 'missing',
-      detail:
-        'Ziyaretçi ölçümü henüz kurulmadı. Site şu an hiçbir analitik servise veri ' +
-        'göndermiyor ve panelde trafik verisi yok.',
-    };
+  private async analytics(): Promise<ConnectionReport> {
+    try {
+      const since = new Date(Date.now() - 7 * 86_400_000);
+      const recent = await this.prisma.pageView.count({ where: { createdAt: { gte: since } } });
+
+      if (recent > 0) {
+        return {
+          key: 'analytics',
+          label: 'Ziyaretçi Ölçümü',
+          state: 'connected',
+          detail: `Son 7 günde ${recent} sayfa görüntüleme kaydedildi. Çerez kullanılmıyor, IP saklanmıyor.`,
+        };
+      }
+
+      const total = await this.prisma.pageView.count();
+      return {
+        key: 'analytics',
+        label: 'Ziyaretçi Ölçümü',
+        state: 'missing',
+        detail:
+          total > 0
+            ? 'Ölçüm kurulu ama son 7 günde kayıt yok. Siteye ziyaret gelmemiş olabilir.'
+            : 'Ölçüm kodu hazır ama henüz veri gelmedi. Siteyi bir kez yayınlayıp ziyaret et.',
+      };
+    } catch {
+      return {
+        key: 'analytics',
+        label: 'Ziyaretçi Ölçümü',
+        state: 'broken',
+        detail: 'Ziyaretçi kayıtları okunamadı.',
+      };
+    }
   }
 
   private async email(): Promise<ConnectionReport> {

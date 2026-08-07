@@ -27,6 +27,7 @@ export function Cta({ cta }: { cta: CtaContent }) {
             <div className="mt-9 flex justify-center">
               <Link
                 href={cta.button.href}
+                data-cta="band"
                 data-edit="cta.button.label"
                 className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-semibold text-ink-950 shadow-2xl transition-transform duration-300 hover:-translate-y-0.5 hover:scale-[1.02]"
               >

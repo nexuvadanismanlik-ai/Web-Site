@@ -30,7 +30,21 @@ export function Services({
         >
           {list.map((svc, i) => (
             <StaggerItem key={svc.id}>
-              <div className="card-surface group h-full p-7">
+              <div className="card-surface group flex h-full flex-col overflow-hidden">
+                {/* An illustration when one has been chosen, the icon when not.
+                    Both are complete cards; neither leaves a hole. */}
+                {svc.imageUrl ? (
+                  <div className="relative aspect-[16/10] overflow-hidden border-b border-overlay/10 bg-overlay/5">
+                    <img
+                      src={svc.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                ) : null}
+                <div className="flex flex-1 flex-col p-7">
+                {!svc.imageUrl && (
                 <div className="relative mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-overlay/10 bg-overlay/5">
                   <div className="absolute inset-0 rounded-2xl brand-gradient-bg opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                   <Icon
@@ -38,6 +52,7 @@ export function Services({
                     className="relative h-6 w-6 text-brand-dyn transition-colors duration-500 group-hover:text-white"
                   />
                 </div>
+                )}
                 <h3 className="font-heading text-xl font-semibold text-fg" data-edit={`services.${i}.title`}>
                   {t(svc.title)}
                 </h3>
@@ -58,6 +73,7 @@ export function Services({
                     </li>
                   ))}
                 </ul>
+                </div>
               </div>
             </StaggerItem>
           ))}

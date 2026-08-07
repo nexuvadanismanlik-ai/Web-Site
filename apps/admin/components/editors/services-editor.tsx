@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
 import type { ServiceItem, SectionMeta, Localized } from '@nexuva/types';
+import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import {
   LocalizedField,
@@ -24,9 +25,11 @@ const empty: Localized = { tr: '', en: '' };
 export function ServicesEditor({
   meta: m0,
   services: s0,
+  images,
 }: {
   meta: SectionMeta;
   services: ServiceItem[];
+  images: PickableImage[];
 }) {
   const [meta, setMeta] = useState<SectionMeta>(m0);
   const [services, setServices] = useState<ServiceItem[]>(s0);
@@ -112,6 +115,13 @@ export function ServicesEditor({
                         ))}
                       </select>
                     </div>
+                    <ImageField
+                      label="Görsel"
+                      value={svc.imageUrl ?? ''}
+                      onChange={(url) => patch(svc.id, { imageUrl: url })}
+                      images={images}
+                      hint="Kartta ikonun yerine geçer. Boş bırakılırsa ikon kullanılır."
+                    />
                     <LocalizedField label="Başlık" value={svc.title} onChange={(v) => patch(svc.id, { title: v })} />
                     <LocalizedField label="Açıklama" value={svc.description} onChange={(v) => patch(svc.id, { description: v })} multiline rows={2} />
 

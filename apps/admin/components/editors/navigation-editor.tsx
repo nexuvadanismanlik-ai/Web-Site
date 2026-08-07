@@ -2,7 +2,15 @@
 
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { Trash2 } from 'lucide-react';
-import type { NavItem, FooterContent, FooterColumn, LinkItem, Localized } from '@nexuva/types';
+import type {
+  NavItem,
+  FooterContent,
+  FooterColumn,
+  LinkItem,
+  Localized,
+  LogoItem,
+} from '@nexuva/types';
+import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import { LocalizedField, Panel, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
 import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-controls';
@@ -13,13 +21,15 @@ export function NavigationEditor({
   nav: n0,
   logos: l0,
   footer: f0,
+  images,
 }: {
   nav: NavItem[];
-  logos: string[];
+  logos: LogoItem[];
   footer: FooterContent;
+  images: PickableImage[];
 }) {
   const [nav, setNav] = useState<NavItem[]>(n0);
-  const [logos, setLogos] = useState<string[]>(l0);
+  const [logos, setLogos] = useState<LogoItem[]>(l0);
   const [footer, setFooter] = useState<FooterContent>(f0);
   const { saving, saved, error, run } = useSaver();
 
@@ -99,32 +109,51 @@ export function NavigationEditor({
         </Panel>
 
         <Panel title="Logo Şeridi (akan markalar)">
-          <div className="space-y-2">
+          <p className="mb-3 text-xs text-faint">
+            Logo yüklenmemişse markanın adı yazıyla görünür — böylece bir müşteri, logosu
+            elinize geçmeden de listeye girebilir.
+          </p>
+          <div className="space-y-3">
             {logos.map((logo, i) => {
               const rowProps = sortLogos.rowProps(i);
+              const patch = (p: Partial<LogoItem>) =>
+                setLogos((l) => l.map((x, idx) => (idx === i ? { ...x, ...p } : x)));
               return (
                 <div
                   key={i}
                   {...rowProps}
-                  className={`flex items-center gap-2 rounded-lg border border-overlay/10 bg-overlay/[0.03] p-2 ${rowProps.className}`}
+                  className={`flex flex-wrap items-end gap-3 rounded-xl border border-overlay/10 bg-overlay/[0.02] p-3 ${rowProps.className}`}
                 >
-                  <DragHandle
-                    index={i}
-                    count={logos.length}
-                    handleProps={sortLogos.handleProps(i)}
-                    onMoveUp={() => sortLogos.moveUp(i)}
-                    onMoveDown={() => sortLogos.moveDown(i)}
-                    label={logo || 'Marka'}
-                  />
-                  <input
-                    value={logo}
-                    onChange={(e) => setLogos((l) => l.map((x, idx) => (idx === i ? e.target.value : x)))}
-                    className="flex-1 bg-transparent text-sm text-fg focus:outline-none"
-                  />
+                  <div className="pb-1">
+                    <DragHandle
+                      index={i}
+                      count={logos.length}
+                      handleProps={sortLogos.handleProps(i)}
+                      onMoveUp={() => sortLogos.moveUp(i)}
+                      onMoveDown={() => sortLogos.moveDown(i)}
+                      label={logo.name || 'Marka'}
+                    />
+                  </div>
+                  <div className="min-w-[10rem] flex-1">
+                    <label className="field-label">Marka Adı</label>
+                    <input
+                      value={logo.name}
+                      onChange={(e) => patch({ name: e.target.value })}
+                      className="field-input"
+                    />
+                  </div>
+                  <div className="min-w-[16rem] flex-[2]">
+                    <ImageField
+                      label="Logo"
+                      value={logo.imageUrl ?? ''}
+                      onChange={(url) => patch({ imageUrl: url })}
+                      images={images}
+                    />
+                  </div>
                   <IconButton
                     variant="danger"
                     title="Markayı sil"
-                    onClick={() => removeLogo(i, logo, logo || 'Marka')}
+                    onClick={() => removeLogo(i, logo, logo.name || 'Marka')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </IconButton>
@@ -132,12 +161,12 @@ export function NavigationEditor({
               );
             })}
           </div>
-          <button
-            onClick={() => setLogos((l) => [...l, 'Yeni Marka'])}
-            className="mt-3 rounded-lg border border-dashed border-overlay/15 px-4 py-2 text-sm text-muted hover:border-brand-400/50 hover:text-fg"
-          >
-            + Logo ekle
-          </button>
+          <div className="mt-3">
+            <AddButton
+              label="Marka ekle"
+              onClick={() => setLogos((l) => [...l, { name: 'Yeni Marka' }])}
+            />
+          </div>
         </Panel>
 
         <Panel title="Footer">

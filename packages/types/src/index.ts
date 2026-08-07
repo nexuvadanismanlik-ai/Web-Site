@@ -44,6 +44,7 @@ export type {
   ContactContent,
   FooterColumn,
   FooterContent,
+  LogoItem,
   SectionMeta,
   SeoContent,
   SiteContent,

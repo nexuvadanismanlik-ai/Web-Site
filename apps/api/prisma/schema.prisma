@@ -835,6 +835,9 @@ model WebsiteService {
   description Json
   /// Array of Localized feature bullets.
   features    Json
+  /// Illustration for the service card and its detail. Chosen from the media
+  /// library; an icon alone reads as a template.
+  imageUrl    String?
   position    Int     @default(0)
   isActive    Boolean @default(true)
 
@@ -874,6 +877,13 @@ model WebsiteReference {
   name     String
   category Json
   logoUrl  String?
+  /// What was done for them. A name and a sector is a logo wall; this is what
+  /// makes it a reference.
+  description Json?
+  /// Their own site, so a reader can check the claim.
+  website     String?
+  /// A screenshot or photograph of the work.
+  imageUrl    String?
   position Int     @default(0)
   isActive Boolean @default(true)
 

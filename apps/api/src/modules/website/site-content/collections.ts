@@ -46,6 +46,9 @@ const service = z.object({
   title: localized,
   description: localized,
   features: z.array(localized).max(20),
+  // Chosen from the media library, so an address is always one this platform
+  // produced. Nullish, because clearing the field has to be expressible.
+  imageUrl: z.string().url().max(500).nullish(),
   ...ordering,
 });
 
@@ -61,6 +64,9 @@ const reference = z.object({
   name: z.string().min(1).max(120),
   category: localized,
   logoUrl: z.string().url().max(500).nullish(),
+  description: localized.nullish(),
+  website: z.string().url().max(300).nullish(),
+  imageUrl: z.string().url().max(500).nullish(),
   ...ordering,
 });
 

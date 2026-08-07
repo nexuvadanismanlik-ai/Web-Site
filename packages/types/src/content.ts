@@ -61,6 +61,14 @@ export interface HeroContent {
   primaryCta: LinkItem;
   secondaryCta: LinkItem;
   metrics: HeroMetric[];
+  /**
+   * The composition beside the headline — a product screen, a photograph, a
+   * mockup. Without one the first screen is a paragraph on a gradient, which
+   * is what every template looks like.
+   */
+  image?: string;
+  /** Optional atmospheric backdrop behind the whole section. */
+  backgroundImage?: string;
 }
 
 export interface ServiceItem {
@@ -70,6 +78,8 @@ export interface ServiceItem {
   title: Localized;
   description: Localized;
   features: Localized[];
+  /** Chosen from the media library. Optional: the icon remains the fallback. */
+  imageUrl?: string;
 }
 
 export interface StatItem {
@@ -91,12 +101,22 @@ export interface AboutContent {
   title: Localized;
   paragraphs: Localized[];
   highlights: AboutHighlight[];
+  /** The team, the office, the work — anything that is not another paragraph. */
+  image?: string;
 }
 
 export interface ReferenceItem {
   id: string;
   name: string;
   category: Localized;
+  /** Their mark, from the media library. */
+  logoUrl?: string;
+  /** What was done for them. A logo wall proves nothing on its own. */
+  description?: Localized;
+  /** Their own site, so a reader can check the claim. */
+  website?: string;
+  /** A screenshot or photograph of the work. */
+  imageUrl?: string;
 }
 
 export interface TestimonialItem {
@@ -175,6 +195,17 @@ export interface SeoContent {
   themeColor: string;
 }
 
+/**
+ * One brand in the trust strip.
+ *
+ * A name alone renders as text, which is what a placeholder looks like. The
+ * mark is optional so a client can be listed before their logo is to hand.
+ */
+export interface LogoItem {
+  name: string;
+  imageUrl?: string;
+}
+
 export interface SectionMeta {
   badge: Localized;
   title: Localized;
@@ -186,7 +217,7 @@ export interface SiteContent {
   seo: SeoContent;
   nav: NavItem[];
   hero: HeroContent;
-  logos: string[];
+  logos: LogoItem[];
   servicesMeta: SectionMeta;
   services: ServiceItem[];
   stats: StatItem[];

@@ -46,6 +46,21 @@ export function About({
                 </Reveal>
               ))}
             </div>
+
+            {/* The team, the office, the work. A section about who we are that
+                shows nobody is a section of adjectives. */}
+            {about.image && (
+              <Reveal delay={0.2}>
+                <div className="mt-8 overflow-hidden rounded-2xl border border-overlay/10 shadow-card">
+                  <img
+                    src={about.image}
+                    alt=""
+                    loading="lazy"
+                    className="block h-auto w-full"
+                  />
+                </div>
+              </Reveal>
+            )}
           </div>
 
           {/* Highlights column */}

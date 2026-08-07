@@ -108,7 +108,7 @@ export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
             {/* Right actions */}
             <div className="flex items-center gap-2">
               <Link href={'/contact'} className="hidden md:inline-flex">
-                <span className="btn-primary !px-5 !py-2.5 text-sm">
+                <span data-cta="header" className="btn-primary !px-5 !py-2.5 text-sm">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
                 </span>
@@ -173,7 +173,7 @@ export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
                 ))}
               </nav>
               <div className="mt-auto flex flex-col gap-3">
-                <Link href={'/contact'} className="btn-primary w-full justify-center">
+                <Link href={'/contact'} data-cta="header-mobile" className="btn-primary w-full justify-center">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>

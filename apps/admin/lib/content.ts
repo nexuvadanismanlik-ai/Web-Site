@@ -133,9 +133,16 @@ function toApiItems(key: string, value: unknown): Record<string, unknown>[] {
   const list = Array.isArray(value) ? value : [];
 
   if (key === 'logos') {
-    // Logos are plain strings in SiteContent but rows with a name in the API.
-    // With no id to carry, the API matches them positionally on save.
-    return list.map((name) => ({ name: String(name) }));
+    // Logos carry no id in the document, so the API matches them positionally
+    // on save. An absent mark is sent as null rather than omitted, which is
+    // what lets one be cleared.
+    return list.map((raw) => {
+      const item = (raw ?? {}) as { name?: unknown; imageUrl?: unknown };
+      return {
+        name: String(item.name ?? ''),
+        imageUrl: typeof item.imageUrl === 'string' && item.imageUrl ? item.imageUrl : null,
+      };
+    });
   }
 
   return list.map((raw) => {

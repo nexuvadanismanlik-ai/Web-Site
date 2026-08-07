@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { HeroContent, CtaContent, HeroMetric } from '@nexuva/types';
+import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import {
   TextField,
@@ -15,7 +16,15 @@ import {
 } from '../fields';
 import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-controls';
 
-export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaContent }) {
+export function HeroEditor({
+  hero: h0,
+  cta: c0,
+  images,
+}: {
+  hero: HeroContent;
+  cta: CtaContent;
+  images: PickableImage[];
+}) {
   const [hero, setHero] = useState<HeroContent>(h0);
   const [cta, setCta] = useState<CtaContent>(c0);
   const { saving, saved, error, run } = useSaver();
@@ -66,6 +75,25 @@ export function HeroEditor({ hero: h0, cta: c0 }: { hero: HeroContent; cta: CtaC
               <LocalizedField label="Metin" value={hero.secondaryCta.label} onChange={(v) => setH('secondaryCta', { ...hero.secondaryCta, label: v })} />
               <TextField label="Bağlantı" value={hero.secondaryCta.href} onChange={(v) => setH('secondaryCta', { ...hero.secondaryCta, href: v })} />
             </div>
+          </div>
+        </Panel>
+
+        <Panel title="Görseller">
+          <div className="space-y-4">
+            <ImageField
+              label="Ana Görsel"
+              value={hero.image ?? ''}
+              onChange={(url) => setH('image', url)}
+              images={images}
+              hint="Başlığın yanında duran görsel — ürün ekranı, fotoğraf ya da mockup. Boş bırakılırsa ilk ekran yalnızca metin olur."
+            />
+            <ImageField
+              label="Arkaplan Görseli"
+              value={hero.backgroundImage ?? ''}
+              onChange={(url) => setH('backgroundImage', url)}
+              images={images}
+              hint="Bölümün tamamının arkasına gelir, üzerine koyu bir katman uygulanır. Boş bırakmak da bir seçim — mevcut degrade kalır."
+            />
           </div>
         </Panel>
 

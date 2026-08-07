@@ -149,7 +149,10 @@ export class SiteContentService {
         href: item.href,
       })),
       hero: section('hero'),
-      logos: logos.map((item) => item.name),
+      logos: logos.map((item) => ({
+        name: item.name,
+        ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
+      })),
       servicesMeta: section('servicesMeta'),
       services: services.map((item) => ({
         id: item.id,
@@ -157,6 +160,7 @@ export class SiteContentService {
         title: item.title,
         description: item.description,
         features: item.features,
+        ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
       })),
       stats: stats.map((item) => ({
         id: item.id,
@@ -171,6 +175,10 @@ export class SiteContentService {
         id: item.id,
         name: item.name,
         category: item.category,
+        ...(item.logoUrl ? { logoUrl: item.logoUrl } : {}),
+        ...(item.description ? { description: item.description } : {}),
+        ...(item.website ? { website: item.website } : {}),
+        ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
       })),
       testimonialsMeta: section('testimonialsMeta'),
       testimonials: testimonials.map((item) => ({

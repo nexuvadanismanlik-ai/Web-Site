@@ -34,6 +34,17 @@ export function Footer({ content }: { content: SiteContent }) {
             <p data-edit="footer.about" className="mt-5 max-w-xs text-sm leading-relaxed text-muted">
               {t(footer.about)}
             </p>
+            {/* The footer is where a reader lands after everything else has
+                failed to convince them. One clear way forward beats none. */}
+            <Link
+              href="/contact"
+              data-cta="footer"
+              className="btn-primary mt-6 inline-flex"
+            >
+              Talep Oluştur
+              <Icon name="arrow-right" className="h-4 w-4" />
+            </Link>
+
             <div className="mt-6 flex gap-3">
               {brand.social.map((s) => (
                 <a
@@ -98,10 +109,10 @@ export function Footer({ content }: { content: SiteContent }) {
           <p>
             © {year} {brand.siteName}. {t(footer.copyright)}
           </p>
-          <p className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
-            {'Sistemler çalışıyor'}
-          </p>
+          {/* There used to be a green dot here reading "Sistemler çalışıyor".
+              It measured nothing — it was a claim printed unconditionally,
+              including while the site was down. The tagline is at least true. */}
+          <p data-edit="brand.tagline">{t(brand.tagline)}</p>
         </div>
       </div>
     </footer>

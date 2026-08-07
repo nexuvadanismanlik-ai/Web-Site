@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { AboutContent, AboutHighlight, Localized } from '@nexuva/types';
+import { ImageField, type PickableImage } from '@nexuva/ui';
 import { saveSection } from '../../app/actions';
 import { LocalizedField, Panel, EditorHeader, useSaver, IconButton, AddButton } from '../fields';
 import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-controls';
@@ -10,7 +11,13 @@ import { DragHandle, fieldSetter, useRemoveWithUndo, useSortable } from './list-
 const empty: Localized = { tr: '', en: '' };
 const HL_ICONS = ['target', 'users', 'zap', 'shield', 'rocket', 'sparkles', 'layers', 'bar-chart', 'compass', 'cloud'];
 
-export function AboutEditor({ initial }: { initial: AboutContent }) {
+export function AboutEditor({
+  initial,
+  images,
+}: {
+  initial: AboutContent;
+  images: PickableImage[];
+}) {
   const [about, setAbout] = useState<AboutContent>(initial);
   const { saving, saved, error, run } = useSaver();
 
@@ -44,6 +51,16 @@ export function AboutEditor({ initial }: { initial: AboutContent }) {
             <LocalizedField label="Rozet" value={about.badge} onChange={(v) => set('badge', v)} />
             <LocalizedField label="Başlık" value={about.title} onChange={(v) => set('title', v)} />
           </div>
+        </Panel>
+
+        <Panel title="Görsel">
+          <ImageField
+            label="Bölüm Görseli"
+            value={about.image ?? ''}
+            onChange={(url) => set('image', url)}
+            images={images}
+            hint="Ekip, ofis ya da çalışma anından bir kare. Metnin yanında durur; boşsa bölüm sadece metin kalır."
+          />
         </Panel>
 
         <Panel title="Paragraflar">

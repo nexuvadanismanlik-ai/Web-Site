@@ -19,6 +19,7 @@ import { ContentBlocksModule } from './modules/content-blocks/content-blocks.mod
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { SeoModule } from './modules/seo/seo.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BrandingModule } from './modules/branding/branding.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
@@ -53,6 +54,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     UsersModule,
     RolesModule,
     SeoModule,
+    AnalyticsModule,
     BrandingModule,
     StorageModule,
     FeatureFlagsModule,

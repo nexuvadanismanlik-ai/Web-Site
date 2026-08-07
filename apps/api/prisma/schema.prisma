@@ -130,6 +130,10 @@ model Tenant {
   mailTemplates MailTemplate[]
   mailLogs      MailLog[]
 
+  // Analytics
+  pageViews       PageView[]
+  analyticsEvents AnalyticsEvent[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -1258,4 +1262,71 @@ model MailLog {
   @@index([tenantId, createdAt(sort: Desc)])
   @@index([status])
   @@map("mail_logs")
+}
+
+// ============================================================
+// ANALYTICS — first-party, cookie-free, no IP retained
+// ============================================================
+
+/// One page view.
+///
+/// Built rather than bought because the alternative is shipping a third party's
+/// script to every visitor, which is a consent banner, a data transfer to
+/// somebody else's servers, and a dependency on their availability.
+///
+/// No IP address is stored. Distinguishing one visitor from another needs only
+/// a value that is stable within a day and meaningless after it, so the address
+/// is hashed with a salt that changes daily and discarded. That makes a visitor
+/// count possible and makes re-identifying anyone impossible — which is what
+/// KVKK asks for, and also simply the right way round.
+model PageView {
+  id       String  @id @default(cuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  path     String
+  referrer String?
+  /// Where the visit came from, reduced to a name: Google, Instagram, Direct.
+  source   String  @default("direct")
+
+  device  String @default("desktop")
+  browser String @default("")
+  country String @default("")
+
+  /// Daily-salted hash of the address. Identifies a session for one day and
+  /// nothing at all afterwards.
+  visitorHash String
+
+  /// Seconds spent on the page, sent when the visitor leaves. Null if they
+  /// closed the tab in a way the browser did not report.
+  durationSeconds Int?
+  /// Furthest scroll depth reached, as a percentage.
+  scrollDepth     Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, path])
+  @@index([tenantId, visitorHash])
+  @@map("page_views")
+}
+
+/// A thing a visitor did that matters: a CTA press, a form submission.
+model AnalyticsEvent {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// 'cta_click' | 'form_submit' | 'form_start'
+  name  String
+  path  String
+  /// Which button, which form — whatever names the thing that was used.
+  label String @default("")
+
+  visitorHash String
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, name])
+  @@map("analytics_events")
 }

@@ -228,3 +228,18 @@ export interface MailLogEntry {
   error: string | null;
   createdAt: string;
 }
+
+// ─── Analytics ──────────────────────────────────────────────────────────────
+
+export interface AnalyticsSummary {
+  visitors: { today: number; week: number; month: number };
+  views: { today: number; week: number; month: number };
+  /** Null when nobody has visited yet — a rate over no visitors is unknown. */
+  conversionRate: number | null;
+  formSubmits: number;
+  ctaClicks: number;
+  averageSeconds: number;
+  topPages: { path: string; views: number }[];
+  sources: { source: string; views: number }[];
+  devices: { device: string; views: number }[];
+}

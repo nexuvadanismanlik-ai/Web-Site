@@ -13,6 +13,7 @@ import type {
   MailTemplate,
   MailVariable,
   MailLogEntry,
+  AnalyticsSummary,
   AppNotification,
   MediaFile,
   MediaFolder,
@@ -530,4 +531,10 @@ export async function readMailPreview(key: string): Promise<{ subject: string; h
 
 export async function readMailLogs(): Promise<{ items: MailLogEntry[]; failed: number }> {
   return apiFetch<{ items: MailLogEntry[]; failed: number }>('/mail/logs');
+}
+
+// ─── Analytics ──────────────────────────────────────────────────────────────
+
+export async function readAnalytics(): Promise<AnalyticsSummary> {
+  return apiFetch<AnalyticsSummary>('/analytics/summary');
 }

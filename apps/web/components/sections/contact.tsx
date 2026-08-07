@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
+import { trackFormSubmit } from '../analytics';
 
 export function Contact({
   contact,
@@ -47,6 +48,9 @@ export function Contact({
     if (res.ok) {
       setFailure(null);
       setStatus('success');
+      // Counted here rather than on the server so that the conversion belongs
+      // to the page the visitor was actually on.
+      trackFormSubmit(window.location.pathname);
       form.reset();
     } else {
       setFailure(res.error ?? 'server');

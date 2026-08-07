@@ -7,6 +7,7 @@ import { t, getUi } from '../lib/i18n';
 import { Header } from '../components/site/header';
 import { Footer } from '../components/site/footer';
 import { EditOverlay } from '../components/edit-overlay';
+import { Analytics } from '../components/analytics';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -124,6 +125,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <main className="relative">{children}</main>
         <Footer content={content} />
         <EditOverlay />
+        <Analytics />
       </body>
     </html>
   );

@@ -67,6 +67,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: 'Sistem',
     items: [
+      { label: 'Ziyaretçiler', href: '/analytics', icon: BarChart3 },
       { label: 'Mail', href: '/mail', icon: MailIcon },
       { label: 'Sistem & Bağlantılar', href: '/system', icon: Activity },
     ],

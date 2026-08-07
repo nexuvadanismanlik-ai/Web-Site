@@ -31,6 +31,7 @@ import {
   saveMailTemplateViaApi,
   readMailPreview,
   readMailLogs,
+  readAnalytics,
   createLeadViaApi,
   readAssignees,
   readLeadDetail,
@@ -52,6 +53,7 @@ import {
   type MailTemplate,
   type MailVariable,
   type MailLogEntry,
+  type AnalyticsSummary,
   type AppNotification,
   type MediaList,
   type MediaFile,
@@ -592,5 +594,17 @@ export async function getMailLogs(): Promise<{ items: MailLogEntry[]; failed: nu
     return await readMailLogs();
   } catch {
     return { items: [], failed: 0 };
+  }
+}
+
+// ─── Analytics ──────────────────────────────────────────────────────────────
+
+/** Zeros rather than a crash: an empty chart is a truer answer than an error. */
+export async function getAnalytics(): Promise<AnalyticsSummary | null> {
+  await requireAuth();
+  try {
+    return await readAnalytics();
+  } catch {
+    return null;
   }
 }

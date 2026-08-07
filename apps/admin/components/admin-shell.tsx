@@ -28,18 +28,33 @@ import {
   Menu,
   MousePointerClick,
   Settings,
+  MessageSquare,
+  LineChart,
   type LucideIcon,
 } from 'lucide-react';
 import { PublishButton } from './publish-button';
 import { NotificationCenter } from './notification-center';
+import { CommandPalette, CommandTrigger } from './command-palette';
+import { ShellStatus } from './shell-status';
 import { adminPath, isAdminRoute } from '../lib/routes';
 
 interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /** Which count, if any, belongs on this row. */
+  badge?: 'enquiries';
 }
 
+/**
+ * The sidebar, grouped by what somebody is trying to do rather than by which
+ * part of the codebase owns it.
+ *
+ * Content editing, running the business, and configuring the system are three
+ * different jobs done at three different times; a flat list of twenty-two
+ * entries makes each of them a scan. Anything not found here is one Ctrl-K
+ * away — see the command palette.
+ */
 const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: 'Genel',
@@ -47,33 +62,43 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { label: 'Genel Bakış', href: '/', icon: LayoutDashboard },
       { label: 'Yayın Merkezi', href: '/publish', icon: CloudUpload },
       { label: 'Medya', href: '/media', icon: ImageIcon },
-      { label: 'Canlı Düzenleme', href: '/visual', icon: MousePointerClick },
-      { label: 'Marka & Tema', href: '/brand', icon: Palette },
     ],
   },
   {
     section: 'İçerik',
     items: [
+      { label: 'Marka & Tema', href: '/brand', icon: Palette },
       { label: 'Hero', href: '/hero', icon: Sparkles },
       { label: 'Hizmetler', href: '/services', icon: Briefcase },
-      { label: 'İstatistikler', href: '/stats', icon: BarChart3 },
-      { label: 'Hakkımızda', href: '/about', icon: Building2 },
       { label: 'Referanslar', href: '/references', icon: Star },
       { label: 'Görüşler', href: '/testimonials', icon: Quote },
       { label: 'Süreç', href: '/process', icon: ListChecks },
+      { label: 'Hakkımızda', href: '/about', icon: Building2 },
+      { label: 'İstatistikler', href: '/stats', icon: BarChart3 },
       { label: 'İletişim', href: '/contact', icon: Phone },
       { label: 'Menü & Footer', href: '/navigation', icon: LayoutList },
       { label: 'Site Metinleri', href: '/texts', icon: Type },
-      { label: 'SEO', href: '/seo', icon: Search },
+      { label: 'Canlı Düzenleme', href: '/visual', icon: MousePointerClick },
+    ],
+  },
+  {
+    // What the site produced, as opposed to what it says. Kept apart because
+    // somebody answering an enquiry is not somebody editing a headline.
+    section: 'İş',
+    items: [
+      { label: 'Talepler', href: '/crm', icon: Inbox, badge: 'enquiries' },
+      { label: 'Mesajlar', href: '/messages', icon: MessageSquare },
+      { label: 'Ziyaretçiler', href: '/analytics', icon: LineChart },
     ],
   },
   {
     section: 'Sistem',
     items: [
-      { label: 'Ziyaretçiler', href: '/analytics', icon: BarChart3 },
-      { label: 'Entegrasyonlar', href: '/integrations', icon: Plug },
+      { label: 'SEO', href: '/seo', icon: Search },
       { label: 'Mail', href: '/mail', icon: MailIcon },
+      { label: 'Entegrasyonlar', href: '/integrations', icon: Plug },
       { label: 'Sistem & Bağlantılar', href: '/system', icon: Activity },
+      { label: 'Ayarlar', href: '/settings', icon: Settings },
     ],
   },
 ];
@@ -133,34 +158,20 @@ export function AdminShell({
                     }`}
                   >
                     <Icon
-                      className={`h-4.5 w-4.5 ${active ? 'text-brand-dyn' : 'text-faint group-hover:text-fg'}`}
+                      className={`h-4.5 w-4.5 shrink-0 ${active ? 'text-brand-dyn' : 'text-faint group-hover:text-fg'}`}
                       style={{ width: 18, height: 18 }}
                     />
-                    {item.label}
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    {/* The count sits on the row it belongs to, so an unanswered
+                        enquiry is visible from any screen without opening one. */}
+                    {item.badge === 'enquiries' && unreadCount > 0 && (
+                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full brand-gradient-bg px-1.5 text-[0.65rem] font-bold text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
-              {group.section === 'İçerik' && (
-                <Link
-                  href={adminPath('/crm')}
-                  onClick={() => setOpen(false)}
-                  className={`group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive('/crm') || isActive('/messages')
-                      ? 'bg-overlay/10 text-fg'
-                      : 'text-muted hover:bg-overlay/[0.06] hover:text-fg'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <Inbox style={{ width: 18, height: 18 }} className="text-faint group-hover:text-fg" />
-                    Talep Yönetimi
-                  </span>
-                  {unreadCount > 0 && (
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full brand-gradient-bg px-1.5 text-[0.65rem] font-bold text-white">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
-              )}
             </div>
           </div>
         ))}
@@ -226,10 +237,16 @@ export function AdminShell({
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="hidden lg:block" />
+          {/* Search on the left where the eye starts, so it reads as the way
+              in rather than as another control among the icons. */}
+          <div className="hidden lg:block">
+            <CommandTrigger />
+          </div>
+
           {/* Identity lives in the sidebar account block; the topbar carries
               what applies to every page: what happened, and publishing. */}
           <div className="flex items-center gap-3">
+            <ShellStatus />
             <NotificationCenter initialUnread={unreadNotifications} />
             <PublishButton />
           </div>
@@ -237,6 +254,8 @@ export function AdminShell({
 
         <main className="flex-1 p-5 sm:p-8">{children}</main>
       </div>
+
+      <CommandPalette />
     </div>
   );
 }

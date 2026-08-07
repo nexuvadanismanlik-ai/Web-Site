@@ -47,11 +47,10 @@ export function SettingsClient({ email, name, role }: { email: string; name: str
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-fg">Ayarlar</h1>
-        <p className="mt-1 text-sm text-muted">Panel görünümü ve hesap güvenliği.</p>
-      </div>
+    <div className="space-y-6">
+      <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-faint">
+        Hesabın
+      </h2>
 
       {/* ── Account ─────────────────────────────────────────────────────── */}
       <section className="panel p-6">

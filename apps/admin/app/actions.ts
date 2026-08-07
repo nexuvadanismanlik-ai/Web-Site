@@ -32,6 +32,8 @@ import {
   readMailPreview,
   readMailLogs,
   readAnalytics,
+  readSitePreferences,
+  saveSitePreferencesViaApi,
   createLeadViaApi,
   readAssignees,
   readLeadDetail,
@@ -62,6 +64,7 @@ import {
   type PublishStatus,
   type ContentVersion,
   type ContentDiff,
+  type SitePreferences,
 } from '../lib/content';
 
 // Resolved from the per-request cache, so thirty-two call sites cost one
@@ -634,4 +637,36 @@ export async function getAnalytics(
   } catch {
     return null;
   }
+}
+
+// ─── Panel preferences ──────────────────────────────────────────────────────
+
+/**
+ * Preferences that change how the panel reads its data. Not versioned and not
+ * published — a timezone change should show up in the next report, not after a
+ * deploy.
+ */
+export async function getSitePreferences(): Promise<
+  (SitePreferences & { options: string[] }) | null
+> {
+  await requireAuth();
+  try {
+    return await readSitePreferences();
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSitePreferences(
+  input: Partial<SitePreferences>,
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  try {
+    await saveSitePreferencesViaApi(input);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Kaydedilemedi.' };
+  }
+  revalidatePath(adminPath('/settings'));
+  revalidatePath(adminPath('/analytics'));
+  return { ok: true };
 }

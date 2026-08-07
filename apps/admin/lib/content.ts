@@ -19,6 +19,7 @@ import type {
   MediaFolder,
   MediaList,
   ContentDiff,
+  SitePreferences,
 } from './model';
 
 // Shapes and constants live in lib/model, which imports nothing from the
@@ -576,4 +577,19 @@ export async function readAnalytics(from?: string, to?: string): Promise<Analyti
   if (to) query.set('to', to);
   const suffix = query.toString();
   return apiFetch<AnalyticsSummary>(`/analytics/summary${suffix ? `?${suffix}` : ''}`);
+}
+
+// ─── Panel preferences ──────────────────────────────────────────────────────
+
+export async function readSitePreferences(): Promise<SitePreferences & { options: string[] }> {
+  return apiFetch<SitePreferences & { options: string[] }>('/website/preferences');
+}
+
+export async function saveSitePreferencesViaApi(
+  input: Partial<SitePreferences>,
+): Promise<SitePreferences> {
+  return apiFetch<SitePreferences>('/website/preferences', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
 }

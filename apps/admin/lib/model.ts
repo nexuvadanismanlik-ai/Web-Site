@@ -322,3 +322,15 @@ export interface AnalyticsSummary {
     leadRate: number | null;
   };
 }
+
+// ─── Panel preferences ──────────────────────────────────────────────────────
+
+/**
+ * Settings that change how the panel reads its data, not what the site says.
+ * Not versioned and not published: changing the timezone should take effect on
+ * the next report, not on the next deploy.
+ */
+export interface SitePreferences {
+  /** IANA name. Decides where a reporting day starts. */
+  timezone: string;
+}

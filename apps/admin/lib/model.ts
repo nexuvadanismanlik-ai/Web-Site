@@ -242,4 +242,15 @@ export interface AnalyticsSummary {
   topPages: { path: string; views: number }[];
   sources: { source: string; views: number }[];
   devices: { device: string; views: number }[];
+  /** One entry per day, gaps filled with zeros. */
+  daily: { date: string; views: number; visitors: number }[];
+  crm: {
+    leads: number;
+    won: number;
+    lost: number;
+    /** Null until something has been decided. */
+    winRate: number | null;
+    /** Visitors that became enquiries, as a percentage. */
+    leadRate: number | null;
+  };
 }

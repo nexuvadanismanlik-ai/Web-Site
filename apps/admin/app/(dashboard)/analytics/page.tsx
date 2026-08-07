@@ -88,6 +88,25 @@ export default async function AnalyticsPage() {
         })}
       </div>
 
+      {/* Daily traffic. Bars rather than a line: with a handful of days a line
+          implies a trend that is not there yet. */}
+      <div className="panel mt-6 p-5">
+        <h2 className="mb-4 font-heading text-sm font-semibold text-fg">Günlük Ziyaretçi</h2>
+        <DailyChart series={data.daily} />
+      </div>
+
+      {/* Where traffic meets the business. */}
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Tile label="Gelen talep" value={data.crm.leads} hint="Son 30 gün" />
+        <Tile label="Kazanıldı" value={data.crm.won} hint="Son 30 günde sonuçlanan" />
+        <Tile label="Kaybedildi" value={data.crm.lost} hint="Son 30 günde sonuçlanan" />
+        <Tile
+          label="Kazanma oranı"
+          value={data.crm.winRate === null ? '—' : `%${data.crm.winRate}`}
+          hint={data.crm.winRate === null ? 'Henüz sonuçlanan yok' : 'Kazanılan / sonuçlanan'}
+        />
+      </div>
+
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Bars
           title="En çok ziyaret edilen sayfalar"
@@ -191,6 +210,76 @@ function Row({
         {label}
       </dt>
       <dd className="font-medium text-fg">{children}</dd>
+    </div>
+  );
+}
+
+/**
+ * Thirty days of traffic, as bars.
+ *
+ * Drawn with divs rather than a charting library: it is one series of thirty
+ * numbers, and a library would be more JavaScript than the whole screen. Bars
+ * rather than a line because with a handful of days a line implies a trend that
+ * is not there yet.
+ */
+function DailyChart({ series }: { series: { date: string; views: number; visitors: number }[] }) {
+  const max = Math.max(1, ...series.map((d) => d.views));
+  const total = series.reduce((sum, d) => sum + d.views, 0);
+
+  if (total === 0) {
+    return <p className="py-6 text-center text-sm text-faint">Henüz ziyaret kaydı yok.</p>;
+  }
+
+  return (
+    <>
+      <div className="flex h-32 items-end gap-[3px]">
+        {series.map((day) => (
+          <div
+            key={day.date}
+            className="group relative flex-1 rounded-t bg-overlay/10 transition-colors hover:bg-overlay/20"
+            style={{ height: `${Math.max(2, (day.views / max) * 100)}%` }}
+          >
+            <div
+              className="h-full w-full rounded-t brand-gradient-bg opacity-80"
+              style={{ height: '100%' }}
+            />
+            {/* Values on hover: thirty labels along an axis would be unreadable
+                and the shape is what the chart is for. */}
+            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-overlay/15 bg-card px-2 py-1 text-[11px] text-fg shadow-lg group-hover:block">
+              {new Date(day.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}
+              {' · '}
+              {day.visitors} ziyaretçi · {day.views} görüntüleme
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between text-[11px] text-faint">
+        <span>
+          {new Date(series[0]?.date ?? '').toLocaleDateString('tr-TR', {
+            day: '2-digit',
+            month: 'short',
+          })}
+        </span>
+        <span>Bugün</span>
+      </div>
+    </>
+  );
+}
+
+function Tile({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number | string;
+  hint: string;
+}) {
+  return (
+    <div className="panel p-5">
+      <div className="font-heading text-2xl font-bold text-fg">{value}</div>
+      <div className="mt-0.5 text-xs font-medium text-muted">{label}</div>
+      <div className="mt-0.5 text-[11px] text-faint">{hint}</div>
     </div>
   );
 }

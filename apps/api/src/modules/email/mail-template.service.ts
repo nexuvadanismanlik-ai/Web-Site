@@ -94,6 +94,39 @@ export const DEFAULT_TEMPLATES = [
     ].join('\n'),
   },
   {
+    key: 'status_changed',
+    name: 'Talep durumu değişti',
+    description: 'Bir talebin durumu değiştiğinde müşteriye gönderilebilir. Varsayılan olarak kapalı.',
+    subject: 'Talebinizde gelişme var — {{talep_no}}',
+    body: [
+      'Merhaba {{ad}},',
+      '',
+      'Talebinizin durumu **{{durum}}** olarak güncellendi.',
+      '',
+      'Sorularınız için bu maili yanıtlayabilirsiniz.',
+      '{{firma_adi}}',
+    ].join('\n'),
+    // Off until somebody decides they want it. A customer who hears from the
+    // system every time an internal column changes learns to ignore it.
+    enabled: false,
+  },
+  {
+    key: 'lead_assigned',
+    name: 'Talep atandı (ekibe)',
+    description: 'Bir talep bir kullanıcıya atandığında o kişiye gönderilir.',
+    subject: 'Sana bir talep atandı — {{talep_no}}',
+    body: [
+      '{{ad}} adına gelen talep sana atandı.',
+      '',
+      'Firma: {{firma}}',
+      'Hizmet: {{hizmet}}',
+      'Durum: {{durum}}',
+      '',
+      'Mesaj:',
+      '{{mesaj}}',
+    ].join('\n'),
+  },
+  {
     key: 'thank_you',
     name: 'Teşekkür',
     description: 'İş tamamlandığında gönderilir.',
@@ -118,6 +151,7 @@ export const TEMPLATE_VARIABLES = [
   { key: 'butce', label: 'Belirttiği bütçe' },
   { key: 'talep_no', label: 'Talep numarası' },
   { key: 'mesaj', label: 'Talep metni' },
+  { key: 'durum', label: 'Talebin bulunduğu aşama' },
   { key: 'firma_adi', label: 'Sizin firma adınız' },
   { key: 'site_adresi', label: 'Web sitenizin adresi' },
 ] as const;

@@ -128,6 +128,23 @@ export class AnalyticsService {
     const formSubmits = events.find((row) => row.name === 'form_submit')?._count._all ?? 0;
     const ctaClicks = events.find((row) => row.name === 'cta_click')?._count._all ?? 0;
 
+    // Traffic is only half the picture. What the business wants to know is
+    // whether visits turn into enquiries and enquiries turn into work — and
+    // that answer lives in the CRM, which is in the same database.
+    const [leads, won, lost] = await Promise.all([
+      this.prisma.contactMessage.count({
+        where: { tenantId, deletedAt: null, createdAt: { gte: since(30) } },
+      }),
+      this.prisma.contactMessage.count({
+        where: { tenantId, deletedAt: null, status: 'WON', lastActionAt: { gte: since(30) } },
+      }),
+      this.prisma.contactMessage.count({
+        where: { tenantId, deletedAt: null, status: 'LOST', lastActionAt: { gte: since(30) } },
+      }),
+    ]);
+
+    const daily = await this.dailySeries(tenantId, 30);
+
     return {
       visitors: { today: today_.visitors, week: week.visitors, month: month.visitors },
       views: { today: today_.views, week: week.views, month: monthViews },
@@ -141,7 +158,58 @@ export class AnalyticsService {
       topPages: topPages.map((row) => ({ path: row.path, views: row._count._all })),
       sources: sources.map((row) => ({ source: row.source, views: row._count._all })),
       devices: devices.map((row) => ({ device: row.device, views: row._count._all })),
+      daily,
+      crm: {
+        leads,
+        won,
+        lost,
+        // Won over decided, not over all leads: an enquiry still being worked
+        // is not a loss, and counting it as one makes every healthy pipeline
+        // look like a failing one.
+        winRate: won + lost > 0 ? Math.round((won / (won + lost)) * 100) : null,
+        // What a visit is ultimately worth: visitors in, enquiries out.
+        leadRate:
+          month.visitors > 0 ? Math.round((leads / month.visitors) * 1000) / 10 : null,
+      },
     };
+  }
+
+  /**
+   * Views and visitors per day, for the chart.
+   *
+   * Grouped in the database and then filled in here: a day with no traffic
+   * produces no row, and a chart that silently skips those days draws a
+   * flattering line through the gaps.
+   */
+  private async dailySeries(tenantId: string, days: number) {
+    const since = new Date(Date.now() - days * 86_400_000);
+
+    const rows = await this.prisma.$queryRaw<
+      { day: Date; views: bigint; visitors: bigint }[]
+    >`
+      SELECT date_trunc('day', "createdAt") AS day,
+             count(*) AS views,
+             count(DISTINCT "visitorHash") AS visitors
+      FROM page_views
+      WHERE "tenantId" = ${tenantId} AND "createdAt" >= ${since}
+      GROUP BY 1
+      ORDER BY 1
+    `;
+
+    const byDay = new Map(
+      rows.map((row) => [
+        row.day.toISOString().slice(0, 10),
+        { views: Number(row.views), visitors: Number(row.visitors) },
+      ]),
+    );
+
+    const series: { date: string; views: number; visitors: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+      const found = byDay.get(date);
+      series.push({ date, views: found?.views ?? 0, visitors: found?.visitors ?? 0 });
+    }
+    return series;
   }
 
   /** Views and distinct visitors since a moment. */

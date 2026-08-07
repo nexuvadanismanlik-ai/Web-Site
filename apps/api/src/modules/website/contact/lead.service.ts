@@ -2,6 +2,12 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { LeadActivityType, LeadStatus, NotificationType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
+import { EmailService } from '../../email/email.service';
+import {
+  MailTemplateService,
+  fillTemplate,
+  renderEmailHtml,
+} from '../../email/mail-template.service';
 
 /** Columns a lead list may be sorted by. */
 export const LEAD_SORTABLE = ['createdAt', 'lastActionAt', 'name', 'status'] as const;
@@ -9,6 +15,20 @@ export const LEAD_DEFAULT_SORT = 'lastActionAt';
 
 /** The pipeline, in order. */
 export const LEAD_STATUSES = Object.values(LeadStatus);
+
+
+/** What each stage is called in a message to a person. */
+const STATUS_TEXT: Record<string, string> = {
+  NEW: 'Yeni',
+  REVIEWING: 'İnceleniyor',
+  CONTACTED: 'İletişime geçildi',
+  PROPOSAL_SENT: 'Teklif gönderildi',
+  MEETING: 'Görüşme',
+  WAITING: 'Bekliyor',
+  WON: 'Kazanıldı',
+  LOST: 'Kaybedildi',
+  ARCHIVED: 'Arşiv',
+};
 
 /** Statuses that mean the lead is no longer being worked. */
 const CLOSED: LeadStatus[] = [LeadStatus.WON, LeadStatus.LOST, LeadStatus.ARCHIVED];
@@ -78,6 +98,8 @@ export class LeadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenants: WebsiteTenantService,
+    private readonly email: EmailService,
+    private readonly templates: MailTemplateService,
   ) {}
 
   /** How many leads sit in each stage, for the pipeline header. */
@@ -279,6 +301,13 @@ export class LeadService {
       );
     }
 
+    // And the customer hears about it, if that template has been turned on.
+    // It ships disabled: somebody who is emailed every time an internal column
+    // changes learns to ignore the emails that matter.
+    void this.sendLeadTemplate(tenantId, 'status_changed', id, {
+      durum: STATUS_TEXT[status] ?? status,
+    });
+
     return this.findOne(id, tenantSlug);
   }
 
@@ -321,9 +350,97 @@ export class LeadService {
         null,
         { leadId: id },
       );
+
+      // A notification in the panel is only seen by somebody already in the
+      // panel. The person who has just been handed a lead may not be.
+      const assignee = await this.prisma.user
+        .findUnique({ where: { id: userId }, select: { email: true } })
+        .catch(() => null);
+      if (assignee?.email) {
+        void this.sendLeadTemplate(tenantId, 'lead_assigned', id, {}, assignee.email);
+      }
     }
 
     return this.findOne(id, tenantSlug);
+  }
+
+  /**
+   * Sends one of the CRM's templates about a specific lead.
+   *
+   * Best-effort throughout: the lead has already moved, and a mail provider
+   * having a bad afternoon must not roll that back. Every attempt is written to
+   * the mail log either way, so "did they get it" has an answer.
+   *
+   * Recipient defaults to the person who wrote in; pass one to send internally
+   * instead.
+   */
+  private async sendLeadTemplate(
+    tenantId: string,
+    key: string,
+    leadId: string,
+    extra: Record<string, string>,
+    to?: string,
+  ): Promise<void> {
+    try {
+      const template = await this.templates.findByKey(tenantId, key).catch(() => null);
+      if (!template || !template.enabled) return;
+
+      const lead = await this.prisma.contactMessage.findUnique({
+        where: { id: leadId },
+        select: {
+          name: true,
+          email: true,
+          phone: true,
+          company: true,
+          service: true,
+          budget: true,
+          message: true,
+          requestNo: true,
+          status: true,
+        },
+      });
+      if (!lead) return;
+
+      const brandRow = await this.prisma.websiteSection.findUnique({
+        where: { tenantId_key: { tenantId, key: 'brand' } },
+        select: { data: true },
+      });
+      const brand = (brandRow?.data ?? {}) as {
+        siteName?: string;
+        primaryColor?: string;
+        logoUrl?: string;
+      };
+
+      const values: Record<string, string> = {
+        ad: lead.name,
+        firma: lead.company ?? '',
+        eposta: lead.email,
+        telefon: lead.phone ?? '',
+        hizmet: lead.service ?? '',
+        butce: lead.budget ?? '',
+        talep_no: String(lead.requestNo),
+        mesaj: lead.message,
+        durum: STATUS_TEXT[lead.status] ?? lead.status,
+        firma_adi: brand.siteName ?? 'Nexuva',
+        site_adresi: '',
+        ...extra,
+      };
+
+      await this.email.trySend({
+        tenantId,
+        to: to ?? lead.email,
+        templateKey: key,
+        subject: fillTemplate(template.subject, values),
+        html: renderEmailHtml({
+          body: fillTemplate(template.body, values),
+          brandName: brand.siteName || 'Nexuva',
+          brandColor: brand.primaryColor || '#6366f1',
+          logoUrl: brand.logoUrl ?? null,
+        }),
+      });
+    } catch (err) {
+      this.logger.error(`Lead maili gönderilemedi (${key}): ${String(err)}`);
+    }
   }
 
   async addNote(id: string, body: string, authorId: string, tenantSlug?: string) {

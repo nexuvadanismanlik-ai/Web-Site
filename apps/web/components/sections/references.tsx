@@ -1,81 +1,10 @@
 import type { CSSProperties } from 'react';
-import { ArrowUpRight } from 'lucide-react';
 import type { ReferenceItem, SectionMeta } from '@nexuva/types';
 import { t } from '../../lib/i18n';
 import { SectionHeading } from './section-heading';
-import { Stagger, StaggerItem } from '../motion';
+import { ReferenceCorridor } from './reference-corridor';
 
 type Indexed = ReferenceItem & { __idx: number };
-
-/** Has this reference been given enough to be worth reading rather than counting? */
-function isDetailed(item: ReferenceItem): boolean {
-  return Boolean(item.description?.tr?.trim() || item.imageUrl);
-}
-
-/**
- * A reference with something to say.
- *
- * Logo, sector, what was done, and a link the reader can follow to check it.
- * The link matters more than it looks: a claim nobody can verify is decoration,
- * and a claim anyone can verify is evidence.
- */
-function DetailCard({ item }: { item: Indexed }) {
-  return (
-    <article className="card-surface group flex h-full flex-col overflow-hidden">
-      {item.imageUrl && (
-        <div className="aspect-[16/10] overflow-hidden border-b border-overlay/10 bg-overlay/5">
-          <img
-            src={item.imageUrl}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-          />
-        </div>
-      )}
-
-      <div className="flex flex-1 flex-col p-6">
-        <div className="flex items-center gap-3">
-          <Mark item={item} />
-          <div className="min-w-0">
-            <h3
-              className="truncate font-heading text-base font-semibold text-fg"
-              data-edit={`references.${item.__idx}.name`}
-            >
-              {item.name}
-            </h3>
-            <p
-              className="truncate text-xs uppercase tracking-wide text-faint"
-              data-edit={`references.${item.__idx}.category`}
-            >
-              {t(item.category)}
-            </p>
-          </div>
-        </div>
-
-        {item.description?.tr && (
-          <p
-            className="mt-4 flex-1 text-sm leading-relaxed text-muted"
-            data-edit={`references.${item.__idx}.description`}
-          >
-            {t(item.description)}
-          </p>
-        )}
-
-        {item.website && (
-          <a
-            href={item.website}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="mt-5 inline-flex items-center gap-1.5 self-start text-sm font-medium text-brand-dyn transition-opacity hover:opacity-75"
-          >
-            Siteyi ziyaret et
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </a>
-        )}
-      </div>
-    </article>
-  );
-}
 
 /** The brand's own mark, or its initials until a logo is uploaded. */
 function Mark({ item }: { item: ReferenceItem }) {
@@ -151,10 +80,15 @@ function Row({
 /**
  * References, in whichever form the content has earned.
  *
- * Ones with a story get a card that tells it; ones that are only a name keep
- * the moving strip. Both at once, because filling in the detail for eleven
- * clients before any of them can be shown properly is how a section stays empty
- * for a year.
+ * A studio that wants its client list read sets the names large in a column of
+ * rules and shows a picture when the reader's attention is already on that
+ * line. So every reference now goes through the corridor — the grid of
+ * identical cards is what a directory looks like, and it made six real clients
+ * read as filler.
+ *
+ * The moving strip stays for the case where there is nothing but names and no
+ * pictures at all: a corridor of bare rows is a list, and a list is better
+ * shown moving than pretending to be editorial.
  */
 export function References({
   meta,
@@ -168,46 +102,39 @@ export function References({
   if (references.length === 0) return null;
 
   const indexed: Indexed[] = references.map((r, i) => ({ ...r, __idx: i }));
-  const detailed = indexed.filter(isDetailed);
-  const plain = indexed.filter((item) => !isDetailed(item));
 
-  const mid = Math.ceil(plain.length / 2);
-  const rowA = plain.slice(0, mid);
-  const rowB = plain.slice(mid);
+  // Nothing but names and no pictures anywhere: the corridor has nothing to
+  // reveal, so the strip is the honest presentation.
+  const hasAnyVisual = references.some((item) => item.imageUrl || item.logoUrl);
 
-  return (
-    <section id="references" className={`overflow-hidden ${hideHeading ? 'py-8' : 'section'}`}>
-      {!hideHeading && (
-        <div className="container-x">
-          <SectionHeading meta={meta} basePath="referencesMeta" />
-        </div>
-      )}
+  if (!hasAnyVisual) {
+    const mid = Math.ceil(indexed.length / 2);
+    const rowA = indexed.slice(0, mid);
+    const rowB = indexed.slice(mid);
 
-      {detailed.length > 0 && (
-        <div className="container-x">
-          <Stagger
-            className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${hideHeading ? '' : 'mt-14'}`}
-            gap={0.08}
-          >
-            {detailed.map((item) => (
-              <StaggerItem key={item.id}>
-                <DetailCard item={item} />
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </div>
-      )}
-
-      {plain.length > 0 && (
-        <div
-          className={`flex flex-col gap-4 ${
-            detailed.length > 0 ? 'mt-14' : hideHeading ? '' : 'mt-14'
-          }`}
-        >
-          <Row items={rowA.length ? rowA : plain} duration="44s" />
+    return (
+      <section id="references" className={`overflow-hidden ${hideHeading ? 'py-8' : 'section'}`}>
+        {!hideHeading && (
+          <div className="container-x">
+            <SectionHeading meta={meta} basePath="referencesMeta" />
+          </div>
+        )}
+        <div className={`flex flex-col gap-4 ${hideHeading ? '' : 'mt-14'}`}>
+          <Row items={rowA} duration="44s" />
           {rowB.length > 0 && <Row items={rowB} reverse duration="52s" />}
         </div>
-      )}
+      </section>
+    );
+  }
+
+  return (
+    <section id="references" className={hideHeading ? 'py-8' : 'section'}>
+      <div className="container-x">
+        {!hideHeading && <SectionHeading meta={meta} basePath="referencesMeta" />}
+        <div className={hideHeading ? '' : 'mt-12'}>
+          <ReferenceCorridor items={references} />
+        </div>
+      </div>
     </section>
   );
 }

@@ -33,7 +33,7 @@ export function Services({
         >
           {list.map((svc, i) => (
             <StaggerItem key={svc.id}>
-              <div className="card-surface group flex h-full flex-col overflow-hidden">
+              <div className="service-card group flex h-full flex-col overflow-hidden">
                 {/* An illustration when one has been chosen, the icon when not.
                     Both are complete cards; neither leaves a hole. */}
                 {svc.imageUrl ? (
@@ -48,15 +48,25 @@ export function Services({
                 ) : null}
                 <div className="flex flex-1 flex-col p-7">
                 {!svc.imageUrl && (
-                <div className="relative mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-overlay/10 bg-overlay/5">
-                  <div className="absolute inset-0 rounded-2xl brand-gradient-bg opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <Icon
-                    name={svc.icon}
-                    className="relative h-6 w-6 text-brand-dyn transition-colors duration-500 group-hover:text-white"
-                  />
+                <div className="mb-6 flex items-center justify-between">
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-full"
+                    style={{ border: '1px solid color-mix(in srgb, var(--gold) 45%, transparent)' }}
+                  >
+                    <Icon name={svc.icon} className="h-5 w-5 text-brand-dyn" />
+                  </span>
+                  {/* The index, set in the display face. Eight identical cards
+                      become a numbered list, which is what a reader needs to
+                      keep their place in one. */}
+                  <span
+                    aria-hidden
+                    className="font-heading text-sm tabular-nums text-faint"
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
                 </div>
                 )}
-                <h3 className="font-heading text-xl font-semibold text-fg" data-edit={`services.${i}.title`}>
+                <h3 className="font-heading text-xl text-fg" data-edit={`services.${i}.title`}>
                   {t(svc.title)}
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted" data-edit={`services.${i}.description`}>
@@ -69,9 +79,11 @@ export function Services({
                       className="flex items-center gap-2.5 text-sm text-muted"
                       data-edit={`services.${i}.features.${j}`}
                     >
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500/15">
-                        <Icon name="check" className="h-3 w-3 text-brand-dyn" />
-                      </span>
+                      <span
+                        aria-hidden
+                        className="h-px w-3 shrink-0"
+                        style={{ background: 'var(--gold)' }}
+                      />
                       {t(f)}
                     </li>
                   ))}

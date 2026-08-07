@@ -343,3 +343,49 @@
   outline: 2px solid var(--brand);
   background-color: color-mix(in srgb, var(--brand) 10%, transparent);
 }
+
+@layer components {
+  /**
+   * A service card.
+   *
+   * Separated from `.card-surface` because the two want different things: a
+   * surface is a container, and this is one of eight things a reader is
+   * comparing. Comparison wants a quiet resting state and a clear hovered one,
+   * which is a border that warms and a shadow that deepens — not a gradient
+   * that arrives.
+   */
+  .service-card {
+    @apply relative rounded-[var(--r-lg)];
+    background: var(--card-solid);
+    border: 1px solid rgb(var(--c-overlay) / 0.08);
+    box-shadow: var(--shadow-raise);
+    transition: border-color var(--t-slow) var(--ease-out),
+      box-shadow var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
+  }
+  .service-card:hover {
+    border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+    box-shadow: var(--shadow-float);
+    transform: translateY(-3px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .service-card:hover {
+      transform: none;
+    }
+  }
+}
+
+@layer components {
+  /**
+   * The closing band.
+   *
+   * Deep ink rather than a brand gradient. A gradient that saturated, running
+   * the full width behind a headline, is the single loudest thing a landing
+   * page can do — and eight sections above it were already using the same two
+   * colours. Ink lets the gold rule and the white button be the only bright
+   * things in the frame, which is what makes them read as important.
+   */
+  .cta-band {
+    background: linear-gradient(160deg, #14161f 0%, #0c0d14 100%);
+    border: 1px solid rgb(255 255 255 / 0.08);
+  }
+}

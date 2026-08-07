@@ -119,7 +119,29 @@ async function fetchSiteContent(): Promise<SiteContent> {
     throw new Error(`Site content request to ${url} returned an unexpected body.`);
   }
 
-  return content;
+  return normalise(content);
+}
+
+/**
+ * Accepts content written by an older version of the API.
+ *
+ * The published snapshot is frozen at publish time, so a deploy that adds a
+ * field is serving documents written before that field existed — for as long as
+ * nobody publishes again. Logos used to be an array of names and are now
+ * objects carrying an optional mark; reading the new shape out of the old one
+ * would have rendered a strip of blanks on the live site.
+ *
+ * Cheap to keep, and the alternative is a site whose correctness depends on
+ * somebody having pressed Publish after a deploy.
+ */
+function normalise(content: SiteContent): SiteContent {
+  const logos = Array.isArray(content.logos)
+    ? content.logos.map((entry) =>
+        typeof entry === 'string' ? { name: entry } : (entry ?? { name: '' }),
+      )
+    : [];
+
+  return { ...content, logos };
 }
 
 export async function getSiteContent(): Promise<SiteContent> {

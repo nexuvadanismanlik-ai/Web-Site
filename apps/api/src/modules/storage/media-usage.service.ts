@@ -112,6 +112,83 @@ export class MediaUsageService {
   }
 
   /**
+   * Points every use of one file at another.
+   *
+   * This is what makes "replace this image" honest. The obvious
+   * implementation — overwrite the bytes and keep the address — cannot work
+   * here: files are served with an immutable cache header, which is correct
+   * because an address contains a record id that is never reused, and it means
+   * a browser that has seen the old picture would go on showing it for a year.
+   *
+   * So a replacement is a new file with a new address, and this moves the
+   * references across. The alternative was asking somebody to remember every
+   * screen a logo appears on and change each by hand.
+   *
+   * Returns how many places were rewritten, so the panel can say what it did
+   * rather than claim success over nothing.
+   */
+  async rewriteUrl(tenantId: string, from: string, to: string): Promise<number> {
+    if (!from || from === to) return 0;
+
+    const [sections, collections] = await Promise.all([
+      this.rewriteSections(tenantId, from, to),
+      this.rewriteCollections(tenantId, from, to),
+    ]);
+
+    return sections + collections;
+  }
+
+  /**
+   * Sections hold arbitrary JSON, so the swap happens on the serialised
+   * document. Crude, and correct for exactly the reason the scan is: a URL can
+   * sit at any depth under any key, and a rewrite that only knows the shapes
+   * somebody thought of leaves the others pointing at a deleted file.
+   */
+  private async rewriteSections(tenantId: string, from: string, to: string): Promise<number> {
+    const rows = await this.prisma.websiteSection.findMany({
+      where: { tenantId },
+      select: { id: true, data: true },
+    });
+
+    let changed = 0;
+    for (const row of rows) {
+      const before = JSON.stringify(row.data ?? {});
+      if (!before.includes(from)) continue;
+
+      // Split/join rather than a regex: a URL contains characters a regex
+      // would read as syntax, and escaping them is a bug waiting to happen.
+      const after = before.split(from).join(to);
+      await this.prisma.websiteSection.update({
+        where: { id: row.id },
+        data: { data: JSON.parse(after) as object },
+      });
+      changed++;
+    }
+    return changed;
+  }
+
+  /** Collections have named columns, so the swap is exact. */
+  private async rewriteCollections(tenantId: string, from: string, to: string): Promise<number> {
+    let changed = 0;
+
+    for (const entry of COLLECTION_IMAGE_FIELDS) {
+      const delegate = this.prisma[entry.model] as {
+        updateMany(args: unknown): Promise<{ count: number }>;
+      };
+
+      for (const column of entry.columns) {
+        const result = await delegate.updateMany({
+          where: { tenantId, [column]: from },
+          data: { [column]: to },
+        });
+        changed += result.count;
+      }
+    }
+
+    return changed;
+  }
+
+  /**
    * Sections are JSON documents with no fixed shape — a URL can be at
    * `image`, at `logo.dark`, or inside an array of items — so they are matched
    * on the serialised document rather than on named columns. Coarse, but it

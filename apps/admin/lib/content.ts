@@ -601,3 +601,33 @@ export async function saveSitePreferencesViaApi(
     body: JSON.stringify(input),
   });
 }
+
+/** Renames a file or moves it to another folder. Both are labels, not addresses. */
+export async function updateMediaViaApi(
+  id: string,
+  changes: { filename?: string; folder?: MediaFolder },
+): Promise<MediaFile> {
+  return apiFetch<MediaFile>(`/storage/files/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(changes),
+  });
+}
+
+/**
+ * Swaps one file for another everywhere it appears.
+ *
+ * A replacement is a new file with a new address — see the API — so this also
+ * reports how many places were repointed, which is the only way to know the
+ * swap actually reached the site.
+ */
+export async function replaceMediaViaApi(
+  id: string,
+  file: File,
+): Promise<{ file: MediaFile; replaced: number; message: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  return apiFetch<{ file: MediaFile; replaced: number; message: string }>(
+    `/storage/files/${id}/replace`,
+    { method: 'POST', body },
+  );
+}

@@ -5,6 +5,8 @@ import {
   Delete,
   Query,
   Param,
+  Patch,
+  Body,
   BadRequestException,
   ConflictException,
   Req,
@@ -19,6 +21,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { NoEnvelope, ResponseMessage } from '../../common/decorators/response.decorator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import type { UserRole } from '@nexuva/types';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -34,6 +37,12 @@ const ALLOWED_MIME_TYPES = new Set([
 const ALLOWED_FOLDERS = new Set(['images', 'documents', 'logos', 'uploads', 'attachments']);
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+/** What may be changed about a stored file. Both are labels, not addresses. */
+export class UpdateFileDto {
+  @IsOptional() @IsString() @MaxLength(200) filename?: string;
+  @IsOptional() @IsString() @MaxLength(40) folder?: string;
+}
 
 interface AuthUser {
   id: string;
@@ -208,6 +217,107 @@ export class StorageController {
         totalBytes: result.usage,
         totalMB: Math.round((result.usage / 1024 / 1024) * 100) / 100,
       },
+    };
+  }
+
+  /**
+   * Renames a file, or moves it to another folder.
+   *
+   * Safe by construction: the address a file is served from contains its
+   * record id, not its name, so neither operation can break a page that uses
+   * it. That is what makes tidying up a library of `IMG_4471.jpg` something
+   * somebody can do without holding their breath.
+   */
+  @Patch('files/:id')
+  @Roles('CONTENT_EDITOR')
+  @ResponseMessage('Dosya güncellendi')
+  @ApiOperation({ summary: 'Rename a file or move it to another folder' })
+  async updateFile(
+    @Param('id') fileId: string,
+    @Body() dto: UpdateFileDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.storageService.updateFile({
+      fileId,
+      actorRole: user.role,
+      actorCompanyId: user.companyId,
+      ...(dto.filename !== undefined ? { filename: dto.filename } : {}),
+      ...(dto.folder !== undefined ? { folder: dto.folder } : {}),
+    });
+  }
+
+  /**
+   * Swaps one file for another everywhere it appears.
+   *
+   * Not an overwrite. Files are served with an immutable cache header, which
+   * is right — an address contains a record id that is never reused — and it
+   * means changing the bytes under an existing address would leave browsers
+   * showing last month's logo for a year. So the new picture is a new file,
+   * and every reference to the old one is moved across.
+   *
+   * The alternative was asking somebody to remember every screen a logo
+   * appears on and change each by hand, which is how a site ends up with two
+   * versions of its own logo.
+   */
+  @Post('files/:id/replace')
+  @Roles('CONTENT_EDITOR')
+  @ApiOperation({ summary: 'Upload a replacement and repoint every use of the old file' })
+  @ApiConsumes('multipart/form-data')
+  async replaceFile(
+    @Param('id') fileId: string,
+    @Req() req: FastifyRequest,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const existing = await this.storageService.getFile(fileId, user.role, user.companyId);
+
+    if (!req.isMultipart()) {
+      throw new BadRequestException('Request must use Content-Type: multipart/form-data');
+    }
+    const part = await req.file();
+    if (!part) throw new BadRequestException('No file part found in the request');
+
+    if (!ALLOWED_MIME_TYPES.has(part.mimetype)) {
+      throw new BadRequestException(
+        `MIME type "${part.mimetype}" is not allowed. Allowed: ${[...ALLOWED_MIME_TYPES].join(', ')}`,
+      );
+    }
+
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    for await (const chunk of part.file) {
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_FILE_SIZE_BYTES) {
+        throw new BadRequestException(
+          `File exceeds the maximum allowed size of ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB`,
+        );
+      }
+      chunks.push(chunk);
+    }
+
+    const replacement = await this.storageService.uploadFile({
+      tenantId: existing.tenantId,
+      uploadedById: user.id,
+      actorRole: user.role,
+      actorCompanyId: user.companyId,
+      folder: existing.folder,
+      buffer: Buffer.concat(chunks),
+      mimeType: part.mimetype,
+      filename: part.filename,
+    });
+
+    // Only after the new file exists. Rewriting first would leave every page
+    // pointing at nothing if the upload then failed.
+    const rewritten = existing.url
+      ? await this.mediaUsage.rewriteUrl(existing.tenantId, existing.url, replacement.url)
+      : 0;
+
+    return {
+      file: replacement,
+      replaced: rewritten,
+      message:
+        rewritten > 0
+          ? `Görsel değiştirildi ve ${rewritten} yerde güncellendi. Yayınlamayı unutma.`
+          : 'Görsel yüklendi. Eski dosya hiçbir yerde kullanılmıyordu.',
     };
   }
 

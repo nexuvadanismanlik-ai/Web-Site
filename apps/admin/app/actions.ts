@@ -19,6 +19,8 @@ import {
   readMedia,
   uploadMediaViaApi,
   deleteMediaViaApi,
+  updateMediaViaApi,
+  replaceMediaViaApi,
   MEDIA_FOLDERS,
   readLeads,
   readPipelineCounts,
@@ -681,4 +683,42 @@ export async function saveSitePreferences(
   revalidatePath(adminPath('/settings'));
   revalidatePath(adminPath('/analytics'));
   return { ok: true };
+}
+
+export async function renameMedia(
+  id: string,
+  filename: string,
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAuth();
+  try {
+    await updateMediaViaApi(id, { filename });
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Yeniden adlandırılamadı.' };
+  }
+  revalidatePath(adminPath('/media'));
+  return { ok: true };
+}
+
+/**
+ * Replaces a file's picture everywhere it is used.
+ *
+ * Revalidates the whole admin subtree, not just the media screen: the point of
+ * a replacement is that other screens now show a different image.
+ */
+export async function replaceMedia(
+  id: string,
+  form: FormData,
+): Promise<{ ok: boolean; replaced?: number; message?: string; error?: string }> {
+  await requireAuth();
+  const file = form.get('file');
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: 'Dosya seçilmedi.' };
+  }
+  try {
+    const result = await replaceMediaViaApi(id, file);
+    revalidatePath(adminPath('/'), 'layout');
+    return { ok: true, replaced: result.replaced, message: result.message };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Değiştirilemedi.' };
+  }
 }

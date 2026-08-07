@@ -46,6 +46,12 @@ const FILE_WITH_TENANT_SELECT = {
  */
 const DB_BLOB_MAX_BYTES = 2 * 1024 * 1024;
 
+/**
+ * Folders a file may live in. Mirrors the controller's upload allowlist — the
+ * same list guards the upload path against traversal.
+ */
+const ALLOWED_FOLDERS = new Set(['images', 'documents', 'logos', 'uploads', 'attachments']);
+
 const FILE_SELECT = {
   id: true,
   key: true,
@@ -354,6 +360,55 @@ export class StorageService {
     const usage = await this.getTenantUsage(tenantId);
 
     return { files, total, usage };
+  }
+
+  /**
+   * Changes what a file is called, or which folder it sits in.
+   *
+   * Both are labels: the address a file is served from contains its record id,
+   * so neither renaming nor moving can break a page that uses it. That is the
+   * whole reason this is safe to offer — somebody tidying up a library full of
+   * `IMG_4471.jpg` should not have to wonder what they are about to break.
+   */
+  async updateFile(params: {
+    fileId: string;
+    actorRole: UserRole;
+    actorCompanyId?: string | null;
+    filename?: string;
+    folder?: string;
+  }) {
+    const { fileId, actorRole, actorCompanyId, filename, folder } = params;
+    await this.assertFileOwnership(fileId, actorRole, actorCompanyId);
+
+    const data: { filename?: string; folder?: string } = {};
+
+    if (filename !== undefined) {
+      // Path separators stripped rather than rejected: the value is only ever
+      // a display label, and a name with a slash in it is a mistake, not an
+      // attack worth an error message.
+      const clean = filename.replace(/[/\\]/g, '').trim().slice(0, 200);
+      if (!clean) throw new BadRequestException('Dosya adı boş olamaz.');
+      data.filename = clean;
+    }
+
+    if (folder !== undefined) {
+      if (!ALLOWED_FOLDERS.has(folder)) {
+        throw new BadRequestException(
+          `Geçersiz klasör "${folder}". Seçenekler: ${[...ALLOWED_FOLDERS].join(', ')}`,
+        );
+      }
+      data.folder = folder;
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Değiştirilecek bir şey verilmedi.');
+    }
+
+    return this.prisma.storageFile.update({
+      where: { id: fileId },
+      data,
+      select: FILE_SELECT,
+    });
   }
 
   /**

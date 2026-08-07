@@ -9,11 +9,13 @@ import {
   HardDrive,
   Image as ImageIcon,
   Link2,
+  Pencil,
+  RefreshCw,
   Trash2,
   Upload,
 } from 'lucide-react';
 import { ConfirmDialog, EmptyState, SearchBar, SelectField, useToast } from '@nexuva/ui';
-import { uploadMedia, deleteMedia } from '../../app/actions';
+import { uploadMedia, deleteMedia, renameMedia, replaceMedia } from '../../app/actions';
 import { MEDIA_FOLDERS, type MediaFile, type MediaFolder, type MediaList } from '../../lib/model';
 
 /** What each folder is for, so the choice is not a guess. */
@@ -43,12 +45,15 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const fileInput = useRef<HTMLInputElement>(null);
+  // One hidden picker per card, so 'replace' can target a specific file.
+  const replaceInput = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [folder, setFolder] = useState<MediaFolder>('images');
   const [filterFolder, setFilterFolder] = useState<string>('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState<'selection' | MediaFile | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
 
   const visible = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase('tr');
@@ -110,6 +115,49 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
         toast.success(ok === 1 ? 'Dosya silindi.' : `${ok} dosya silindi.`);
         setSelected(new Set());
         router.refresh();
+      }
+    });
+  }
+
+  /**
+   * Swaps a file's picture wherever it appears.
+   *
+   * The count comes back from the API and is reported verbatim: "changed in 3
+   * places" is a fact somebody can check, and "done" is not. The reminder to
+   * publish matters — the swap has happened in the draft, and the live site is
+   * still showing the old one until somebody says so.
+   */
+  function onReplace(file: MediaFile, picked: globalThis.File | null) {
+    if (!picked) return;
+    if (picked.size > MAX_BYTES) {
+      toast.error('Dosya 10 MB sınırını aşıyor.');
+      return;
+    }
+
+    startTransition(async () => {
+      const form = new FormData();
+      form.append('file', picked);
+      const result = await replaceMedia(file.id, form);
+      if (result.ok) {
+        toast.success(result.message ?? 'Görsel değiştirildi.');
+        router.refresh();
+      } else {
+        toast.error(result.error ?? 'Değiştirilemedi.');
+      }
+    });
+  }
+
+  function onRename() {
+    const target = renaming;
+    if (!target || !target.name.trim()) return;
+    setRenaming(null);
+    startTransition(async () => {
+      const result = await renameMedia(target.id, target.name.trim());
+      if (result.ok) {
+        toast.success('Yeniden adlandırıldı.');
+        router.refresh();
+      } else {
+        toast.error(result.error ?? 'Yeniden adlandırılamadı.');
       }
     });
   }
@@ -297,6 +345,35 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
                       <Download className="h-3.5 w-3.5" />
                     </a>
                     <button
+                      onClick={() => setRenaming({ id: file.id, name: file.filename })}
+                      title="Yeniden adlandır"
+                      aria-label={`${file.filename} dosyasını yeniden adlandır`}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-overlay/10 text-muted hover:text-fg"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    {/* Replacing swaps the picture everywhere it is used, which
+                        is the difference between changing a logo and changing
+                        a logo on eleven screens by hand. */}
+                    <button
+                      onClick={() => replaceInput.current?.[file.id]?.click()}
+                      disabled={pending}
+                      title="Görseli değiştir"
+                      aria-label={`${file.filename} dosyasını değiştir`}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-overlay/10 text-muted hover:text-fg disabled:opacity-40"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </button>
+                    <input
+                      ref={(node) => {
+                        if (replaceInput.current) replaceInput.current[file.id] = node;
+                      }}
+                      type="file"
+                      accept={ACCEPT}
+                      className="hidden"
+                      onChange={(event) => onReplace(file, event.target.files?.[0] ?? null)}
+                    />
+                    <button
                       onClick={() => setConfirming(file)}
                       disabled={pending}
                       title="Sil"
@@ -317,6 +394,52 @@ export function MediaLibrary({ initial }: { initial: MediaList }) {
         <HardDrive className="h-3.5 w-3.5" />
         En fazla 10 MB · JPEG, PNG, WebP, GIF, SVG ve PDF
       </p>
+
+      {/* Renaming is safe — the address a file is served from contains its
+          record id, not its name — so this needs no warning, only a field. */}
+      {renaming && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Dosyayı yeniden adlandır"
+        >
+          <button
+            aria-label="Kapat"
+            className="absolute inset-0 cursor-default bg-black/50"
+            onClick={() => setRenaming(null)}
+          />
+          <div className="chrome relative w-full max-w-sm rounded-2xl border p-5 shadow-2xl">
+            <h3 className="font-heading text-base font-semibold text-fg">Yeniden adlandır</h3>
+            <p className="mt-1 text-xs text-muted">
+              Yalnızca görünen ad değişir. Dosyanın adresi sabit kalır, sitede hiçbir şey
+              bozulmaz.
+            </p>
+            <input
+              autoFocus
+              value={renaming.name}
+              onChange={(event) => setRenaming({ ...renaming, name: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') onRename();
+                if (event.key === 'Escape') setRenaming(null);
+              }}
+              className="field-input mt-4"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setRenaming(null)} className="ui-button text-xs">
+                Vazgeç
+              </button>
+              <button
+                onClick={onRename}
+                disabled={!renaming.name.trim()}
+                className="ui-button-primary text-xs disabled:opacity-50"
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirming !== null}

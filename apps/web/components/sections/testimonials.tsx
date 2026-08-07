@@ -18,7 +18,7 @@ function TestimonialCard({
     .join('')
     .toUpperCase();
   return (
-    <figure className="flex w-[360px] shrink-0 flex-col justify-between rounded-3xl border border-overlay/10 bg-card shadow-card p-7">
+    <figure className="flex w-[min(22rem,calc(100vw-3rem))] shrink-0 sm:w-[360px] flex-col justify-between rounded-3xl border border-overlay/10 bg-card shadow-card p-7">
       <div>
         <div className="flex gap-0.5">
           {Array.from({ length: item.rating }).map((_, i) => (

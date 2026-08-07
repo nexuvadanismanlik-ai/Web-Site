@@ -107,8 +107,11 @@ export function Header({ logoText, logoUrl, nav, ctaLabel }: HeaderProps) {
 
             {/* Right actions */}
             <div className="flex items-center gap-2">
-              <Link href={'/contact'} className="hidden md:inline-flex">
-                <span data-cta="header" className="btn-primary !px-5 !py-2.5 text-sm">
+              {/* data-cta belongs on the anchor, not on a span inside it: the
+                  tracker resolves a click to its nearest a/button, so an
+                  attribute on a child is never the element it inspects. */}
+              <Link href={'/contact'} data-cta="header" className="hidden md:inline-flex">
+                <span className="btn-primary !px-5 !py-2.5 text-sm">
                   {ctaLabel}
                   <ArrowUpRight className="h-4 w-4" />
                 </span>

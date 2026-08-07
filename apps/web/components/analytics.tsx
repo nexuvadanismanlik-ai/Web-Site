@@ -71,17 +71,33 @@ export function Analytics() {
     };
 
     // Clicks on anything a visitor would call a call to action.
+    //
+    // The marked element is looked for first and independently of the link:
+    // resolving to the nearest a/button and then reading its attribute meant a
+    // marker placed on a wrapper — or on a span inside the link — was never
+    // seen, which is exactly what happened to the header button.
     const onClick = (event: MouseEvent) => {
-      const target = (event.target as HTMLElement | null)?.closest('a,button');
-      if (!target) return;
-      const label = (target.textContent ?? '').trim().slice(0, 120);
-      if (!label) return;
+      const from = event.target as HTMLElement | null;
+      if (!from) return;
 
+      const marked = from.closest('[data-cta]');
+      const link = from.closest('a,button');
+      const element = marked ?? link;
+      if (!element) return;
+
+      // Unmarked elements still count when they carry the primary button
+      // styling, so a new CTA reports itself before anybody remembers to
+      // label it.
       const isCta =
-        target.getAttribute('data-cta') !== null ||
-        target.className.includes('btn-primary') ||
-        target.className.includes('brand-gradient-bg');
+        marked !== null ||
+        (link?.className ?? '').includes('btn-primary') ||
+        (link?.className ?? '').includes('brand-gradient-bg');
       if (!isCta) return;
+
+      const label =
+        marked?.getAttribute('data-cta') ||
+        (element.textContent ?? '').trim().slice(0, 120);
+      if (!label) return;
 
       send('/analytics/event', { name: 'cta_click', path: pathname, label });
     };

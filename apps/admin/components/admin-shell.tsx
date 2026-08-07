@@ -21,6 +21,7 @@ import {
   Activity,
   Search,
   Type,
+  Plug,
   Mail as MailIcon,
   Inbox,
   LogOut,
@@ -70,6 +71,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: 'Sistem',
     items: [
       { label: 'Ziyaretçiler', href: '/analytics', icon: BarChart3 },
+      { label: 'Entegrasyonlar', href: '/integrations', icon: Plug },
       { label: 'Mail', href: '/mail', icon: MailIcon },
       { label: 'Sistem & Bağlantılar', href: '/system', icon: Activity },
     ],

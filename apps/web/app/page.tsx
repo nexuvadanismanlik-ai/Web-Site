@@ -35,6 +35,7 @@ export default async function HomePage() {
         services={content.services.map((s) => t(s.title))}
         budgets={[...LEAD_BUDGET_BANDS]}
         uiText={content.uiText}
+        integrations={content.integrations}
       />
     </>
   );

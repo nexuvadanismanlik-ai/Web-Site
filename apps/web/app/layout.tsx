@@ -8,6 +8,7 @@ import { Header } from '../components/site/header';
 import { Footer } from '../components/site/footer';
 import { EditOverlay } from '../components/edit-overlay';
 import { Analytics } from '../components/analytics';
+import { Integrations } from '../components/integrations';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -41,6 +42,20 @@ export async function generateMetadata(): Promise<Metadata> {
   const ogTitle = seo.ogTitle?.trim() || title;
   const ogDescription = seo.ogDescription?.trim() || description;
   const ogImage = seo.ogImage?.trim();
+
+  const integrations = content.integrations ?? {};
+  const verification: { google?: string; other?: Record<string, string> } = {};
+  if (integrations.googleSiteVerification?.trim()) {
+    verification.google = integrations.googleSiteVerification.trim();
+  }
+  const other: Record<string, string> = {};
+  if (integrations.bingSiteVerification?.trim()) {
+    other['msvalidate.01'] = integrations.bingSiteVerification.trim();
+  }
+  if (integrations.yandexVerification?.trim()) {
+    other['yandex-verification'] = integrations.yandexVerification.trim();
+  }
+  if (Object.keys(other).length > 0) verification.other = other;
 
   const icons: NonNullable<Metadata['icons']> = {};
   if (seo.favicon?.trim()) icons.icon = seo.favicon.trim();
@@ -82,6 +97,11 @@ export async function generateMetadata(): Promise<Metadata> {
       ...(ogImage ? { images: [ogImage] } : {}),
     },
     ...(Object.keys(icons).length > 0 ? { icons } : {}),
+    // Search-console ownership proofs. Plain strings the panel supplies; the
+    // consoles read them from the head and nothing else does.
+    ...(verification.google || verification.other
+      ? { verification }
+      : {}),
   };
 }
 
@@ -127,6 +147,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <Footer content={content} />
         <EditOverlay />
         <Analytics />
+        <Integrations config={content.integrations} />
       </body>
     </html>
   );

@@ -2,16 +2,18 @@
 
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
-import type { ContactContent, UiText } from '@nexuva/types';
+import type { ContactContent, IntegrationsContent, UiText } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
 import { submitContact, type ContactError } from '../../lib/contact-api';
 import { trackFormSubmit } from '../analytics';
+import { reportConversion } from '../integrations';
 
 export function Contact({
   contact,
   services = [],
   budgets = [],
   uiText,
+  integrations,
   hideHeading = false,
 }: {
   contact: ContactContent;
@@ -25,6 +27,8 @@ export function Contact({
   budgets?: string[];
   /** Panel-managed labels. Falls back to the built-in wording when absent. */
   uiText?: UiText;
+  /** Ad platform ids, so a submission can be reported as a conversion. */
+  integrations?: IntegrationsContent;
   hideHeading?: boolean;
 }) {
   const ui = getUi(uiText);
@@ -54,6 +58,9 @@ export function Contact({
       // Counted here rather than on the server so that the conversion belongs
       // to the page the visitor was actually on.
       trackFormSubmit(window.location.pathname);
+      // Ad platforms need their own event to attribute the conversion to the
+      // click that caused it. Guarded internally; a blocked tag cannot throw.
+      reportConversion(integrations);
       form.reset();
     } else {
       setFailure(res.error ?? 'server');

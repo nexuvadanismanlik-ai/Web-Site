@@ -33,6 +33,8 @@ export const WEBSITE_SECTION_KEYS = [
   // Button labels, form fields, empty and error states — the words that are
   // not part of any one section but appear on every page.
   'uiText',
+  // Measurement and advertising tags. Public identifiers only.
+  'integrations',
 ] as const;
 
 export type WebsiteSectionKey = (typeof WEBSITE_SECTION_KEYS)[number];

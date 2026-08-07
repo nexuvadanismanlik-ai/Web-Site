@@ -145,6 +145,7 @@ export class SiteContentService {
       brand: section('brand'),
       seo: section('seo'),
       uiText: section('uiText'),
+      integrations: section('integrations'),
       nav: navItems.map((item) => ({
         label: item.label,
         href: item.href,

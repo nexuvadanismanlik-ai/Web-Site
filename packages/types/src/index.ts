@@ -48,6 +48,7 @@ export type {
   SectionMeta,
   SeoContent,
   UiText,
+  IntegrationsContent,
   SiteContent,
   ContactMessage,
 } from './content';

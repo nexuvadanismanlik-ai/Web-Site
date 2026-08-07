@@ -233,6 +233,7 @@ export interface SiteContent {
   brand: BrandConfig;
   seo: SeoContent;
   uiText: UiText;
+  integrations: IntegrationsContent;
   nav: NavItem[];
   hero: HeroContent;
   logos: LogoItem[];
@@ -306,4 +307,44 @@ export interface UiText {
   subjectPlaceholder?: string;
   companyPlaceholder?: string;
   messagePlaceholder?: string;
+}
+
+/**
+ * Measurement and advertising tags.
+ *
+ * Held as content rather than as server configuration because these are
+ * marketing decisions, not deployment ones: the person who opens a Google Ads
+ * account is the person who should be able to connect it, and an environment
+ * variable means a redeploy and somebody with access to the hosting dashboard.
+ *
+ * Only public identifiers live here. They are printed into the page for every
+ * visitor to read, which is what they are for — a Pixel ID is not a secret.
+ * Anything that is a secret (a Conversions API token) is stored server-side and
+ * never travels to the browser.
+ */
+export interface IntegrationsContent {
+  /** G-XXXXXXXXXX */
+  ga4MeasurementId?: string;
+  /** GTM-XXXXXXX */
+  gtmContainerId?: string;
+  /** Meta Pixel numeric id */
+  metaPixelId?: string;
+  /** AW-XXXXXXXXX */
+  googleAdsId?: string;
+  /** AW-XXXXXXXXX/AbC-D_efGh — the conversion label for a form submission. */
+  googleAdsConversionLabel?: string;
+  /** The content of google-site-verification, without the meta tag. */
+  googleSiteVerification?: string;
+  /** Bing Webmaster Tools verification. */
+  bingSiteVerification?: string;
+  /** Yandex Webmaster verification. */
+  yandexVerification?: string;
+  /** Microsoft Clarity project id. */
+  clarityProjectId?: string;
+
+  /**
+   * Off by default. Tags load only when this is on, so a half-entered
+   * configuration never reaches a visitor.
+   */
+  enabled?: boolean;
 }

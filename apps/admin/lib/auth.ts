@@ -39,6 +39,30 @@ function accessTokenExpiry(token: string): number {
 const REFRESH_MARGIN_MS = 60_000;
 
 /**
+ * How long a session refresh may take before it is abandoned.
+ *
+ * Deliberately short. This runs inside the jwt callback, which NextAuth
+ * invokes on every getServerSession — so it is in the path of every page the
+ * panel renders, and anything slow here is a slow panel. A warm refresh
+ * measures about 1.5 seconds.
+ */
+const REFRESH_TIMEOUT_MS = 10_000;
+
+/**
+ * How long a sign-in may take.
+ *
+ * Long, because it genuinely can be: the API suspends when idle and a wake-up
+ * costs about seventy seconds — measured, not guessed — and a sign-in that
+ * gave up before then would make a cold service look like a wrong password.
+ *
+ * But bounded, and tried once. The old code allowed seventy-five seconds and
+ * then retried, so a sign-in against an unreachable service could hold the
+ * form for two and a half minutes. Nobody waits that long without concluding
+ * the thing is broken.
+ */
+const SIGN_IN_TIMEOUT_MS = 80_000;
+
+/**
  * Exchanges the refresh token for a new pair.
  *
  * The backend's access tokens last 15 minutes while this session lasts for
@@ -52,10 +76,23 @@ async function refreshAccessToken(token: Record<string, unknown>): Promise<Recor
   }
 
   try {
+    // Bounded, and this is the important part.
+    //
+    // NextAuth runs the jwt callback on every getServerSession, so this fetch
+    // sits in the path of every page the panel renders. It had no timeout at
+    // all: Node's default lets a request hang for five minutes, so opening the
+    // panel while the API was asleep produced a blank screen for minutes with
+    // nothing to click and nothing to read. That is the "sonsuz yükleniyor".
+    //
+    // Ten seconds is long for a warm service — measured, this endpoint answers
+    // in about 1.5s — and far too short for a cold start, which is deliberate.
+    // A page load must not wait out a wake-up; failing here leaves the existing
+    // token in place and the next request tries again.
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
+      signal: AbortSignal.timeout(REFRESH_TIMEOUT_MS),
     });
 
     if (!res.ok) return { ...token, error: 'RefreshFailed' };
@@ -93,36 +130,29 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
 
-        // The API may suspend when idle; the first sign-in after a quiet spell
-        // pays a wake-up of roughly a minute. Given room and one retry, so a
-        // cold service reads as a slow login rather than a wrong password.
-        const attempt = async () => {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 75_000);
-          try {
-            return await fetch(`${API_BASE}/auth/login`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: credentials.email.trim().toLowerCase(),
-                password: credentials.password,
-              }),
-              signal: controller.signal,
-            });
-          } finally {
-            clearTimeout(timer);
-          }
-        };
-
+        // One attempt, generously bounded. The API suspends when idle and a
+        // wake-up costs about seventy seconds, so the budget has to cover that
+        // or a cold service reads as a wrong password. It must not be doubled
+        // by a retry: that turned an unreachable API into a two-and-a-half
+        // minute wait on a form that showed nothing but a spinner.
         try {
-          let res: Response;
-          try {
-            res = await attempt();
-          } catch {
-            res = await attempt();
-          }
+          const res = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: credentials.email.trim().toLowerCase(),
+              password: credentials.password,
+            }),
+            signal: AbortSignal.timeout(SIGN_IN_TIMEOUT_MS),
+          });
 
-          if (!res.ok) return null;
+          // 401 is the only answer that means the credentials are wrong.
+          // Everything else is the service having a problem, and saying
+          // "check your password" to somebody whose password is fine is how
+          // an evening gets lost. The thrown message reaches the form.
+          if (res.status === 401) return null;
+          if (res.status === 429) throw new Error('TooManyAttempts');
+          if (!res.ok) throw new Error('ApiError');
 
           const data = unwrap<BackendLoginResponse>(await res.json());
           const name = [data.user.firstName, data.user.lastName].filter(Boolean).join(' ');
@@ -135,10 +165,14 @@ export const authOptions: NextAuthOptions = {
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           };
-        } catch {
-          // Network failure reaching the API — treated as a failed login so the
-          // form shows the standard error rather than a stack trace.
-          return null;
+        } catch (err) {
+          // Rethrown as a code the form can turn into a sentence. A timeout is
+          // a sleeping service; anything else at this level never reached it.
+          if (err instanceof Error && (err.message === 'TooManyAttempts' || err.message === 'ApiError')) {
+            throw err;
+          }
+          const timedOut = err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError');
+          throw new Error(timedOut ? 'ApiTimeout' : 'ApiUnreachable');
         }
       },
     }),

@@ -159,6 +159,7 @@ export class StorageController {
   @ApiQuery({ name: 'tenantId', required: true })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiQuery({ name: 'offset', required: false, example: 0 })
+  @ApiQuery({ name: 'usage', required: false, description: 'true to include where each file is used (costs extra queries)' })
   @ApiQuery({ name: 'tenant', required: false, description: 'Tenant slug, as an alternative to tenantId' })
   async listFiles(
     @CurrentUser() user: AuthUser,
@@ -166,6 +167,7 @@ export class StorageController {
     @Query('tenant') tenantSlug?: string,
     @Query('limit') limitStr?: string,
     @Query('offset') offsetStr?: string,
+    @Query('usage') usage?: string,
   ) {
     const tenantId = await this.resolveTenant(tenantIdParam, tenantSlug);
 
@@ -183,15 +185,23 @@ export class StorageController {
     // Where each file is used, resolved for the page rather than per file: the
     // library needs it to warn before a delete, and asking one file at a time
     // turned a fifty-file page into a hundred queries.
-    const usedAt = await this.mediaUsage.findUsage(
-      tenantId,
-      result.files.map((file) => file.url).filter((url): url is string => Boolean(url)),
-    );
+    //
+    // Opt-in, because it costs six queries and only one caller wants it. The
+    // dashboard and the media pickers ask for this list to show a file count or
+    // a grid of thumbnails; making all of them pay for a usage scan they never
+    // render was the kind of waste that only shows up on the slowest screen.
+    const usedAt =
+      usage === 'true'
+        ? await this.mediaUsage.findUsage(
+            tenantId,
+            result.files.map((file) => file.url).filter((url): url is string => Boolean(url)),
+          )
+        : null;
 
     return {
       files: result.files.map((file) => ({
         ...file,
-        usedAt: file.url ? usedAt[file.url] ?? [] : [],
+        ...(usedAt ? { usedAt: file.url ? usedAt[file.url] ?? [] : [] } : {}),
       })),
       pagination: { total: result.total, limit, offset },
       usage: {

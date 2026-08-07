@@ -426,9 +426,21 @@ interface ApiFileList {
  * storage endpoints previously only accepted an id, which is why nothing in the
  * admin could reach them.
  */
-export async function readMedia(limit = 100, offset = 0): Promise<MediaList> {
+/**
+ * A page of uploaded files.
+ *
+ * `withUsage` asks the API to also report where each file appears on the site.
+ * It costs six extra queries, so only the media library — the one screen that
+ * shows it and warns before a delete — asks for it. The dashboard and the
+ * pickers just want names and thumbnails.
+ */
+export async function readMedia(
+  limit = 100,
+  offset = 0,
+  withUsage = false,
+): Promise<MediaList> {
   const res = await apiFetch<ApiFileList>(
-    `/storage/files?tenant=&limit=${limit}&offset=${offset}`,
+    `/storage/files?tenant=&limit=${limit}&offset=${offset}${withUsage ? '&usage=true' : ''}`,
   );
   return {
     files: res.files,

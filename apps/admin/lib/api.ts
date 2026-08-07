@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth';
 import type { ApiErrorCode } from '@nexuva/types';
-import { authOptions } from './auth';
+import { getAccessToken } from './session';
 import { unwrap } from './envelope';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
@@ -24,16 +23,48 @@ export class ApiError extends Error {
  * room and retried once: a cold start looks exactly like a network error, and
  * by the second attempt the service is usually up.
  */
-const REQUEST_TIMEOUT_MS = 75_000;
+const WAKE_TIMEOUT_MS = 75_000;
+
+/**
+ * How long a request is given once the service is known to be awake.
+ *
+ * A warm call to this API answers in under 400ms; measured, the slowest
+ * endpoint the panel uses has a median of 412ms. So eight seconds is not a
+ * tight budget — it is "something is wrong" territory, and failing there is
+ * better than holding the screen for over a minute on a request that is not
+ * coming back.
+ */
+const WARM_TIMEOUT_MS = 8_000;
+
+/**
+ * Whether the service has answered recently enough to assume it is still up.
+ *
+ * Render suspends the API when it is idle, and waking it costs about 70
+ * seconds — measured, not estimated. That has to be waited out, or the panel
+ * turns a cold start into a failed page. But it must be waited out *once*: the
+ * old code gave every request 75 seconds and retried it, so a single call
+ * could hold a page for two and a half minutes long after the reason had
+ * passed.
+ */
+let lastSuccessAt = 0;
+const ASSUME_WARM_FOR_MS = 5 * 60_000;
 
 async function fetchWithWakeRetry(url: string, init: RequestInit): Promise<Response> {
   let lastError: unknown;
 
   for (let attempt = 0; attempt < 2; attempt++) {
+    // Generous on the first attempt after a quiet spell — that is the one that
+    // might be paying for a cold start. Short once we know the service is up,
+    // and short on the retry either way: by then the wake-up has happened.
+    const warm = Date.now() - lastSuccessAt < ASSUME_WARM_FOR_MS;
+    const budget = attempt === 0 && !warm ? WAKE_TIMEOUT_MS : WARM_TIMEOUT_MS;
+
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), budget);
     try {
-      return await fetch(url, { ...init, signal: controller.signal });
+      const res = await fetch(url, { ...init, signal: controller.signal });
+      lastSuccessAt = Date.now();
+      return res;
     } catch (err) {
       lastError = err;
     } finally {
@@ -49,11 +80,8 @@ async function fetchWithWakeRetry(url: string, init: RequestInit): Promise<Respo
 }
 
 /** Access token issued by the backend at login, carried on the NextAuth JWT. */
-async function getAccessToken(): Promise<string> {
-  const session = (await getServerSession(authOptions)) as
-    | { accessToken?: string }
-    | null;
-  const token = session?.accessToken;
+async function requireAccessToken(): Promise<string> {
+  const token = await getAccessToken();
   if (!token) {
     throw new ApiError('Not authenticated — sign in again', 401);
   }
@@ -86,7 +114,7 @@ export async function apiFetch<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  if (auth) headers['Authorization'] = `Bearer ${await getAccessToken()}`;
+  if (auth) headers['Authorization'] = `Bearer ${await requireAccessToken()}`;
 
   const res = await fetchWithWakeRetry(`${API_BASE}${path}`, {
     ...rest,

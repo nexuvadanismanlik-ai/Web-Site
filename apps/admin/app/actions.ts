@@ -1,9 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
 import type { SiteContent } from '@nexuva/types';
-import { authOptions } from '../lib/auth';
+import { getSession } from '../lib/session';
 import { adminPath } from '../lib/routes';
 import {
   markAllMessagesReadViaApi,
@@ -65,8 +64,10 @@ import {
   type ContentDiff,
 } from '../lib/content';
 
+// Resolved from the per-request cache, so thirty-two call sites cost one
+// session decrypt rather than thirty-two — see lib/session.
 async function requireAuth() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (!session) throw new Error('Unauthorized');
 }
 
@@ -391,10 +392,14 @@ export async function markAllNotificationsRead(): Promise<{ ok: boolean; error?:
 
 // ─── Media ──────────────────────────────────────────────────────────────────
 
-export async function getMedia(): Promise<MediaList> {
+/**
+ * The uploaded files. `withUsage` also reports where each one appears on the
+ * site — six extra queries, so only the media library asks for it.
+ */
+export async function getMedia(withUsage = false): Promise<MediaList> {
   await requireAuth();
   try {
-    return await readMedia();
+    return await readMedia(100, 0, withUsage);
   } catch {
     return { files: [], total: 0, usedBytes: 0 };
   }

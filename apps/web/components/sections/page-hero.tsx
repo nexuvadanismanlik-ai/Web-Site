@@ -1,5 +1,18 @@
 import { Reveal } from '../motion';
 
+/**
+ * The opening of an inner page.
+ *
+ * Left-aligned rather than centred, and this is the only structural decision
+ * here worth arguing. A centred column of text under a centred badge is what
+ * every template does, and it fights the rest of the site: the home page,
+ * every section heading and the reference list all start at the same left
+ * edge, so a centred inner page reads as a different website.
+ *
+ * The gold rule under the title does the work the grid pattern and the glow
+ * used to do — it says "a page starts here" using the brand's own colour
+ * instead of two decorative layers borrowed from nowhere in particular.
+ */
 export function PageHero({
   badge,
   title,
@@ -10,32 +23,34 @@ export function PageHero({
   subtitle?: string;
 }) {
   return (
-    <section className="relative overflow-hidden pt-40 pb-16 sm:pt-48 sm:pb-20">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-80 w-[720px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_12%,transparent),transparent)]" />
-        <div className="absolute inset-0 bg-grid-slate bg-[size:56px_56px] opacity-20 [mask-image:radial-gradient(60%_50%_at_50%_20%,black,transparent)]" />
-      </div>
-      <div className="container-x text-center">
-        {badge && (
-          <Reveal>
-            <span className="eyebrow">
-              <span className="h-1.5 w-1.5 rounded-full brand-gradient-bg" />
-              {badge}
-            </span>
+    <section className="relative overflow-hidden pt-36 pb-14 sm:pt-44 sm:pb-18">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            'radial-gradient(55% 40% at 50% 0%, color-mix(in srgb, var(--brand) 10%, transparent) 0%, transparent 70%)',
+        }}
+      />
+      <div className="container-x">
+        <div className="max-w-3xl">
+          {badge && (
+            <Reveal>
+              <span className="eyebrow">{badge}</span>
+            </Reveal>
+          )}
+          <Reveal delay={0.05}>
+            <h1 className="display-1 mt-6 text-fg">{title}</h1>
           </Reveal>
-        )}
-        <Reveal delay={0.05}>
-          <h1 className="mx-auto mt-5 max-w-3xl font-heading text-4xl font-bold text-fg text-balance sm:text-5xl md:text-6xl">
-            {title}
-          </h1>
-        </Reveal>
-        {subtitle && (
           <Reveal delay={0.1}>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
-              {subtitle}
-            </p>
+            <div className="rule-gold mt-8 w-28" />
           </Reveal>
-        )}
+          {subtitle && (
+            <Reveal delay={0.14}>
+              <p className="prose-measure mt-6 text-base sm:text-lg">{subtitle}</p>
+            </Reveal>
+          )}
+        </div>
       </div>
     </section>
   );

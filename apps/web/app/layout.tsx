@@ -66,7 +66,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const canonical = seo.canonical?.trim() || origin;
   const ogTitle = seo.ogTitle?.trim() || title;
   const ogDescription = seo.ogDescription?.trim() || description;
-  const ogImage = seo.ogImage?.trim();
+  /**
+   * The picture that appears when a link to this site is shared.
+   *
+   * A chain rather than a single field, because a site without one renders as
+   * a bare URL wherever it is posted — which, for a company selling digital
+   * marketing, is an unfortunate advert. The panel's own choice wins; failing
+   * that the hero picture, which is a real image of the work and is almost
+   * always set; failing that the logo.
+   *
+   * A purpose-made 1200×630 file is still better than any of these, and the
+   * SEO screen is where to put it. This only ensures the fallback is a picture
+   * rather than nothing.
+   */
+  const ogImage =
+    seo.ogImage?.trim() ||
+    content.hero?.image?.trim() ||
+    content.brand?.logoUrl?.trim() ||
+    '';
 
   const integrations = content.integrations ?? {};
   const verification: { google?: string; other?: Record<string, string> } = {};

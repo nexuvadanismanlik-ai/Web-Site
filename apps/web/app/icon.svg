@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    The Nexuva mark, at tab size.
+
+    A drawing rather than a photograph of the logo: a favicon is 16 pixels
+    wide on most screens, and a scaled-down raster of a fine-stroked serif
+    monogram turns to mud at that size. The double ring survives; the
+    hairlines in the wordmark would not, so they are not attempted.
+
+    Replaced the moment a favicon is uploaded in the panel — this is only
+    what the browser tab shows until then, instead of a blank globe.
+  -->
+  <rect width="64" height="64" rx="12" fill="#232530" />
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#d9b380" stroke-width="2" />
+  <circle cx="32" cy="32" r="19.5" fill="none" stroke="#d9b380" stroke-width="1" opacity="0.6" />
+  <path
+    d="M23 42V22h4l10 13.5V22h4v20h-4L27 28.5V42h-4z"
+    fill="#f0d5ab"
+  />
+</svg>

@@ -171,7 +171,7 @@ export function Contact({
                 </div>
                 <Field name="subject" label={ui.formSubject} placeholder={ui.subjectPlaceholder} />
                 <div>
-                  <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-muted">
+                  <label htmlFor="contact-message" className="nx-label">
                     {ui.formMessage}
                   </label>
                   <textarea
@@ -180,7 +180,7 @@ export function Contact({
                     required
                     rows={5}
                     placeholder={ui.messagePlaceholder}
-                    className="w-full resize-none rounded-2xl border border-overlay/10 bg-overlay/[0.04] px-4 py-3 text-sm text-fg placeholder:text-faint transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                    className="nx-field resize-none"
                   />
                 </div>
 
@@ -246,14 +246,14 @@ function Choice({
   if (options.length === 0) return null;
   return (
     <div>
-      <label htmlFor={`contact-${name}`} className="mb-2 block text-sm font-medium text-muted">
+      <label htmlFor={`contact-${name}`} className="nx-label">
         {label}
       </label>
       <select
         id={`contact-${name}`}
         name={name}
         defaultValue=""
-        className="w-full rounded-2xl border border-overlay/10 bg-overlay/[0.04] px-4 py-3 text-sm text-fg transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+        className="nx-field nx-select"
       >
         <option value="">Seçiniz</option>
         {options.map((option) => (
@@ -281,9 +281,9 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={`contact-${name}`} className="mb-2 block text-sm font-medium text-muted">
+      <label htmlFor={`contact-${name}`} className="nx-label">
         {label}
-        {required && <span className="text-brand-dyn"> *</span>}
+        {required && <span className="nx-required"> *</span>}
       </label>
       <input
         id={`contact-${name}`}
@@ -291,7 +291,7 @@ function Field({
         type={type}
         required={required}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-overlay/10 bg-overlay/[0.04] px-4 py-3 text-sm text-fg placeholder:text-faint transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+        className="nx-field"
       />
     </div>
   );

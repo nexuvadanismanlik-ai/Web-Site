@@ -9,6 +9,7 @@ import { Footer } from '../components/site/footer';
 import { EditOverlay } from '../components/edit-overlay';
 import { Analytics } from '../components/analytics';
 import { Integrations } from '../components/integrations';
+import { SiteSchema } from '../components/site-schema';
 import './globals.css';
 
 /**
@@ -188,6 +189,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <main className="relative">{children}</main>
         <Footer content={content} />
         <EditOverlay />
+        {/* What this site is, for search engines and for the models that
+            answer questions about it. Built from the CMS so it cannot drift
+            from the page. */}
+        <SiteSchema content={content} origin={siteOrigin(content)} />
         <Analytics />
         <Integrations config={content.integrations} />
       </body>

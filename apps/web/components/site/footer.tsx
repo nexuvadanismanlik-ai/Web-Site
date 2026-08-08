@@ -5,7 +5,22 @@ import { Icon } from '../icon';
 
 export function Footer({ content }: { content: SiteContent }) {
   const { brand, footer } = content;
+  const services = content.services ?? [];
   const year = new Date().getFullYear();
+
+  /**
+   * The panel's own columns, minus any that was a hand-written services list.
+   *
+   * Recognised by its links all pointing at the services page. Dropped rather
+   * than left in place, because two "Hizmetler" columns side by side — one
+   * real, one stale — is worse than the stale one alone. Everything else the
+   * panel defines is rendered untouched.
+   */
+  const panelColumns = footer.columns.filter((column) => {
+    const links = column.links ?? [];
+    if (links.length === 0) return true;
+    return !links.every((link) => link.href === '/services');
+  });
 
   return (
     <footer className="relative mt-10 border-t border-overlay/10">
@@ -72,8 +87,45 @@ export function Footer({ content }: { content: SiteContent }) {
             </div>
           </div>
 
+          {/* Services, from the services themselves.
+              This column used to be three hand-typed links — "Dijital
+              Strateji", "Yazılım Geliştirme", "Bulut & DevOps" — none of which
+              Nexuva offers. A list of services maintained separately from the
+              services will drift, and it had: the footer was advertising work
+              the company does not do. It now reads the same records the
+              services page does, so adding one in the panel puts it here too. */}
+          {services.length > 0 && (
+            <div>
+              <h4 className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-faint">
+                Hizmetler
+              </h4>
+              <ul className="mt-5 space-y-3">
+                {services.slice(0, 6).map((service) => (
+                  <li key={service.id}>
+                    <Link
+                      href="/services"
+                      className="text-sm text-muted transition-colors hover:text-fg"
+                    >
+                      {t(service.title)}
+                    </Link>
+                  </li>
+                ))}
+                {services.length > 6 && (
+                  <li>
+                    <Link
+                      href="/services"
+                      className="text-sm font-medium text-brand-dyn transition-opacity hover:opacity-75"
+                    >
+                      Tüm hizmetler
+                    </Link>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
           {/* Link columns */}
-          {footer.columns.map((col, ci) => (
+          {panelColumns.map((col, ci) => (
             <div key={t(col.title)}>
               <h4 data-edit={`footer.columns.${ci}.title`} className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-faint">
                 {t(col.title)}

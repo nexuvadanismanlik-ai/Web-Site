@@ -15,6 +15,11 @@ export const dynamic = 'force-static';
 const ROUTES: { path: string; priority: number }[] = [
   { path: '/', priority: 1 },
   { path: '/services/', priority: 0.9 },
+  // The product page, and it ranks alongside services rather than below them:
+  // it is the one page targeting a search anybody types with intent —
+  // "freight forwarder yazılımı" — and it was missing from this list
+  // entirely, which is the cheapest possible way to be invisible.
+  { path: '/logiops/', priority: 0.9 },
   { path: '/references/', priority: 0.8 },
   { path: '/about/', priority: 0.7 },
   { path: '/contact/', priority: 0.7 },

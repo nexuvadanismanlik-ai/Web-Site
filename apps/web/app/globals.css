@@ -389,3 +389,168 @@
     border: 1px solid rgb(255 255 255 / 0.08);
   }
 }
+
+/* ============================================================
+   The hero's chart, drawing itself.
+
+   A still picture of a rising line says "we made a graphic". A line
+   that draws is the difference between an illustration of growth and
+   the feeling of it — which for a company selling campaign performance
+   is the one thing the picture is there to convey.
+
+   Every property here is transform, opacity or stroke-dashoffset, all
+   of which the compositor can animate without touching layout. It runs
+   once, on load, and never again: an above-the-fold animation that
+   loops is a page that never settles.
+   ============================================================ */
+@keyframes nx-draw {
+  from { stroke-dashoffset: var(--nx-len, 400); }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes nx-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nx-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes nx-pop {
+  0% { opacity: 0; transform: scale(0.4); }
+  70% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@layer utilities {
+  .nx-line {
+    stroke-dasharray: var(--nx-len, 400);
+    stroke-dashoffset: var(--nx-len, 400);
+    animation: nx-draw 1.6s var(--ease-out) 0.45s forwards;
+  }
+  .nx-area {
+    opacity: 0;
+    animation: nx-fade-up 0.9s var(--ease-out) 1.5s forwards;
+  }
+  .nx-dot {
+    opacity: 0;
+    transform-origin: center;
+    animation: nx-pop 0.5s var(--ease-out) 1.95s forwards;
+  }
+  /* Bars fill from the left, one after another. The delay is set inline
+     per bar so the stagger lives with the data rather than in a stack of
+     nth-child rules. */
+  .nx-bar {
+    transform-origin: left center;
+    transform: scaleX(0);
+    animation: nx-grow-x 0.7s var(--ease-out) forwards;
+    animation-delay: var(--nx-delay, 0ms);
+  }
+  .nx-rise {
+    opacity: 0;
+    animation: nx-fade-up 0.6s var(--ease-out) forwards;
+    animation-delay: var(--nx-delay, 0ms);
+  }
+
+  /* Somebody who has asked for less motion gets the finished picture,
+     immediately. Not a degraded version — the same chart, already drawn. */
+  @media (prefers-reduced-motion: reduce) {
+    .nx-line,
+    .nx-area,
+    .nx-dot,
+    .nx-bar,
+    .nx-rise {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      stroke-dashoffset: 0 !important;
+    }
+  }
+}
+
+@layer components {
+  /**
+   * The ground the future sits on.
+   *
+   * Everything above this band is what the product does today; everything
+   * inside it is where it is going. The brief asks for that line to be visible
+   * and not only stated, because a reader who skims a product page and comes
+   * away believing a planned feature exists has been misled by the layout even
+   * if every sentence was careful.
+   *
+   * Deep ink, like the closing band, so the page has two grounds rather than
+   * five — and the switch reads as "different kind of claim" rather than
+   * "different decoration".
+   */
+  .vision-band {
+    background: linear-gradient(170deg, #14161f 0%, #0b0c12 100%);
+    border-top: 1px solid rgb(255 255 255 / 0.06);
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  }
+}
+
+@layer components {
+  /**
+   * Form fields.
+   *
+   * Rewritten as one class because the contact form had the same forty-
+   * character utility string repeated on every input, the textarea and the
+   * select — which is how a form ends up with three slightly different focus
+   * rings nobody meant to create.
+   *
+   * The label sits above and the field is quiet until it is touched. Quiet
+   * matters on a lead form: a page of boxes with heavy borders reads as
+   * paperwork, and the thing being asked for here is a conversation.
+   */
+  .nx-label {
+    @apply mb-2 block text-[0.8rem] font-medium tracking-wide text-muted;
+  }
+
+  .nx-field {
+    @apply w-full rounded-[var(--r-md)] px-4 py-3.5 text-sm text-fg;
+    border: 1px solid rgb(var(--c-overlay) / 0.1);
+    background: rgb(var(--c-overlay) / 0.025);
+    transition: border-color var(--t-fast) var(--ease-out),
+      background-color var(--t-fast) var(--ease-out),
+      box-shadow var(--t-fast) var(--ease-out);
+  }
+  .nx-field::placeholder {
+    color: rgb(var(--c-faint));
+  }
+  .nx-field:hover {
+    border-color: rgb(var(--c-overlay) / 0.18);
+  }
+  .nx-field:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+    background: rgb(var(--c-card));
+    /* A ring rather than a glow: three pixels of brand at low alpha reads as
+       "this field is active" without the page appearing to light up. */
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent);
+  }
+  /* Browsers that support it get a visible invalid state only after the
+     person has finished typing — :invalid alone marks an empty required
+     field red before anybody has touched it, which is scolding. */
+  .nx-field:user-invalid {
+    border-color: color-mix(in srgb, #ef4444 55%, transparent);
+  }
+
+  /* The select's own arrow, because the native one differs on every platform
+     and a form with one control that does not match the others looks broken
+     rather than native. */
+  .nx-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23868EB4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 12px 8px;
+    padding-right: 2.5rem;
+  }
+
+  /** The gold asterisk. Required is information, not a warning. */
+  .nx-required {
+    color: var(--gold);
+  }
+}

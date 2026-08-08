@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 /**
  * The picture in the hero when no photograph has been uploaded.
  *
@@ -121,7 +123,11 @@ export function CampaignVisual() {
               <span className="mb-3 block h-2.5 w-16 rounded-full bg-overlay/12" />
               <div className="space-y-3">
                 {[1, 2, 3, 4].map((row) => (
-                  <div key={row} className="flex items-center gap-2.5">
+                  <div
+                    key={row}
+                    className="nx-rise flex items-center gap-2.5"
+                    style={{ '--nx-delay': `${1200 + row * 110}ms` } as CSSProperties}
+                  >
                     <span className="h-5 w-5 shrink-0 rounded-full bg-overlay/[0.07]" />
                     <span className="h-1.5 flex-1 rounded-full bg-overlay/10" />
                     <span className="h-1.5 w-6 shrink-0 rounded-full bg-overlay/[0.07]" />

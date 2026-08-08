@@ -13,11 +13,15 @@ export function Cta({ cta }: { cta: CtaContent }) {
             {/* One decorative layer, and it is the brand's own colour rather
                 than a stock glow: a gold hairline across the top edge. */}
             <div className="rule-gold absolute inset-x-16 top-0" aria-hidden />
+            {/* Gold rather than the brand colour. The brand is now the same
+                charcoal this band is made of, so a brand-tinted glow on it was
+                dark on dark — present in the markup and invisible on screen.
+                The accent is the only colour that can light this ground. */}
             <div
               className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full"
               style={{
                 background:
-                  'radial-gradient(closest-side, color-mix(in srgb, var(--brand) 40%, transparent), transparent)',
+                  'radial-gradient(closest-side, color-mix(in srgb, var(--gold) 26%, transparent), transparent)',
               }}
               aria-hidden
             />

@@ -218,7 +218,9 @@ export default async function LogiOpsPage() {
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             backgroundImage:
-              'radial-gradient(60% 45% at 50% 0%, color-mix(in srgb, var(--brand) 12%, transparent) 0%, transparent 70%)',
+              // Warm, because the brand colour is charcoal and a charcoal wash
+              // on a near-white page is a smudge rather than a backdrop.
+              'radial-gradient(60% 45% at 50% 0%, color-mix(in srgb, var(--gold) 16%, transparent) 0%, transparent 70%)',
           }}
         />
         <div className="container-x">

@@ -64,8 +64,13 @@ export function Hero({ hero }: { hero: HeroContent }) {
           </>
         ) : (
           <>
-            <div className="absolute left-1/2 top-0 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_14%,transparent),transparent)]" />
-            <div className="absolute right-[6%] top-40 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--accent)_12%,transparent),transparent)]" />
+            {/* One cool wash and one warm one. The brand colour is charcoal
+                now, so two brand-derived blurs would be two greys — technically
+                a backdrop, visually a smudge. The gold gives the composition a
+                warm side to sit against, which is the whole reason the logo
+                has one. */}
+            <div className="absolute left-1/2 top-0 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_9%,transparent),transparent)]" />
+            <div className="absolute right-[6%] top-40 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--gold)_20%,transparent),transparent)]" />
             <div className="absolute inset-0 bg-grid-slate bg-[size:56px_56px] opacity-25 [mask-image:radial-gradient(60%_50%_at_50%_30%,black,transparent)]" />
           </>
         )}
@@ -175,7 +180,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
                   without it a screenshot floats on the background. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_22%,transparent),transparent)] blur-2xl"
+                className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--gold)_28%,transparent),transparent)] blur-2xl"
               />
               {hero.image ? (
                 <div className="overflow-hidden rounded-[var(--r-lg)] border border-overlay/15 bg-card shadow-[var(--shadow-float)]">

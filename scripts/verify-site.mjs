@@ -45,19 +45,24 @@ async function get(path) {
   return { status: res.status, html: await res.text(), headers: res.headers };
 }
 
-/** What is between two tags, with the markup stripped. */
+/**
+ * The content of one meta tag.
+ *
+ * The name is escaped before it goes into a pattern, and the tag is found
+ * first and read second. An earlier version built a regex straight from the
+ * name — so `og:image` also matched `og:image:width`, whichever came first
+ * won, and the check reported a missing share image that was sitting in the
+ * document. A verification that cries wolf is worse than none, because it
+ * teaches you to skim.
+ */
 function meta(html, name) {
-  const patterns = [
-    new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']*)["']`, 'i'),
-    new RegExp(`<meta[^>]+property=["']${name}["'][^>]+content=["']([^"']*)["']`, 'i'),
-    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+name=["']${name}["']`, 'i'),
-    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${name}["']`, 'i'),
-  ];
-  for (const pattern of patterns) {
-    const found = html.match(pattern);
-    if (found) return found[1];
-  }
-  return '';
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const tag = html.match(
+    new RegExp(`<meta[^>]*(?:name|property)=["']${escaped}["'][^>]*>`, 'i'),
+  );
+  if (!tag) return '';
+  const content = tag[0].match(/content=["']([^"']*)["']/i);
+  return content ? (content[1] ?? '') : '';
 }
 
 async function main() {
@@ -144,16 +149,32 @@ async function main() {
   check(Boolean(meta(home?.html ?? '', 'og:image')), 'OpenGraph görseli');
   check(Boolean(meta(home?.html ?? '', 'twitter:card')), 'Twitter kartı');
   check(/<link[^>]+rel=["']canonical["']/i.test(home?.html ?? ''), 'Canonical');
-  check(/<link[^>]+rel=["'](icon|shortcut icon)["']/i.test(home?.html ?? ''), 'Favicon');
+  // Excluding the font preloads, which also carry the word "icon" in their
+  // hashed filenames often enough to make a naive match meaningless.
+  const iconLinks = [...(home?.html ?? '').matchAll(/<link[^>]*>/gi)]
+    .map((m) => m[0])
+    .filter((tag) => /rel=["'](shortcut )?icon["']/i.test(tag));
+  check(iconLinks.length > 0, 'Favicon', 'rel="icon" bağlantısı yok');
 
   // ── 7. The design system actually shipped ───────────────────────────
   console.log('\n7. Tasarım sistemi');
-  // next/font self-hosts and renames the family, so the word 'Playfair' never
-  // reaches the HTML. What does reach it is the variable and the display class.
+  // next/font self-hosts the file, renames the family and exposes the variable
+  // through a hashed class — so neither "Playfair" nor "--font-heading"
+  // reaches the markup. Two things do: the generated variable class on <html>,
+  // and the display scale the new headings use.
   check(
-    /--font-heading/.test(home?.html ?? '') && /display-1|display-2/.test(home?.html ?? ''),
-    'Serif başlık sistemi yayında',
-    'display-* sınıfları bulunamadı — eski derleme olabilir',
+    /__variable_/.test(home?.html ?? ''),
+    'Yazı tipi değişkenleri yüklü',
+    'next/font sınıfı bulunamadı',
+  );
+  check(
+    /display-1|display-2/.test(home?.html ?? ''),
+    'Serif başlık ölçeği yayında',
+    'display-* sınıfları yok — eski derleme',
+  );
+  check(
+    /\bfont-heading\b/.test(home?.html ?? ''),
+    'Başlık ailesi uygulanıyor',
   );
   check(
     (home?.html ?? '').includes('--gold') || (home?.html ?? '').includes('#d9b380'),

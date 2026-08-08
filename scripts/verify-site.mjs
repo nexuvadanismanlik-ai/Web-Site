@@ -157,8 +157,28 @@ async function main() {
     check(ok, `${label}: title + description`, `title="${title}" desc=${description.length} krkt`);
   }
   check(Boolean(meta(home?.html ?? '', 'og:title')), 'OpenGraph başlığı');
-  check(Boolean(meta(home?.html ?? '', 'og:image')), 'OpenGraph görseli');
   check(Boolean(meta(home?.html ?? '', 'twitter:card')), 'Twitter kartı');
+
+  // The share image, followed rather than just counted. This tag has been
+  // present and pointing at nothing before: the fallback chain ended in an
+  // empty string, and every check that only asked "is there an og:image tag"
+  // said yes. A card nobody can fetch is the same as no card.
+  for (const [label, path] of [
+    ['Ana sayfa', '/'],
+    ['LogiOps', '/logiops'],
+  ]) {
+    const url = meta(pages.get(path)?.html ?? '', 'og:image');
+    if (!check(Boolean(url), `${label}: OpenGraph görseli tanımlı`)) continue;
+    check(/^https?:\/\//.test(url), `${label}: görsel mutlak adres`, url);
+    const image = await get(url.replace(SITE, ''));
+    const type = image.headers?.get('content-type') ?? '';
+    check(image.status === 200, `${label}: görsel indirilebiliyor`, `HTTP ${image.status}`);
+    check(
+      /^image\/(png|jpe?g|webp)/.test(type),
+      `${label}: paylaşılabilir format`,
+      `${type || 'bilinmiyor'} — SVG'yi hiçbir platform kabul etmiyor`,
+    );
+  }
   check(/<link[^>]+rel=["']canonical["']/i.test(home?.html ?? ''), 'Canonical');
   // Excluding the font preloads, which also carry the word "icon" in their
   // hashed filenames often enough to make a naive match meaningless.
@@ -280,11 +300,20 @@ async function main() {
   // because its content is empty is exactly the failure this catches.
   console.log('\n12. Bölüm görselleri');
   const homeHtml = home?.html ?? '';
-  check(
-    /class="[^"]*nx-line/.test(homeHtml) || homeHtml.includes('nx-bar'),
-    'Hero grafiği canlandırılmış',
-    'çizim sınıfları yok — statik görsel',
-  );
+  // Each part separately. The version that accepted "line OR bars" would have
+  // passed on the build where only the four table rows animated and the chart
+  // itself was static — which is exactly the state this shipped in.
+  for (const [label, cls] of [
+    ['çizgi çiziliyor', 'nx-line'],
+    ['alan yükseliyor', 'nx-area'],
+    ['uç nokta iniyor', 'nx-dot'],
+    ['çubuklar doluyor', 'nx-bar'],
+  ]) {
+    check(homeHtml.includes(cls), `Hero grafiği: ${label}`, `${cls} yok`);
+  }
+  // The placeholder needs no check of its own: the illustration and an
+  // uploaded image are mutually exclusive, so the four above passing already
+  // proves the mockup is gone. A check that cannot fail is noise.
   check(
     homeHtml.includes('marquee-track'),
     'Hero altındaki şerit dolu',

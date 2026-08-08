@@ -65,6 +65,17 @@ function meta(html, name) {
   return content ? (content[1] ?? '') : '';
 }
 
+/**
+ * Every JSON-LD block in a document, as raw strings.
+ *
+ * Pulled out into a function because the same regex was needed twice and the
+ * escaping is fiddly enough that two copies would eventually disagree.
+ */
+function readJsonLd(html) {
+  const pattern = /<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
+  return [...html.matchAll(pattern)].map((match) => match[1] ?? '');
+}
+
 async function main() {
   console.log(`\n${'═'.repeat(64)}`);
   console.log(`NEXUVA SİTE DOĞRULAMASI — ${SITE}`);
@@ -203,8 +214,67 @@ async function main() {
     `${fixedWide.length} adet: ${[...new Set(fixedWide)].join(', ')}px`,
   );
 
-  // ── 9. Weight ───────────────────────────────────────────────────────
-  console.log('\n9. Ağırlık');
+  // ── 9. Structured data ──────────────────────────────────────────────
+  // The part a search engine reads to decide what this site is, and the part
+  // a language model reads to decide whether it can quote it with confidence.
+  console.log('\n9. Yapılandırılmış veri');
+  const blocks = readJsonLd(home?.html ?? '');
+  check(blocks.length > 0, 'Ana sayfada JSON-LD var', `${blocks.length} blok`);
+
+  let siteGraph = null;
+  for (const raw of blocks) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (JSON.stringify(parsed).includes('"Organization"')) siteGraph = parsed;
+    } catch {
+      check(false, 'JSON-LD ayrıştırılabiliyor', 'geçersiz JSON');
+    }
+  }
+  check(Boolean(siteGraph), 'Organization tanımlı');
+  const siteText = JSON.stringify(siteGraph ?? {});
+  check(siteText.includes('ProfessionalService'), 'Ajans olarak tanımlı');
+  check(siteText.includes('hasOfferCatalog'), 'Hizmet kataloğu var');
+  check(siteText.includes('Google Ads'), 'Hizmetler kataloğa girmiş');
+
+  const logiopsPage = pages.get('/logiops');
+  const logiopsBlocks = readJsonLd(logiopsPage?.html ?? '').join('');
+  check(logiopsBlocks.includes('SoftwareApplication'), 'LogiOps yazılım olarak tanımlı');
+  check(logiopsBlocks.includes('FAQPage'), 'LogiOps SSS yapılandırılmış');
+  check(logiopsBlocks.includes('Air Waybill'), 'AWB özelliği kataloglanmış');
+  // The vision must not be in the feature list. Marking a planned capability
+  // as shipped is the same lie as writing it on the page, in the one format
+  // that gets read automatically and quoted without checking.
+  check(
+    !logiopsBlocks.includes('gümrük beyanı') && !logiopsBlocks.includes('Müşteri Portalı'),
+    'Vizyon özellikleri mevcut gibi işaretlenmemiş',
+  );
+
+  // ── 10. Answer engines ──────────────────────────────────────────────
+  console.log('\n10. Yapay zekâ görünürlüğü');
+  const llms = await get('/llms.txt');
+  check(llms.status === 200, 'llms.txt yayında', `HTTP ${llms.status}`);
+  check(llms.html.includes('LogiOps'), 'llms.txt LogiOps’u anlatıyor');
+  check(
+    llms.html.includes('mevcut DEĞİLDİR') || llms.html.includes('hedefleniyor'),
+    'llms.txt vizyonu bugünden ayırıyor',
+  );
+  const robots = await get('/robots.txt');
+  check(/GPTBot/i.test(robots.html), 'GPTBot açıkça izinli');
+  check(/ClaudeBot/i.test(robots.html), 'ClaudeBot açıkça izinli');
+  check(/PerplexityBot/i.test(robots.html), 'PerplexityBot açıkça izinli');
+  const sitemapXml = await get('/sitemap.xml');
+  check(sitemapXml.html.includes('/logiops'), 'LogiOps sitemap’te');
+
+  // ── 11. Footer reflects the real services ───────────────────────────
+  console.log('\n11. Footer hizmetleri');
+  check(
+    !(home?.html ?? '').includes('Bulut &amp; DevOps') && !(home?.html ?? '').includes('Bulut & DevOps'),
+    'Sunulmayan hizmet footer’dan kalktı',
+  );
+  check((home?.html ?? '').includes('Google Ads Yönetimi'), 'Gerçek hizmet footer’da');
+
+  // ── 12. Weight ──────────────────────────────────────────────────────
+  console.log('\n12. Ağırlık');
   const homeKb = Math.round((home?.html.length ?? 0) / 1024);
   check(homeKb < 250, `Ana sayfa HTML ${homeKb} KB`, 'çok büyük');
   notes.push(`Ana sayfa HTML: ${homeKb} KB`);

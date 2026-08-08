@@ -2,6 +2,7 @@ import type { AboutContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
 import { Reveal, Stagger, StaggerItem } from '../motion';
+import { DisciplineVisual } from './discipline-visual';
 
 export function About({
   about,
@@ -48,19 +49,27 @@ export function About({
             </div>
 
             {/* The team, the office, the work. A section about who we are that
-                shows nobody is a section of adjectives. */}
-            {about.image && (
-              <Reveal delay={0.2}>
-                <div className="mt-8 overflow-hidden rounded-2xl border border-overlay/10 shadow-card">
-                  <img
-                    src={about.image}
-                    alt={about.imageAlt ?? ''}
-                    loading="lazy"
-                    className="block h-auto w-full"
-                  />
-                </div>
-              </Reveal>
-            )}
+                shows nobody is a section of adjectives.
+                Until there is a photograph, the diagram draws the claim the
+                paragraph above already makes — four disciplines in one team —
+                which is a picture of something true rather than a stock image
+                of strangers at laptops. Uploading a photo replaces it. */}
+            <Reveal delay={0.2}>
+              <div className="mt-8">
+                {about.image ? (
+                  <div className="overflow-hidden rounded-2xl border border-overlay/10 shadow-card">
+                    <img
+                      src={about.image}
+                      alt={about.imageAlt ?? ''}
+                      loading="lazy"
+                      className="block h-auto w-full"
+                    />
+                  </div>
+                ) : (
+                  <DisciplineVisual />
+                )}
+              </div>
+            </Reveal>
           </div>
 
           {/* Highlights column */}

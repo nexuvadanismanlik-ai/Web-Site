@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useScroll } from 'framer-motion';
 import { Menu, X, ArrowUpRight } from 'lucide-react';
 
 
@@ -41,6 +41,7 @@ export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProp
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { scrollYProgress } = useScroll();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -68,6 +69,20 @@ export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProp
 
   return (
     <>
+      {/* How far down the page you are, as a gold hairline along the very top
+          edge. Two pixels, brand colour, hidden until you have actually
+          started reading — at rest it would be a full-width bar of nothing.
+          It is tied to scroll position rather than to a timer, so it never
+          moves on its own and needs no reduced-motion exception. */}
+      <motion.div
+        aria-hidden
+        className="fixed inset-x-0 top-0 z-[55] h-[2px] origin-left transition-opacity duration-500"
+        style={{
+          background: 'var(--gold)',
+          scaleX: scrollYProgress,
+          opacity: scrolled ? 1 : 0,
+        }}
+      />
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
           scrolled ? 'py-3' : 'py-5'

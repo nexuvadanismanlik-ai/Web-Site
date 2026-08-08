@@ -3,6 +3,7 @@ import { getSiteContent } from '../lib/content';
 import { getUi, t } from '../lib/i18n';
 import { Hero } from '../components/sections/hero';
 import { LogosMarquee } from '../components/sections/logos';
+import { CapabilityStrip } from '../components/sections/capability-strip';
 import { Services } from '../components/sections/services';
 import { Stats } from '../components/sections/stats';
 import { About } from '../components/sections/about';
@@ -19,7 +20,13 @@ export default async function HomePage() {
   return (
     <>
       <Hero hero={content.hero} />
-      <LogosMarquee logos={content.logos} label={ui.trustedBy} />
+      {/* The slot under the hero. Client marks when there are any, and what we
+          actually do when there are not — never both, and never empty. */}
+      {content.logos.length > 0 ? (
+        <LogosMarquee logos={content.logos} label={ui.trustedBy} />
+      ) : (
+        <CapabilityStrip items={content.services.map((s) => t(s.title))} />
+      )}
       <Services meta={content.servicesMeta} services={content.services} />
       <Stats stats={content.stats} />
       <About about={content.about} />

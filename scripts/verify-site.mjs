@@ -273,8 +273,37 @@ async function main() {
   );
   check((home?.html ?? '').includes('Google Ads Yönetimi'), 'Gerçek hizmet footer’da');
 
-  // ── 12. Weight ──────────────────────────────────────────────────────
-  console.log('\n12. Ağırlık');
+  // ── 12. Every section has something to look at ──────────────────────
+  // The complaint that started this work was that the site felt generic and
+  // the only picture on it was a static one. These check that the pieces put
+  // there instead actually reach the page — a component that renders `null`
+  // because its content is empty is exactly the failure this catches.
+  console.log('\n12. Bölüm görselleri');
+  const homeHtml = home?.html ?? '';
+  check(
+    /class="[^"]*nx-line/.test(homeHtml) || homeHtml.includes('nx-bar'),
+    'Hero grafiği canlandırılmış',
+    'çizim sınıfları yok — statik görsel',
+  );
+  check(
+    homeHtml.includes('marquee-track'),
+    'Hero altındaki şerit dolu',
+    'ne müşteri logosu ne yetenek şeridi var',
+  );
+  check(
+    /pointer-events-none absolute w-px/.test(homeHtml) &&
+      /pointer-events-none absolute h-px/.test(homeHtml),
+    'Süreç bölümünde kaydırma rayı',
+    'her iki yön de bulunamadı',
+  );
+  check(homeHtml.includes('Tek ekip'), 'Hakkımızda diyagramı sayfada');
+  check(
+    /origin-left transition-opacity/.test(homeHtml),
+    'Kaydırma ilerleme çizgisi',
+  );
+
+  // ── 13. Weight ──────────────────────────────────────────────────────
+  console.log('\n13. Ağırlık');
   const homeKb = Math.round((home?.html.length ?? 0) / 1024);
   check(homeKb < 250, `Ana sayfa HTML ${homeKb} KB`, 'çok büyük');
   notes.push(`Ana sayfa HTML: ${homeKb} KB`);

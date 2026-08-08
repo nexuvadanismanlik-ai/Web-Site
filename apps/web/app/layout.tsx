@@ -76,15 +76,17 @@ export async function generateMetadata(): Promise<Metadata> {
    * that the hero picture, which is a real image of the work and is almost
    * always set; failing that the logo.
    *
-   * A purpose-made 1200×630 file is still better than any of these, and the
-   * SEO screen is where to put it. This only ensures the fallback is a picture
-   * rather than nothing.
+   * The last link is a real 1200×630 card shipped with the site
+   * (scripts/make-og-image.mjs), so the chain can no longer end in nothing.
+   * It had, until recently: every field above it was empty and links to this
+   * site rendered as bare URLs everywhere they were posted. A fallback whose
+   * last step is `''` is not a fallback.
    */
   const ogImage =
     seo.ogImage?.trim() ||
     content.hero?.image?.trim() ||
     content.brand?.logoUrl?.trim() ||
-    '';
+    '/og.png';
 
   const integrations = content.integrations ?? {};
   const verification: { google?: string; other?: Record<string, string> } = {};

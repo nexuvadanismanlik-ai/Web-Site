@@ -65,6 +65,16 @@ export async function generateMetadata(): Promise<Metadata> {
       'dış ticaret ERP',
       'lojistik otomasyon',
       'operasyon yönetim sistemi',
+      // The air-cargo side, named the way the people who buy it name it. An
+      // IATA agent searching for a system does not type "lojistik yazılımı".
+      'IATA acente yazılımı',
+      'IATA kargo acentesi yazılımı',
+      'hava kargo operasyon yazılımı',
+      'hava kargo yazılımı',
+      'master AWB takip',
+      'house AWB takip',
+      'konşimento takip sistemi',
+      'nakliye komisyoncusu yazılımı',
     ],
     alternates: { canonical: url },
     openGraph: {
@@ -73,8 +83,18 @@ export async function generateMetadata(): Promise<Metadata> {
       title: TITLE,
       description: DESCRIPTION,
       siteName: content.brand?.siteName ?? 'Nexuva',
+      // Set here on purpose. A child route's `openGraph` replaces the parent's
+      // rather than merging into it, so leaving this out did not inherit the
+      // site card — it left the product page, the one most likely to be shared
+      // into a group of forwarders, with no share image at all.
+      images: [{ url: '/og.png' }],
     },
-    twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
+    twitter: {
+      card: 'summary_large_image',
+      title: TITLE,
+      description: DESCRIPTION,
+      images: ['/og.png'],
+    },
   };
 }
 

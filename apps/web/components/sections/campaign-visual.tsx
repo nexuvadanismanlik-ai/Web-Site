@@ -75,7 +75,16 @@ export function CampaignVisual() {
                   <stop offset="100%" stopColor="var(--brand)" stopOpacity="0" />
                 </linearGradient>
               </defs>
+              {/* The line draws itself left to right, then the fill rises
+                  under it, then the point lands. The order is the argument:
+                  first the trend, then its weight, then where it got to.
+                  `--nx-len` is the path's own length — roughly 338 units for
+                  these eight segments — and the dash offset starts there so
+                  the stroke is invisible until the animation pulls it back to
+                  zero. Too short and the line appears already partly drawn. */}
               <path
+                className="nx-line"
+                style={{ '--nx-len': 340 } as CSSProperties}
                 d="M0 78 L40 70 L80 74 L120 56 L160 60 L200 38 L240 44 L280 22 L320 14"
                 fill="none"
                 stroke="var(--brand)"
@@ -84,12 +93,13 @@ export function CampaignVisual() {
                 strokeLinejoin="round"
               />
               <path
+                className="nx-area"
                 d="M0 78 L40 70 L80 74 L120 56 L160 60 L200 38 L240 44 L280 22 L320 14 L320 96 L0 96 Z"
                 fill="url(#nx-trend)"
               />
               {/* One marked point, in the brand's gold. The only warm note in
                   the picture, so the eye lands where the story ends. */}
-              <circle cx="280" cy="22" r="3.5" fill="var(--gold)" />
+              <circle className="nx-dot" cx="280" cy="22" r="3.5" fill="var(--gold)" />
             </svg>
           </div>
 
@@ -102,15 +112,23 @@ export function CampaignVisual() {
                   <div key={index} className="flex items-center gap-2">
                     <span className="h-1.5 w-10 shrink-0 rounded-full bg-overlay/10" />
                     <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-overlay/[0.06]">
+                      {/* Each bar grows out from its left edge, one after the
+                          next, starting once the line above has finished
+                          drawing. `nx-bar` scales rather than animating width,
+                          so four bars cost the compositor nothing and never
+                          trigger layout. */}
                       <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: `${width}%`,
-                          background:
-                            index === 0
-                              ? 'var(--brand)'
-                              : 'color-mix(in srgb, var(--brand) 45%, transparent)',
-                        }}
+                        className="nx-bar block h-full rounded-full"
+                        style={
+                          {
+                            width: `${width}%`,
+                            '--nx-delay': `${900 + index * 130}ms`,
+                            background:
+                              index === 0
+                                ? 'var(--brand)'
+                                : 'color-mix(in srgb, var(--brand) 45%, transparent)',
+                          } as CSSProperties
+                        }
                       />
                     </span>
                   </div>

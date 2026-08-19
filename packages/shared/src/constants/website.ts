@@ -38,6 +38,12 @@ export const WEBSITE_SECTION_KEYS = [
   // The LogiOps product page. A page rather than a service entry, so it gets
   // its own document — see LogiOpsContent.
   'logiops',
+  // Every destination outside this site: the LogiOps application, its sign-in
+  // screen, the membership application. Kept as content rather than as build
+  // configuration so an address can be corrected from the panel in a minute
+  // rather than waiting for a deploy — which is the difference between a
+  // broken link that is embarrassing and one that is expensive.
+  'links',
 ] as const;
 
 export type WebsiteSectionKey = (typeof WEBSITE_SECTION_KEYS)[number];

@@ -13,6 +13,8 @@ import {
   ScatteredVsFile,
 } from '../../components/logiops/diagrams';
 import { LogiOpsSchema } from '../../components/logiops/schema';
+import { LogiOpsAccess, LogiOpsAccessInline } from '../../components/logiops/access';
+import { siteLinks } from '../../lib/links';
 
 /**
  * LogiOps — the product page.
@@ -197,6 +199,7 @@ export default async function LogiOpsPage() {
   const content = await getSiteContent();
   const logiops = content.logiops ?? ({} as NonNullable<typeof content.logiops>);
   const origin = siteOrigin(content);
+  const links = siteLinks(content);
 
   // Panel-managed where it should be: the promise at the top, the words at the
   // bottom, and both calls to action.
@@ -267,6 +270,13 @@ export default async function LogiOpsPage() {
                   {t(logiops.secondaryCta?.label) || 'Demo Talep Et'}
                   <ArrowUpRight className="h-4 w-4 opacity-60" />
                 </Link>
+                {/* The sign-in, for somebody who came here to get to work
+                    rather than to be persuaded. Third in the row and quieter
+                    than the other two: most people arriving on this page are
+                    not customers yet, and a login as the loudest control on a
+                    product page tells the majority they are in the wrong
+                    place. Renders nothing until an address is set. */}
+                <LogiOpsAccessInline links={links} />
               </div>
             </Reveal>
           </div>
@@ -679,7 +689,14 @@ export default async function LogiOpsPage() {
         </div>
       </section>
 
-      {/* ── 20 / 43 · Close ────────────────────────────────────────────── */}
+      {/* ── 20 / 43 · Access ───────────────────────────────────────────── */}
+      {/* Placed after the argument and before the close: by here the reader
+          knows what the product is, so a sign-in and an application are the two
+          things they can actually want. Above this point they would be a
+          question asked too early. */}
+      <LogiOpsAccess links={links} />
+
+      {/* ── 21 / 43 · Close ────────────────────────────────────────────── */}
       <section className="section border-t border-overlay/8">
         <div className="container-x">
           <Reveal>

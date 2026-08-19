@@ -266,8 +266,71 @@ export interface LogiOpsContent {
   closingBody: Localized;
 }
 
+/**
+ * One destination the site sends somebody to, with the words on the control
+ * that sends them.
+ *
+ * The address and the label travel together on purpose. They were going to be
+ * two fields on two screens — the URL treated as configuration, the label as
+ * copy — and that split is how a button ends up saying "Giriş Yap" while
+ * pointing at a registration form. Whoever changes where it goes is the person
+ * who needs to change what it promises.
+ */
+export interface LinkTarget {
+  /**
+   * Where it goes. Absolute for another system, or a path beginning with `/`
+   * for somewhere on this site.
+   *
+   * Empty is a meaningful value: it hides whatever uses this rather than
+   * rendering a control that goes nowhere. A dead button is worse than an
+   * absent one — it costs the visitor a click to learn the site is broken.
+   */
+  url: string;
+  /** What the control says. */
+  label: Localized;
+  /** A line under the label, where the control has room for one. */
+  description?: Localized;
+  /**
+   * Open in a new tab. Sensible for another system — a visitor sent away from
+   * a page they were reading, with no way back, usually does not come back.
+   */
+  newTab: boolean;
+  /** Off hides the control without losing the address. */
+  enabled: boolean;
+}
+
+/**
+ * Every destination outside this site, in one document.
+ *
+ * These were going to be constants in the code. They are content instead, for
+ * a reason worth stating: an address is the single most likely thing on a site
+ * to become wrong, it becomes wrong without any code changing, and the person
+ * who finds out is a customer who could not get in. Keeping them here means
+ * the fix is a field and a publish.
+ *
+ * Named keys rather than a free list. A registry the panel can label and
+ * explain is more useful than rows of anonymous URLs, and the site can then
+ * refer to a destination by meaning — "where a member signs in" — rather than
+ * by position in an array.
+ */
+export interface LinksContent {
+  /** The LogiOps application's front door. */
+  logiopsApp: LinkTarget;
+  /** Where a company that already has an account signs in. */
+  logiopsLogin: LinkTarget;
+  /**
+   * Where a company that does not have one applies.
+   *
+   * Defaults to a form on this site rather than to the application, because
+   * LogiOps has no self-service sign-up: requests reach a person. Sending
+   * somebody to a login screen they cannot use is the failure this avoids.
+   */
+  logiopsRegister: LinkTarget;
+}
+
 export interface SiteContent {
   brand: BrandConfig;
+  links: LinksContent;
   seo: SeoContent;
   uiText: UiText;
   integrations: IntegrationsContent;

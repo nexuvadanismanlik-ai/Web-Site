@@ -49,6 +49,13 @@ export type {
   SeoContent,
   UiText,
   IntegrationsContent,
+  // The product page's own document, and the destinations the site sends
+  // people to. LogiOpsContent was defined and never listed here, so nothing
+  // outside the types package could name it — which is why the LogiOps page
+  // reaches for it through `typeof content.logiops` instead.
+  LogiOpsContent,
+  LinkTarget,
+  LinksContent,
   SiteContent,
   ContactMessage,
 } from './content';

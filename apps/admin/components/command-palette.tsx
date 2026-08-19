@@ -54,6 +54,7 @@ const ENTRIES: Entry[] = [
   { label: 'Mail', href: '/mail', group: 'Sistem', keywords: 'eposta smtp resend şablon template log' },
   { label: 'Entegrasyonlar', href: '/integrations', group: 'Sistem', keywords: 'google meta pixel ga4 ads tag' },
   { label: 'Bağlantılar', href: '/links', group: 'Sistem', keywords: 'link url logiops giris login basvuru uyelik yonlendirme adres' },
+  { label: 'LogiOps Sayfası', href: '/logiops', group: 'İçerik', keywords: 'logiops urun lojistik sayfa baslik' },
   { label: 'Sistem & Bağlantılar', href: '/system', group: 'Sistem', keywords: 'durum health ssl dns domain veritabanı' },
   { label: 'Ayarlar', href: '/settings', group: 'Sistem', keywords: 'şifre hesap parola' },
 ];

@@ -331,8 +331,56 @@ async function main() {
     'Kaydırma ilerleme çizgisi',
   );
 
-  // ── 13. Weight ──────────────────────────────────────────────────────
-  console.log('\n13. Ağırlık');
+  // ── 13. Getting into LogiOps ────────────────────────────────────────
+  // The two things a reader can want by the end of the product page. Both
+  // addresses come from the panel, so "the button is in the code" proves
+  // nothing — only the rendered page says whether the content reached it.
+  console.log('\n13. LogiOps erişimi');
+  const logiopsHtml = logiopsPage?.html ?? '';
+  const LOGIOPS_APP = 'logiops-frontend.onrender.com';
+
+  check(logiopsHtml.includes(`${LOGIOPS_APP}/login`), 'Giriş bağlantısı sayfada');
+  check(
+    /href="[^"]*logiops-frontend[^"]*"[^>]*target="_blank"/.test(logiopsHtml) ||
+      /target="_blank"[^>]*href="[^"]*logiops-frontend/.test(logiopsHtml),
+    'Giriş yeni sekmede açılıyor',
+  );
+  // rel is not cosmetic here: without noopener the page we hand the visitor to
+  // can rewrite the tab it came from.
+  check(
+    /rel="noopener noreferrer"/.test(logiopsHtml),
+    'Dış bağlantı noopener ile korunuyor',
+  );
+  check(logiopsHtml.includes('/logiops/basvuru'), 'Başvuru bağlantısı sayfada');
+
+  const apply = await get('/logiops/basvuru');
+  check(apply.status === 200, 'Başvuru sayfası açılıyor', `HTTP ${apply.status}`);
+  check(apply.html.includes('Başvuruyu Gönder'), 'Başvuru formu render edilmiş');
+  check(apply.html.includes('IATA acente kodu'), 'Lojistik alanları formda');
+  check((apply.html.match(/�/g) ?? []).length === 0, 'Başvuru sayfasında bozuk karakter yok');
+  // The application form answers a query the product page answers better;
+  // indexing it means competing with /logiops for the same search.
+  check(
+    /<meta name="robots" content="[^"]*noindex/i.test(apply.html),
+    'Başvuru sayfası aramaya kapalı',
+  );
+  // It must not be in the sitemap either — the two would contradict each other,
+  // and a crawler reading both believes the sitemap.
+  check(
+    !sitemapXml.html.includes('/logiops/basvuru'),
+    'Başvuru sayfası sitemap dışında',
+  );
+
+  // The destination itself. A button that points at a dead application is
+  // worse than no button, and this is the one address on the site that belongs
+  // to a system nobody here deploys.
+  const app = await fetch(`https://${LOGIOPS_APP}/login`, { redirect: 'follow' })
+    .then((res) => res.status)
+    .catch(() => 0);
+  check(app >= 200 && app < 400, 'LogiOps uygulaması yanıt veriyor', `HTTP ${app}`);
+
+  // ── 14. Weight ──────────────────────────────────────────────────────
+  console.log('\n14. Ağırlık');
   const homeKb = Math.round((home?.html.length ?? 0) / 1024);
   check(homeKb < 250, `Ana sayfa HTML ${homeKb} KB`, 'çok büyük');
   notes.push(`Ana sayfa HTML: ${homeKb} KB`);

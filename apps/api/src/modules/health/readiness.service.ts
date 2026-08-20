@@ -152,6 +152,10 @@ export class ReadinessService {
       .map(([name]) => name);
 
     if (missing.length > 0) {
+      // Not broken and not missing a capability: uploads work, they are simply
+      // being served by this API out of the database instead of from a CDN.
+      // Reporting it as an outage sent somebody looking for a fault that was a
+      // deliberate fallback.
       return {
         key: 'storage',
         label: 'Dosya Deposu (Veritabanı)',
@@ -174,6 +178,12 @@ export class ReadinessService {
 
   /**
    * The publish chain, link by link.
+   *
+   * Three separate things are wrong in three different ways here and they used
+   * to produce the same silence: no strategy chosen, a strategy chosen without
+   * its credentials, and a strategy that works but whose result cannot be read
+   * back — the last one being how a failed build looks exactly like a
+   * successful one.
    */
   private deploy(): ConnectionReport {
     const strategy =
@@ -199,23 +209,21 @@ export class ReadinessService {
         .filter(([, key]) => !this.config.get<string>(key))
         .map(([name]) => name);
 
-      if (missing.length > 0) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (ISR revalidate)',
-          state: 'missing',
-          detail:
-            'Strateji "revalidate" ama adresi veya anahtarı tanımlı değil.',
-          missing,
-        };
-      }
-
-      return {
-        key: 'deploy',
-        label: 'Yayın (ISR revalidate)',
-        state: 'connected',
-        detail: 'Yayınlama önbelleği anında tazeliyor.',
-      };
+      return missing.length > 0
+        ? {
+            key: 'deploy',
+            label: 'Yayın (ISR revalidate)',
+            state: 'missing',
+            detail:
+              'Strateji "revalidate" ama adresi veya anahtarı tanımlı değil.',
+            missing,
+          }
+        : {
+            key: 'deploy',
+            label: 'Yayın (ISR revalidate)',
+            state: 'connected',
+            detail: 'Yayınlama önbelleği anında tazeliyor.',
+          };
     }
 
     if (!this.config.get<string>('publish.deployHookUrl')) {
@@ -234,16 +242,6 @@ export class ReadinessService {
       !!this.config.get<string>('publish.renderServiceId');
 
     if (!canTrack) {
-      const missing: string[] = [];
-
-      if (!this.config.get<string>('publish.renderApiKey')) {
-        missing.push('RENDER_API_KEY');
-      }
-
-      if (!this.config.get<string>('publish.renderServiceId')) {
-        missing.push('RENDER_FRONTEND_SERVICE_ID');
-      }
-
       return {
         key: 'deploy',
         label: 'Yayın (Render Deploy)',
@@ -251,7 +249,14 @@ export class ReadinessService {
         detail:
           'Derleme tetiklenebiliyor ama sonucu okunamıyor: başarısız bir derleme, ' +
           'başarılı olanla aynı görünür ve site sessizce eski kalır.',
-        missing,
+        missing: [
+          ...(this.config.get<string>('publish.renderApiKey')
+            ? []
+            : ['RENDER_API_KEY']),
+          ...(this.config.get<string>('publish.renderServiceId')
+            ? []
+            : ['RENDER_FRONTEND_SERVICE_ID']),
+        ],
       };
     }
 
@@ -265,6 +270,12 @@ export class ReadinessService {
 
   /**
    * Asks the hosting provider about the site's own service.
+   *
+   * A real call, because the interesting failures — a suspended service, a
+   * build that never finished — are invisible from a variable being present.
+   * Without an API key the panel can trigger a deploy and never learn how it
+   * ended, which is the state that made a failed publish look like a
+   * successful one.
    */
   private async renderService(): Promise<ConnectionReport> {
     const key =
@@ -289,7 +300,7 @@ export class ReadinessService {
     }
 
     try {
-      const res = await globalThis.fetch(
+      const res = await fetch(
         `https://api.render.com/v1/services/${serviceId}`,
         {
           headers: {
@@ -356,6 +367,10 @@ export class ReadinessService {
 
   /**
    * Does the site's address resolve, and to what?
+   *
+   * Separate from the site check because they fail differently and are fixed
+   * in different places: a name that does not resolve is a DNS record, a name
+   * that resolves to a dead server is the host.
    */
   private async domain(): Promise<ConnectionReport> {
     const url =
@@ -386,7 +401,8 @@ export class ReadinessService {
 
     try {
       const { address } = await lookup(host);
-      const isPlatformDefault = host.endsWith('.onrender.com');
+      const isPlatformDefault =
+        host.endsWith('.onrender.com');
 
       return {
         key: 'domain',
@@ -409,6 +425,11 @@ export class ReadinessService {
 
   /**
    * Reads the site's actual TLS certificate and says when it expires.
+   *
+   * A certificate is the failure nobody sees coming: everything works until
+   * the day it does not, and then every visitor gets a browser warning. This
+   * opens a real TLS connection and reads the expiry off the certificate the
+   * server presents.
    */
   private async certificate(): Promise<ConnectionReport> {
     const url =
@@ -463,7 +484,8 @@ export class ReadinessService {
       }
 
       const daysLeft = Math.floor(
-        (cert.validTo.getTime() - Date.now()) / 86_400_000,
+        (cert.validTo.getTime() - Date.now()) /
+          86_400_000,
       );
 
       const expiry =
@@ -513,6 +535,11 @@ export class ReadinessService {
 
   /**
    * Is traffic actually being measured?
+   *
+   * Answered by counting rows, not by checking that the feature exists. The
+   * tracker ships with the website, so it only starts reporting after the next
+   * publish — and "built but never published" looks exactly like "working" from
+   * inside the API. The row count is the only thing that tells them apart.
    */
   private async analytics(): Promise<ConnectionReport> {
     try {
@@ -520,13 +547,14 @@ export class ReadinessService {
         Date.now() - 7 * 86_400_000,
       );
 
-      const recent = await this.prisma.pageView.count({
-        where: {
-          createdAt: {
-            gte: since,
+      const recent =
+        await this.prisma.pageView.count({
+          where: {
+            createdAt: {
+              gte: since,
+            },
           },
-        },
-      });
+        });
 
       if (recent > 0) {
         return {
@@ -555,14 +583,16 @@ export class ReadinessService {
         key: 'analytics',
         label: 'Ziyaretçi Ölçümü',
         state: 'broken',
-        detail: 'Ziyaretçi kayıtları okunamadı.',
+        detail:
+          'Ziyaretçi kayıtları okunamadı.',
       };
     }
   }
 
   private async email(): Promise<ConnectionReport> {
     const provider =
-      this.config.get<string>('email.provider') ?? 'resend';
+      this.config.get<string>('email.provider') ??
+      'resend';
 
     const key =
       provider === 'sendgrid'
@@ -592,9 +622,12 @@ export class ReadinessService {
       };
     }
 
+    // A key that is present and a key that works are different things, and the
+    // difference only shows up when a real enquiry fails to notify anyone. So
+    // the provider is actually asked.
     try {
       if (provider === 'resend') {
-        const res = await globalThis.fetch(
+        const res = await fetch(
           'https://api.resend.com/domains',
           {
             headers: {
@@ -650,26 +683,25 @@ export class ReadinessService {
           8000,
         );
 
-        if (reachable) {
-          return {
-            key: 'email',
-            label: 'E-posta (smtp)',
-            state: 'connected',
-            detail:
-              `${host}:${port} bağlantıyı kabul ediyor.`,
-          };
-        }
-
-        return {
-          key: 'email',
-          label: 'E-posta (smtp)',
-          state: 'broken',
-          detail:
-            `${host}:${port} bağlantıyı kabul etmiyor. Sunucu adı veya port yanlış olabilir.`,
-        };
+        return reachable
+          ? {
+              key: 'email',
+              label: 'E-posta (smtp)',
+              state: 'connected',
+              detail:
+                `${host}:${port} bağlantıyı kabul ediyor.`,
+            }
+          : {
+              key: 'email',
+              label: 'E-posta (smtp)',
+              state: 'broken',
+              detail:
+                `${host}:${port} bağlantıyı kabul etmiyor. Sunucu adı veya port yanlış olabilir.`,
+            };
       }
 
-      const res = await globalThis.fetch(
+      // SendGrid: any authenticated endpoint answers the same question.
+      const res = await fetch(
         'https://api.sendgrid.com/v3/scopes',
         {
           headers: {
@@ -679,35 +711,38 @@ export class ReadinessService {
         },
       );
 
-      if (res.ok) {
-        return {
-          key: 'email',
-          label: 'E-posta (sendgrid)',
-          state: 'connected',
-          detail:
-            'Anahtar geçerli, sağlayıcı yanıt veriyor.',
-        };
-      }
-
-      return {
-        key: 'email',
-        label: 'E-posta (sendgrid)',
-        state: 'broken',
-        detail:
-          `SendGrid HTTP ${res.status} döndü.`,
-      };
+      return res.ok
+        ? {
+            key: 'email',
+            label: 'E-posta (sendgrid)',
+            state: 'connected',
+            detail:
+              'Anahtar geçerli, sağlayıcı yanıt veriyor.',
+          }
+        : {
+            key: 'email',
+            label: 'E-posta (sendgrid)',
+            state: 'broken',
+            detail:
+              `SendGrid HTTP ${res.status} döndü.`,
+          };
     } catch {
       return {
         key: 'email',
         label: `E-posta (${provider})`,
         state: 'broken',
-        detail: 'Sağlayıcıya ulaşılamadı.',
+        detail:
+          'Sağlayıcıya ulaşılamadı.',
       };
     }
   }
 
   /**
    * Is the published site actually being served?
+   *
+   * The one check that looks outward. A publish can succeed at every internal
+   * step and still leave visitors on an error page, which is exactly the
+   * failure that is invisible from inside.
    */
   private async website(): Promise<ConnectionReport> {
     const url =
@@ -725,7 +760,7 @@ export class ReadinessService {
     }
 
     try {
-      const res = await globalThis.fetch(url, {
+      const res = await fetch(url, {
         method: 'GET',
         signal: AbortSignal.timeout(8000),
       });
@@ -735,7 +770,8 @@ export class ReadinessService {
           key: 'website',
           label: 'Web Sitesi',
           state: 'connected',
-          detail: `${url} yanıt veriyor.`,
+          detail:
+            `${url} yanıt veriyor.`,
         };
       }
 
@@ -789,74 +825,66 @@ async function readCertificate(
   validTo: Date | null;
   issuer: string;
 }> {
-  const tls =
-    await import('node:tls');
+  const tls = await import('node:tls');
 
-  return new Promise(
-    (resolve, reject) => {
-      const socket = tls.connect(
-        {
-          host,
-          port: 443,
-          servername: host,
-          timeout: 10_000,
-        },
-        () => {
-          const cert =
-            socket.getPeerCertificate();
+  return new Promise((resolve, reject) => {
+    const socket = tls.connect(
+      {
+        host,
+        port: 443,
+        servername: host,
+        timeout: 10_000,
+      },
+      () => {
+        const cert =
+          socket.getPeerCertificate();
 
-          socket.end();
+        socket.end();
 
-          if (
-            !cert ||
-            Object.keys(cert).length === 0
-          ) {
-            resolve({
-              validTo: null,
-              issuer: '',
-            });
-            return;
-          }
-
-          const validTo = cert.valid_to
-            ? new Date(cert.valid_to)
-            : null;
-
+        if (
+          !cert ||
+          Object.keys(cert).length === 0
+        ) {
           resolve({
-            validTo:
-              validTo &&
-              !Number.isNaN(
-                validTo.getTime(),
-              )
-                ? validTo
-                : null,
-
-            issuer:
-              firstOf(cert.issuer?.O) ||
-              firstOf(cert.issuer?.CN),
+            validTo: null,
+            issuer: '',
           });
-        },
-      );
+          return;
+        }
 
-      socket.on(
-        'error',
-        (err) => {
-          socket.destroy();
-          reject(err);
-        },
-      );
+        const validTo = cert.valid_to
+          ? new Date(cert.valid_to)
+          : null;
 
-      socket.on(
-        'timeout',
-        () => {
-          socket.destroy();
-          reject(
-            new Error('zaman aşımı'),
-          );
-        },
+        resolve({
+          validTo:
+            validTo &&
+            !Number.isNaN(
+              validTo.getTime(),
+            )
+              ? validTo
+              : null,
+          // Node types these as string | string[]: a certificate may carry
+          // several organisation entries, and the first is the one to show.
+          issuer:
+            firstOf(cert.issuer?.O) ||
+            firstOf(cert.issuer?.CN),
+        });
+      },
+    );
+
+    socket.on('error', (err) => {
+      socket.destroy();
+      reject(err);
+    });
+
+    socket.on('timeout', () => {
+      socket.destroy();
+      reject(
+        new Error('zaman aşımı'),
       );
-    },
-  );
+    });
+  });
 }
 
 /** Whether a TCP port accepts a connection. Used for SMTP, which has no HTTP. */
@@ -865,55 +893,38 @@ async function canConnect(
   port: number,
   timeoutMs: number,
 ): Promise<boolean> {
-  const net =
-    await import('node:net');
+  const net = await import('node:net');
 
-  return new Promise(
-    (resolve) => {
-      const socket =
-        net.createConnection({
-          host,
-          port,
-        });
+  return new Promise((resolve) => {
+    const socket = net.createConnection({
+      host,
+      port,
+    });
 
-      let settled = false;
+    const done = (ok: boolean) => {
+      socket.destroy();
+      resolve(ok);
+    };
 
-      const done = (
-        ok: boolean,
-      ) => {
-        if (settled) return;
+    socket.setTimeout(timeoutMs);
 
-        settled = true;
-        socket.destroy();
-        resolve(ok);
-      };
+    socket.on('connect', () =>
+      done(true),
+    );
 
-      socket.setTimeout(timeoutMs);
+    socket.on('error', () =>
+      done(false),
+    );
 
-      socket.on(
-        'connect',
-        () => done(true),
-      );
-
-      socket.on(
-        'error',
-        () => done(false),
-      );
-
-      socket.on(
-        'timeout',
-        () => done(false),
-      );
-    },
-  );
+    socket.on('timeout', () =>
+      done(false),
+    );
+  });
 }
 
 /** Certificate fields can be a string or a list of them. */
 function firstOf(
-  value:
-    | string
-    | string[]
-    | undefined,
+  value: string | string[] | undefined,
 ): string {
   if (Array.isArray(value)) {
     return value[0] ?? '';

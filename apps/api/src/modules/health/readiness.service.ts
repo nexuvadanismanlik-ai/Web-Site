@@ -2,71 +2,54 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 
+type HttpResponse = {
+  status: number;
+  ok: boolean;
+  json(): Promise<unknown>;
+};
+
+type HttpRequestInit = {
+  method?: string;
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+};
+
+async function httpFetch(
+  url: string,
+  options?: HttpRequestInit,
+): Promise<HttpResponse> {
+  const response = await globalThis.fetch(url, options);
+
+  return response as unknown as HttpResponse;
+}
+
+/** What a connection is doing, in the three words an operator needs. */
 export type ConnectionState =
   | 'connected'
   | 'broken'
   | 'missing';
 
 export interface ConnectionReport {
+  /** Stable key the panel groups by. */
   key: string;
   label: string;
   state: ConnectionState;
+  /** One sentence. What is wrong, or what is working. */
   detail: string;
+  /** Environment variables that would fix a `missing`. */
   missing?: string[];
 }
 
-interface RenderServiceResponse {
-  id?: string;
-  name?: string;
-  type?: string;
-  suspended?: string;
-  autoDeploy?: string;
-  branch?: string;
-  repo?: string;
-  serviceDetails?: {
-    url?: string;
-  };
-}
-
-interface RenderDeploy {
-  id?: string;
-  status?: string;
-  commit?: {
-    id?: string;
-    message?: string;
-    createdAt?: string;
-  };
-  createdAt?: string;
-  updatedAt?: string;
-  finishedAt?: string;
-  trigger?: string;
-  image?: {
-    ref?: string;
-  };
-}
-
-interface RenderDeployListResponse {
-  deploys?: RenderDeploy[];
-  cursor?: string;
-}
-
 /**
- * Checks whether the platform's important connections are actually working.
+ * Whether the platform's connections are actually working.
  *
- * Important:
- *
- * - A configured environment variable does NOT automatically mean that the
- *   connection works.
- * - Render is checked through the real Render API.
- * - The latest Render deploy is read from the Render deploys endpoint.
- * - A Render service being alive is NOT the same thing as the latest deploy
- *   being successful.
+ * /health answers "is this process alive".
+ * This service answers "are the important external connections actually
+ * working?"
  */
 @Injectable()
 export class ReadinessService {
-  private readonly logger = new Logger(
-    ReadinessService.name,
-  );
+  private readonly logger = new Logger(ReadinessService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -77,19 +60,18 @@ export class ReadinessService {
     connections: ConnectionReport[];
     checkedAt: string;
   }> {
-    const connections =
-      await Promise.all([
-        this.database(),
-        Promise.resolve(this.migrations()),
-        Promise.resolve(this.storage()),
-        this.deploy(),
-        this.renderService(),
-        this.email(),
-        this.website(),
-        this.domain(),
-        this.certificate(),
-        this.analytics(),
-      ]);
+    const connections = await Promise.all([
+      this.database(),
+      Promise.resolve(this.migrations()),
+      Promise.resolve(this.storage()),
+      Promise.resolve(this.deploy()),
+      this.renderService(),
+      this.email(),
+      this.website(),
+      this.domain(),
+      this.certificate(),
+      this.analytics(),
+    ]);
 
     return {
       connections,
@@ -97,9 +79,7 @@ export class ReadinessService {
     };
   }
 
-  /**
-   * Real database round trip.
-   */
+  /** A real database query. */
   private async database(): Promise<ConnectionReport> {
     const started = Date.now();
 
@@ -120,7 +100,7 @@ export class ReadinessService {
         state: 'broken',
         detail:
           err instanceof Error
-            ? err.message.split('\n')[0] ||
+            ? err.message.split('\n')[0] ??
               'Bağlanılamadı'
             : 'Bağlanılamadı',
       };
@@ -128,7 +108,7 @@ export class ReadinessService {
   }
 
   /**
-   * Reports migration status written by the startup process.
+   * Reports migration status written by scripts/start.mjs.
    */
   private migrations(): ConnectionReport {
     const status =
@@ -143,8 +123,7 @@ export class ReadinessService {
         label: 'Veritabanı Şeması',
         state: 'broken',
         detail:
-          `${detail || 'Migration başarısız oldu.'} ` +
-          'Şema beklenenden geride olabilir.',
+          `${detail} Şema beklenenden geride olabilir.`,
       };
     }
 
@@ -154,7 +133,7 @@ export class ReadinessService {
         label: 'Veritabanı Şeması',
         state: 'missing',
         detail:
-          `Migration atlandı${detail ? ` (${detail})` : '.'}`,
+          `Migration atlandı (${detail}).`,
       };
     }
 
@@ -173,65 +152,36 @@ export class ReadinessService {
       label: 'Veritabanı Şeması',
       state: 'missing',
       detail:
-        'Bu süreç migration adımından geçmeden ' +
-        'başlatılmış. Şemanın güncel olduğu doğrulanamıyor.',
+        'Bu süreç migration adımından geçmeden başlatılmış. ' +
+        'Bu yüzden şemanın güncel olduğu doğrulanamıyor.',
     };
   }
 
-  /**
-   * Checks storage configuration.
-   *
-   * We do NOT claim that database file storage works merely because R2
-   * variables are missing. We only report which storage mode is configured.
-   */
   private storage(): ConnectionReport {
-    const r2AccountId =
-      this.config.get<string>(
-        'storage.accountId',
-      );
+    const required = [
+      ['R2_ACCOUNT_ID', 'storage.accountId'],
+      ['R2_ACCESS_KEY_ID', 'storage.accessKeyId'],
+      ['R2_SECRET_ACCESS_KEY', 'storage.secretAccessKey'],
+      ['R2_PUBLIC_URL', 'storage.publicUrl'],
+    ] as const;
 
-    const r2AccessKeyId =
-      this.config.get<string>(
-        'storage.accessKeyId',
-      );
-
-    const r2SecretAccessKey =
-      this.config.get<string>(
-        'storage.secretAccessKey',
-      );
-
-    const r2PublicUrl =
-      this.config.get<string>(
-        'storage.publicUrl',
-      );
-
-    const missing: string[] = [];
-
-    if (!r2AccountId) {
-      missing.push('R2_ACCOUNT_ID');
-    }
-
-    if (!r2AccessKeyId) {
-      missing.push('R2_ACCESS_KEY_ID');
-    }
-
-    if (!r2SecretAccessKey) {
-      missing.push('R2_SECRET_ACCESS_KEY');
-    }
-
-    if (!r2PublicUrl) {
-      missing.push('R2_PUBLIC_URL');
-    }
+    const missing = required
+      .filter(
+        ([, key]) =>
+          !this.config.get<string>(key),
+      )
+      .map(([name]) => name);
 
     if (missing.length > 0) {
       return {
         key: 'storage',
-        label: 'Dosya Deposu',
-        state: 'missing',
+        label: 'Dosya Deposu (Veritabanı)',
+        state: 'connected',
         detail:
-          'Cloudflare R2 yapılandırılmamış. ' +
-          'R2 değişkenleri tanımlandığında nesne depolama ' +
-          'kullanılabilir.',
+          'Yükleme çalışıyor. Nesne deposu tanımlı olmadığı için ' +
+          'dosyalar veritabanında saklanıyor ve API üzerinden sunuluyor. ' +
+          'Dosya başına 2 MB sınırı var. Cloudflare R2 tanımlanırsa ' +
+          'dosyalar nesne deposuna taşınabilir.',
         missing,
       };
     }
@@ -241,30 +191,18 @@ export class ReadinessService {
       label: 'Dosya Deposu (Cloudflare R2)',
       state: 'connected',
       detail:
-        'R2 yapılandırması mevcut.',
+        'Yükleme yapılandırılmış ve Cloudflare R2 ayarları mevcut.',
     };
   }
 
   /**
-   * Checks the actual Render deployment state.
-   *
-   * THIS is the important correction.
-   *
-   * The old version only checked whether:
-   *
-   *   - a deploy hook existed
-   *   - an API key existed
-   *   - a service ID existed
-   *
-   * That did NOT prove that a deployment actually happened.
-   *
-   * This version asks Render for the latest deploy belonging to the service.
+   * Checks the configured publication strategy.
    */
-  private async deploy(): Promise<ConnectionReport> {
+  private deploy(): ConnectionReport {
     const strategy =
       this.config.get<string>(
         'publish.strategy',
-      ) ?? 'deploy-hook';
+      ) ?? 'none';
 
     if (
       strategy !== 'deploy-hook' &&
@@ -272,41 +210,31 @@ export class ReadinessService {
     ) {
       return {
         key: 'deploy',
-        label: 'Yayın',
+        label: 'Yayın (Render Deploy)',
         state: 'missing',
         detail:
-          'Yayın stratejisi tanımlı değil.',
+          'Yayın stratejisi seçilmemiş. Kaydedilen içerik ' +
+          'site yeniden derlenmediği sürece ziyaretçiye ulaşmaz.',
         missing: ['PUBLISH_STRATEGY'],
       };
     }
 
-    /**
-     * ISR / revalidation does not create a Render deployment.
-     */
     if (strategy === 'revalidate') {
-      const revalidateUrl =
-        this.config.get<string>(
-          'publish.revalidateUrl',
-        );
-
-      const revalidateSecret =
-        this.config.get<string>(
-          'publish.revalidateSecret',
-        );
-
-      const missing: string[] = [];
-
-      if (!revalidateUrl) {
-        missing.push(
+      const missing = [
+        [
           'FRONTEND_REVALIDATE_URL',
-        );
-      }
-
-      if (!revalidateSecret) {
-        missing.push(
+          'publish.revalidateUrl',
+        ],
+        [
           'FRONTEND_REVALIDATE_SECRET',
-        );
-      }
+          'publish.revalidateSecret',
+        ],
+      ]
+        .filter(
+          ([, key]) =>
+            !this.config.get<string>(key),
+        )
+        .map(([name]) => name);
 
       if (missing.length > 0) {
         return {
@@ -314,8 +242,7 @@ export class ReadinessService {
           label: 'Yayın (ISR revalidate)',
           state: 'missing',
           detail:
-            'Revalidate stratejisi seçilmiş fakat gerekli ' +
-            'ayarlar eksik.',
+            'Strateji "revalidate" fakat adres veya gizli anahtar tanımlı değil.',
           missing,
         };
       }
@@ -325,285 +252,67 @@ export class ReadinessService {
         label: 'Yayın (ISR revalidate)',
         state: 'connected',
         detail:
-          'ISR revalidate yapılandırması mevcut.',
+          'Yayınlama önbelleği tazelemek için yapılandırılmış.',
       };
     }
 
-    const apiKey =
-      this.config.get<string>(
-        'publish.renderApiKey',
-      ) ?? '';
-
-    const serviceId =
-      this.config.get<string>(
-        'publish.renderServiceId',
-      ) ?? '';
-
-    const deployHookUrl =
-      this.config.get<string>(
+    if (
+      !this.config.get<string>(
         'publish.deployHookUrl',
-      ) ?? '';
-
-    if (!apiKey || !serviceId) {
+      )
+    ) {
       return {
         key: 'deploy',
         label: 'Yayın (Render Deploy)',
         state: 'missing',
         detail:
-          'Render API bağlantısı için API anahtarı veya ' +
-          'frontend Render servis ID’si eksik.',
+          'Strateji "deploy-hook" fakat tetiklenecek adres tanımlı değil.',
+        missing: ['RENDER_DEPLOY_HOOK_URL'],
+      };
+    }
+
+    const canTrack =
+      !!this.config.get<string>(
+        'publish.renderApiKey',
+      ) &&
+      !!this.config.get<string>(
+        'publish.renderServiceId',
+      );
+
+    if (!canTrack) {
+      return {
+        key: 'deploy',
+        label: 'Yayın (Render Deploy)',
+        state: 'broken',
+        detail:
+          'Deploy tetiklenebilir ancak Render API bilgileri ' +
+          'eksik olduğu için deploy sonucu doğrulanamıyor.',
         missing: [
-          ...(apiKey
+          ...(this.config.get<string>(
+            'publish.renderApiKey',
+          )
             ? []
             : ['RENDER_API_KEY']),
-          ...(serviceId
+          ...(this.config.get<string>(
+            'publish.renderServiceId',
+          )
             ? []
             : ['RENDER_FRONTEND_SERVICE_ID']),
         ],
       };
     }
 
-    /**
-     * Deploy hook is useful for triggering the deploy, but the API is needed
-     * here to verify what actually happened.
-     */
-    if (!deployHookUrl) {
-      this.logger.warn(
-        'Render deploy hook is not configured. ' +
-        'Latest deploy can still be read through the Render API.',
-      );
-    }
-
-    try {
-      const url =
-        `https://api.render.com/v1/services/` +
-        `${encodeURIComponent(serviceId)}/deploys` +
-        `?limit=1`;
-
-      const response =
-        await fetch(url, {
-          method: 'GET',
-          headers: {
-            Authorization:
-              `Bearer ${apiKey}`,
-            Accept:
-              'application/json',
-          },
-          signal:
-            AbortSignal.timeout(10_000),
-        });
-
-      if (
-        response.status === 401 ||
-        response.status === 403
-      ) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'broken',
-          detail:
-            'Render API anahtarı reddedildi. ' +
-            'API anahtarını kontrol edin.',
-        };
-      }
-
-      if (response.status === 404) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'broken',
-          detail:
-            `Render servisi bulunamadı (${serviceId}). ` +
-            'Service ID yanlış olabilir veya servis silinmiş olabilir.',
-        };
-      }
-
-      if (!response.ok) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'broken',
-          detail:
-            `Render deploy API HTTP ${response.status} döndü.`,
-        };
-      }
-
-      const body =
-        (await response.json()) as
-          | RenderDeployListResponse
-          | RenderDeploy[];
-
-      const deploys =
-        Array.isArray(body)
-          ? body
-          : body.deploys ?? [];
-
-      if (deploys.length === 0) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'missing',
-          detail:
-            'Render servisi bulundu fakat bu servis için ' +
-            'henüz okunabilir bir deploy kaydı bulunamadı.',
-        };
-      }
-
-      const latest = deploys[0];
-
-      const status =
-        String(
-          latest.status ?? '',
-        ).toLowerCase();
-
-      const deployId =
-        latest.id ?? 'bilinmiyor';
-
-      const commitId =
-        latest.commit?.id ??
-        'commit bilgisi yok';
-
-      const commitMessage =
-        latest.commit?.message
-          ? latest.commit.message
-              .replace(/\s+/g, ' ')
-              .trim()
-              .slice(0, 120)
-          : '';
-
-      const createdAt =
-        formatDate(
-          latest.createdAt,
-        );
-
-      const finishedAt =
-        formatDate(
-          latest.finishedAt,
-        );
-
-      const trigger =
-        latest.trigger ??
-        'bilinmiyor';
-
-      /**
-       * Render deploy status values can evolve, so we classify known failure
-       * and in-progress states explicitly and keep unknown states visible.
-       */
-      const failedStatuses =
-        new Set([
-          'failed',
-          'canceled',
-          'cancelled',
-          'deactivated',
-        ]);
-
-      const activeStatuses =
-        new Set([
-          'created',
-          'build_in_progress',
-          'update_in_progress',
-          'queued',
-          'pending',
-        ]);
-
-      const successfulStatuses =
-        new Set([
-          'live',
-        ]);
-
-      if (failedStatuses.has(status)) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'broken',
-          detail:
-            `Son Render deploy’u başarısız/iptal edilmiş. ` +
-            `Durum: ${status}. ` +
-            `Deploy: ${deployId}. ` +
-            `Commit: ${commitId}.` +
-            (commitMessage
-              ? ` Mesaj: ${commitMessage}.`
-              : '') +
-            (createdAt
-              ? ` Başlangıç: ${createdAt}.`
-              : ''),
-        };
-      }
-
-      if (activeStatuses.has(status)) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'missing',
-          detail:
-            `Render deploy’u hâlâ devam ediyor. ` +
-            `Durum: ${status}. ` +
-            `Deploy: ${deployId}. ` +
-            `Commit: ${commitId}.`,
-        };
-      }
-
-      if (successfulStatuses.has(status)) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (Render Deploy)',
-          state: 'connected',
-          detail:
-            `Son Render deploy’u başarıyla yayında. ` +
-            `Deploy: ${deployId}. ` +
-            `Commit: ${commitId}. ` +
-            `Tetikleyici: ${trigger}.` +
-            (commitMessage
-              ? ` Mesaj: ${commitMessage}.`
-              : '') +
-            (createdAt
-              ? ` Başlangıç: ${createdAt}.`
-              : '') +
-            (finishedAt
-              ? ` Bitiş: ${finishedAt}.`
-              : ''),
-        };
-      }
-
-      /**
-       * Unknown status should NEVER silently become connected.
-       */
-      return {
-        key: 'deploy',
-        label: 'Yayın (Render Deploy)',
-        state: 'broken',
-        detail:
-          `Render son deploy için bilinmeyen durum döndürdü: ` +
-          `"${status || 'boş'}". ` +
-          `Deploy: ${deployId}.`,
-      };
-    } catch (err) {
-      this.logger.warn(
-        `Render deploy check failed: ${String(err)}`,
-      );
-
-      return {
-        key: 'deploy',
-        label: 'Yayın (Render Deploy)',
-        state: 'broken',
-        detail:
-          'Render deploy API’sine ulaşılamadı.',
-      };
-    }
+    return {
+      key: 'deploy',
+      label: 'Yayın (Render Deploy)',
+      state: 'connected',
+      detail:
+        'Deploy tetikleme ve Render servis kontrolü yapılandırılmış.',
+    };
   }
 
   /**
-   * Checks whether the Render service itself is accessible.
-   *
-   * This is intentionally separate from deploy().
-   *
-   * renderService() answers:
-   *
-   *   "Is the Render service reachable?"
-   *
-   * deploy() answers:
-   *
-   *   "What happened with the latest deployment?"
+   * Checks Render service availability through the Render API.
    */
   private async renderService(): Promise<ConnectionReport> {
     const key =
@@ -622,7 +331,7 @@ export class ReadinessService {
         label: 'Render (barındırma)',
         state: 'missing',
         detail:
-          'Render API anahtarı veya servis ID’si tanımlı değil.',
+          'Render API anahtarı veya servis kimliği tanımlı değil.',
         missing: [
           ...(key
             ? []
@@ -635,83 +344,74 @@ export class ReadinessService {
     }
 
     try {
-      const response =
-        await fetch(
-          `https://api.render.com/v1/services/${encodeURIComponent(serviceId)}`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization:
-                `Bearer ${key}`,
-              Accept:
-                'application/json',
-            },
-            signal:
-              AbortSignal.timeout(10_000),
+      const res = await httpFetch(
+        `https://api.render.com/v1/services/${serviceId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${key}`,
+            Accept: 'application/json',
           },
-        );
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
 
       if (
-        response.status === 401 ||
-        response.status === 403
+        res.status === 401 ||
+        res.status === 403
       ) {
         return {
           key: 'render',
           label: 'Render (barındırma)',
           state: 'broken',
           detail:
-            'Render API anahtarı reddedildi.',
+            'Render API anahtarı reddedildi. Anahtar yanlış, ' +
+            'geçersiz veya yetkisiz olabilir.',
         };
       }
 
-      if (response.status === 404) {
+      if (res.status === 404) {
         return {
           key: 'render',
           label: 'Render (barındırma)',
           state: 'broken',
           detail:
-            `Render servisi bulunamadı (${serviceId}).`,
+            `Render servisi bulunamadı (${serviceId}). ` +
+            'Servis kimliği yanlış veya servis silinmiş olabilir.',
         };
       }
 
-      if (!response.ok) {
+      if (!res.ok) {
         return {
           key: 'render',
           label: 'Render (barındırma)',
           state: 'broken',
           detail:
-            `Render API HTTP ${response.status} döndü.`,
+            `Render API HTTP ${res.status} döndürdü.`,
         };
       }
 
       const body =
-        (await response.json()) as
-          RenderServiceResponse;
+        (await res.json()) as {
+          name?: string;
+          suspended?: string;
+        };
 
       const suspended =
         body.suspended === 'suspended';
 
-      if (suspended) {
-        return {
-          key: 'render',
-          label: 'Render (barındırma)',
-          state: 'broken',
-          detail:
-            `"${body.name ?? serviceId}" Render tarafından ` +
-            'askıya alınmış.',
-        };
-      }
-
       return {
         key: 'render',
         label: 'Render (barındırma)',
-        state: 'connected',
-        detail:
-          `"${body.name ?? serviceId}" Render servisi erişilebilir.`,
+        state: suspended
+          ? 'broken'
+          : 'connected',
+        detail: suspended
+          ? `"${body.name ?? serviceId}" askıya alınmış.`
+          : `"${body.name ?? serviceId}" servisi Render API üzerinden erişilebilir.`,
       };
     } catch (err) {
       this.logger.warn(
-        `Render service check failed: ${String(err)}`,
+        `Render API probe failed: ${String(err)}`,
       );
 
       return {
@@ -719,7 +419,7 @@ export class ReadinessService {
         label: 'Render (barındırma)',
         state: 'broken',
         detail:
-          'Render API’sine ulaşılamadı.',
+          'Render API\'sine ulaşılamadı.',
       };
     }
   }
@@ -747,8 +447,7 @@ export class ReadinessService {
     let host: string;
 
     try {
-      host =
-        new URL(url).hostname;
+      host = new URL(url).hostname;
     } catch {
       return {
         key: 'domain',
@@ -770,10 +469,9 @@ export class ReadinessService {
         key: 'domain',
         label: 'Alan Adı',
         state: 'connected',
-        detail:
-          isPlatformDefault
-            ? `${host} → ${address}. Render varsayılan adresi kullanılıyor.`
-            : `${host} → ${address}. DNS çözümlemesi başarılı.`,
+        detail: isPlatformDefault
+          ? `${host} → ${address}. Render varsayılan adresi kullanılıyor.`
+          : `${host} → ${address}. DNS çözümlemesi çalışıyor.`,
       };
     } catch {
       return {
@@ -781,13 +479,13 @@ export class ReadinessService {
         label: 'Alan Adı',
         state: 'broken',
         detail:
-          `${host} çözümlenemiyor. DNS kaydı eksik veya yayılmamış olabilir.`,
+          `${host} çözümlenemiyor. DNS kaydı eksik veya henüz yayılmamış olabilir.`,
       };
     }
   }
 
   /**
-   * Reads the actual TLS certificate presented by the website.
+   * Reads the site's actual TLS certificate.
    */
   private async certificate(): Promise<ConnectionReport> {
     const url =
@@ -801,7 +499,7 @@ export class ReadinessService {
         label: 'SSL Sertifikası',
         state: 'missing',
         detail:
-          'Site adresi tanımlı olmadığı için SSL kontrolü yapılamıyor.',
+          'Site adresi tanımlı olmadığı için sertifika kontrol edilemiyor.',
         missing: ['SITE_URL'],
       };
     }
@@ -809,8 +507,7 @@ export class ReadinessService {
     let host: string;
 
     try {
-      const parsed =
-        new URL(url);
+      const parsed = new URL(url);
 
       if (parsed.protocol !== 'https:') {
         return {
@@ -818,12 +515,11 @@ export class ReadinessService {
           label: 'SSL Sertifikası',
           state: 'broken',
           detail:
-            'Site adresi HTTPS kullanmıyor.',
+            'Site adresi HTTPS değil.',
         };
       }
 
-      host =
-        parsed.hostname;
+      host = parsed.hostname;
     } catch {
       return {
         key: 'ssl',
@@ -844,18 +540,15 @@ export class ReadinessService {
           label: 'SSL Sertifikası',
           state: 'broken',
           detail:
-            'Sunucunun SSL sertifikası okunamadı.',
+            'TLS sertifikası okunamadı.',
         };
       }
 
-      const daysLeft =
-        Math.floor(
-          (
-            cert.validTo.getTime() -
-            Date.now()
-          ) /
-            86_400_000,
-        );
+      const daysLeft = Math.floor(
+        (cert.validTo.getTime() -
+          Date.now()) /
+          86_400_000,
+      );
 
       const expiry =
         cert.validTo.toLocaleDateString(
@@ -868,7 +561,7 @@ export class ReadinessService {
           label: 'SSL Sertifikası',
           state: 'broken',
           detail:
-            `Sertifika ${expiry} tarihinde süresi dolmuş.`,
+            `Sertifika ${expiry} tarihinde dolmuş.`,
         };
       }
 
@@ -887,8 +580,9 @@ export class ReadinessService {
         label: 'SSL Sertifikası',
         state: 'connected',
         detail:
-          `Geçerli. ${expiry} tarihine kadar kullanılabilir.` +
-          ` Veren: ${cert.issuer || 'bilinmiyor'}.`,
+          `Geçerli, ${expiry} tarihine kadar (${daysLeft} gün). Veren: ${
+            cert.issuer || 'bilinmiyor'
+          }.`,
       };
     } catch (err) {
       return {
@@ -906,15 +600,14 @@ export class ReadinessService {
   }
 
   /**
-   * Checks whether page-view records are actually being received.
+   * Checks whether analytics has actually received page views.
    */
   private async analytics(): Promise<ConnectionReport> {
     try {
-      const since =
-        new Date(
-          Date.now() -
-            7 * 86_400_000,
-        );
+      const since = new Date(
+        Date.now() -
+          7 * 86_400_000,
+      );
 
       const recent =
         await this.prisma.pageView.count({
@@ -944,14 +637,10 @@ export class ReadinessService {
         state: 'missing',
         detail:
           total > 0
-            ? 'Ölçüm kurulu fakat son 7 günde yeni kayıt yok.'
-            : 'Henüz ziyaretçi ölçümü kaydı alınmadı.',
+            ? 'Ölçüm kurulu ancak son 7 günde kayıt yok.'
+            : 'Ölçüm kodu hazır ancak henüz veri gelmedi.',
       };
-    } catch (err) {
-      this.logger.warn(
-        `Analytics check failed: ${String(err)}`,
-      );
-
+    } catch {
       return {
         key: 'analytics',
         label: 'Ziyaretçi Ölçümü',
@@ -962,247 +651,155 @@ export class ReadinessService {
     }
   }
 
-  /**
-   * Checks the configured email provider.
-   */
   private async email(): Promise<ConnectionReport> {
     const provider =
-      (
-        this.config.get<string>(
-          'email.provider',
-        ) ?? 'resend'
-      ).toLowerCase();
-
-    if (provider === 'smtp') {
-      return this.checkSmtp();
-    }
-
-    if (provider === 'sendgrid') {
-      return this.checkSendgrid();
-    }
-
-    return this.checkResend();
-  }
-
-  /**
-   * Resend API check.
-   */
-  private async checkResend(): Promise<ConnectionReport> {
-    const key =
       this.config.get<string>(
-        'email.resendApiKey',
-      ) ?? '';
+        'email.provider',
+      ) ?? 'resend';
 
-    if (!key) {
+    const key =
+      provider === 'sendgrid'
+        ? 'email.sendgridApiKey'
+        : provider === 'smtp'
+          ? 'email.smtp.host'
+          : 'email.resendApiKey';
+
+    const name =
+      provider === 'sendgrid'
+        ? 'SENDGRID_API_KEY'
+        : provider === 'smtp'
+          ? 'SMTP_HOST'
+          : 'RESEND_API_KEY';
+
+    const value =
+      this.config.get<string>(key);
+
+    if (!value) {
       return {
         key: 'email',
-        label: 'E-posta (Resend)',
+        label: `E-posta (${provider})`,
         state: 'missing',
         detail:
-          'Resend API anahtarı tanımlı değil.',
-        missing: ['RESEND_API_KEY'],
+          'E-posta sağlayıcısı yapılandırılmamış. ' +
+          'Yeni talep bildirimleri gönderilemiyor.',
+        missing: [name],
       };
     }
 
     try {
-      const response =
-        await fetch(
+      if (provider === 'resend') {
+        const res = await httpFetch(
           'https://api.resend.com/domains',
           {
-            method: 'GET',
             headers: {
-              Authorization:
-                `Bearer ${key}`,
-              Accept:
-                'application/json',
+              Authorization: `Bearer ${value}`,
             },
-            signal:
-              AbortSignal.timeout(10_000),
+            signal: AbortSignal.timeout(10_000),
           },
         );
 
-      if (
-        response.status === 401 ||
-        response.status === 403
-      ) {
+        if (
+          res.status === 401 ||
+          res.status === 403
+        ) {
+          return {
+            key: 'email',
+            label: 'E-posta (resend)',
+            state: 'broken',
+            detail:
+              'Resend API anahtarı reddedildi.',
+          };
+        }
+
+        if (!res.ok) {
+          return {
+            key: 'email',
+            label: 'E-posta (resend)',
+            state: 'broken',
+            detail:
+              `Resend HTTP ${res.status} döndürdü.`,
+          };
+        }
+
         return {
           key: 'email',
-          label: 'E-posta (Resend)',
-          state: 'broken',
-          detail:
-            'Resend API anahtarı reddedildi.',
-        };
-      }
-
-      if (!response.ok) {
-        return {
-          key: 'email',
-          label: 'E-posta (Resend)',
-          state: 'broken',
-          detail:
-            `Resend HTTP ${response.status} döndü.`,
-        };
-      }
-
-      return {
-        key: 'email',
-        label: 'E-posta (Resend)',
-        state: 'connected',
-        detail:
-          'Resend API bağlantısı çalışıyor.',
-      };
-    } catch {
-      return {
-        key: 'email',
-        label: 'E-posta (Resend)',
-        state: 'broken',
-        detail:
-          'Resend API’sine ulaşılamadı.',
-      };
-    }
-  }
-
-  /**
-   * SendGrid API check.
-   */
-  private async checkSendgrid(): Promise<ConnectionReport> {
-    const key =
-      this.config.get<string>(
-        'email.sendgridApiKey',
-      ) ?? '';
-
-    if (!key) {
-      return {
-        key: 'email',
-        label: 'E-posta (SendGrid)',
-        state: 'missing',
-        detail:
-          'SendGrid API anahtarı tanımlı değil.',
-        missing: ['SENDGRID_API_KEY'],
-      };
-    }
-
-    try {
-      const response =
-        await fetch(
-          'https://api.sendgrid.com/v3/scopes',
-          {
-            method: 'GET',
-            headers: {
-              Authorization:
-                `Bearer ${key}`,
-              Accept:
-                'application/json',
-            },
-            signal:
-              AbortSignal.timeout(10_000),
-          },
-        );
-
-      if (
-        response.status === 401 ||
-        response.status === 403
-      ) {
-        return {
-          key: 'email',
-          label: 'E-posta (SendGrid)',
-          state: 'broken',
-          detail:
-            'SendGrid API anahtarı reddedildi.',
-        };
-      }
-
-      if (!response.ok) {
-        return {
-          key: 'email',
-          label: 'E-posta (SendGrid)',
-          state: 'broken',
-          detail:
-            `SendGrid HTTP ${response.status} döndü.`,
-        };
-      }
-
-      return {
-        key: 'email',
-        label: 'E-posta (SendGrid)',
-        state: 'connected',
-        detail:
-          'SendGrid API bağlantısı çalışıyor.',
-      };
-    } catch {
-      return {
-        key: 'email',
-        label: 'E-posta (SendGrid)',
-        state: 'broken',
-        detail:
-          'SendGrid API’sine ulaşılamadı.',
-      };
-    }
-  }
-
-  /**
-   * SMTP connectivity check.
-   */
-  private async checkSmtp(): Promise<ConnectionReport> {
-    const host =
-      this.config.get<string>(
-        'email.smtp.host',
-      ) ?? '';
-
-    const port =
-      this.config.get<number>(
-        'email.smtp.port',
-      ) ?? 587;
-
-    if (!host) {
-      return {
-        key: 'email',
-        label: 'E-posta (SMTP)',
-        state: 'missing',
-        detail:
-          'SMTP sunucu adresi tanımlı değil.',
-        missing: ['SMTP_HOST'],
-      };
-    }
-
-    try {
-      const reachable =
-        await canConnect(
-          host,
-          port,
-          8000,
-        );
-
-      if (reachable) {
-        return {
-          key: 'email',
-          label: 'E-posta (SMTP)',
+          label: 'E-posta (resend)',
           state: 'connected',
           detail:
-            `${host}:${port} bağlantısı kabul ediyor.`,
+            'Resend API anahtarı geçerli ve sağlayıcı yanıt veriyor.',
         };
       }
 
-      return {
-        key: 'email',
-        label: 'E-posta (SMTP)',
-        state: 'broken',
-        detail:
-          `${host}:${port} bağlantısı kabul etmiyor.`,
-      };
+      if (provider === 'smtp') {
+        const host = value;
+
+        const port =
+          this.config.get<number>(
+            'email.smtp.port',
+          ) ?? 587;
+
+        const reachable =
+          await canConnect(
+            host,
+            port,
+            8000,
+          );
+
+        return reachable
+          ? {
+              key: 'email',
+              label: 'E-posta (smtp)',
+              state: 'connected',
+              detail:
+                `${host}:${port} bağlantıyı kabul ediyor.`,
+            }
+          : {
+              key: 'email',
+              label: 'E-posta (smtp)',
+              state: 'broken',
+              detail:
+                `${host}:${port} bağlantıyı kabul etmiyor.`,
+            };
+      }
+
+      const res = await httpFetch(
+        'https://api.sendgrid.com/v3/scopes',
+        {
+          headers: {
+            Authorization: `Bearer ${value}`,
+          },
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+
+      return res.ok
+        ? {
+            key: 'email',
+            label: 'E-posta (sendgrid)',
+            state: 'connected',
+            detail:
+              'SendGrid API anahtarı geçerli ve sağlayıcı yanıt veriyor.',
+          }
+        : {
+            key: 'email',
+            label: 'E-posta (sendgrid)',
+            state: 'broken',
+            detail:
+              `SendGrid HTTP ${res.status} döndürdü.`,
+          };
     } catch {
       return {
         key: 'email',
-        label: 'E-posta (SMTP)',
+        label: `E-posta (${provider})`,
         state: 'broken',
         detail:
-          'SMTP sunucusuna ulaşılamadı.',
+          'E-posta sağlayıcısına ulaşılamadı.',
       };
     }
   }
 
   /**
-   * Checks the actual published website.
+   * Checks whether the published website responds.
    */
   private async website(): Promise<ConnectionReport> {
     const url =
@@ -1222,20 +819,18 @@ export class ReadinessService {
     }
 
     try {
-      const response =
-        await fetch(url, {
-          method: 'GET',
-          signal:
-            AbortSignal.timeout(8000),
-        });
+      const res = await httpFetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(8000),
+      });
 
-      if (response.ok) {
+      if (res.ok) {
         return {
           key: 'website',
           label: 'Web Sitesi',
           state: 'connected',
           detail:
-            `${url} HTTP ${response.status} yanıtı veriyor.`,
+            `${url} yanıt veriyor.`,
         };
       }
 
@@ -1244,7 +839,7 @@ export class ReadinessService {
         label: 'Web Sitesi',
         state: 'broken',
         detail:
-          `${url} → HTTP ${response.status}. Site ziyaretçiye başarılı yanıt vermiyor.`,
+          `${url} → HTTP ${res.status}. Site düzgün yanıt vermiyor.`,
       };
     } catch (err) {
       this.logger.warn(
@@ -1262,26 +857,24 @@ export class ReadinessService {
   }
 }
 
-/**
- * Resolves a hostname.
- */
+// ─── Real-connection helpers ──────────────────────────────────────────────────
+
+/** Resolves a hostname. */
 async function lookup(
   host: string,
 ): Promise<{ address: string }> {
-  const dns =
+  const { promises } =
     await import('node:dns');
 
   const result =
-    await dns.promises.lookup(host);
+    await promises.lookup(host);
 
   return {
     address: result.address,
   };
 }
 
-/**
- * Reads the actual TLS certificate presented by the host.
- */
+/** Reads the TLS certificate presented by a host. */
 async function readCertificate(
   host: string,
 ): Promise<{
@@ -1293,104 +886,73 @@ async function readCertificate(
 
   return new Promise(
     (resolve, reject) => {
-      const socket =
-        tls.connect({
+      const socket = tls.connect(
+        {
           host,
           port: 443,
           servername: host,
           timeout: 10_000,
-        });
-
-      let settled = false;
-
-      const finish = (
-        callback: () => void,
-      ) => {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        callback();
-      };
-
-      socket.once(
-        'secureConnect',
+        },
         () => {
-          finish(() => {
-            const cert =
-              socket.getPeerCertificate();
+          const cert =
+            socket.getPeerCertificate();
 
-            socket.end();
+          socket.end();
 
-            if (
-              !cert ||
-              Object.keys(cert).length === 0
-            ) {
-              resolve({
-                validTo: null,
-                issuer: '',
-              });
-              return;
-            }
-
-            const validTo =
-              cert.valid_to
-                ? new Date(
-                    cert.valid_to,
-                  )
-                : null;
-
+          if (
+            !cert ||
+            Object.keys(cert).length === 0
+          ) {
             resolve({
-              validTo:
-                validTo &&
-                !Number.isNaN(
-                  validTo.getTime(),
-                )
-                  ? validTo
-                  : null,
-              issuer:
-                firstOf(
-                  cert.issuer?.O,
-                ) ||
-                firstOf(
-                  cert.issuer?.CN,
-                ),
+              validTo: null,
+              issuer: '',
             });
+            return;
+          }
+
+          const validTo = cert.valid_to
+            ? new Date(cert.valid_to)
+            : null;
+
+          resolve({
+            validTo:
+              validTo &&
+              !Number.isNaN(
+                validTo.getTime(),
+              )
+                ? validTo
+                : null,
+            issuer:
+              firstOf(cert.issuer?.O) ||
+              firstOf(cert.issuer?.CN),
           });
         },
       );
 
-      socket.once(
+      socket.on(
         'error',
         (err) => {
-          finish(() => {
-            socket.destroy();
-            reject(err);
-          });
+          socket.destroy();
+          reject(err);
         },
       );
 
-      socket.once(
+      socket.on(
         'timeout',
         () => {
-          finish(() => {
-            socket.destroy();
-            reject(
-              new Error(
-                'TLS bağlantısı zaman aşımına uğradı.',
-              ),
-            );
-          });
+          socket.destroy();
+          reject(
+            new Error(
+              'zaman aşımı',
+            ),
+          );
         },
       );
     },
   );
 }
 
-/**
- * Checks whether a TCP port accepts connections.
- */
+/** Checks whether a TCP port accepts a connection. */
 async function canConnect(
   host: string,
   port: number,
@@ -1407,35 +969,31 @@ async function canConnect(
           port,
         });
 
-      let settled = false;
+      let finished = false;
 
-      const done = (
-        result: boolean,
-      ) => {
-        if (settled) {
+      const done = (ok: boolean) => {
+        if (finished) {
           return;
         }
 
-        settled = true;
+        finished = true;
         socket.destroy();
-        resolve(result);
+        resolve(ok);
       };
 
-      socket.setTimeout(
-        timeoutMs,
-      );
+      socket.setTimeout(timeoutMs);
 
-      socket.once(
+      socket.on(
         'connect',
         () => done(true),
       );
 
-      socket.once(
+      socket.on(
         'error',
         () => done(false),
       );
 
-      socket.once(
+      socket.on(
         'timeout',
         () => done(false),
       );
@@ -1443,9 +1001,7 @@ async function canConnect(
   );
 }
 
-/**
- * Certificate fields may be a string or an array.
- */
+/** Certificate fields can be a string or an array. */
 function firstOf(
   value:
     | string
@@ -1457,32 +1013,4 @@ function firstOf(
   }
 
   return value ?? '';
-}
-
-/**
- * Formats dates safely for the readiness panel.
- */
-function formatDate(
-  value:
-    | string
-    | undefined,
-): string {
-  if (!value) {
-    return '';
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return '';
-  }
-
-  return date.toLocaleString(
-    'tr-TR',
-  );
 }

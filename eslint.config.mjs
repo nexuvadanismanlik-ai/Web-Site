@@ -18,6 +18,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/.next/**',
+      '**/.test-dist/**',
       '**/out/**',
       '**/*.config.js',
       '**/*.config.mjs',

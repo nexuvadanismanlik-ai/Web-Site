@@ -15,10 +15,18 @@ export const storageConfig = registerAs('storage', () => ({
    * exported website and into emails, neither of which can resolve a path
    * relative to the API.
    *
-   * Falls back to the deployed backend so a fresh install serves working links
-   * without one more variable to set; override it the moment the API moves.
+   * It used to fall back to the Render backend's address, which would have
+   * kept minting links to a host that is being switched off. Now: the explicit
+   * variable, else the Vercel project's production domain, else the local
+   * development server.
    */
-  apiPublicUrl: (
-    process.env.API_PUBLIC_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1'
-  ).replace(/\/+$/, ''),
+  apiPublicUrl: resolveApiPublicUrl(),
 }));
+
+function resolveApiPublicUrl(): string {
+  const explicit = process.env.API_PUBLIC_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, '');
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercel) return `https://${vercel}/${process.env.API_PREFIX ?? 'api/v1'}`;
+  return `http://localhost:${process.env.PORT ?? '4000'}/${process.env.API_PREFIX ?? 'api/v1'}`;
+}

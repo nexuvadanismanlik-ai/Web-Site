@@ -199,7 +199,12 @@ export function Contact({
                     required
                     className="mt-0.5 h-4 w-4 shrink-0 rounded border-overlay/30 accent-[var(--brand)]"
                   />
-                  <span>{ui.consentLabel}</span>
+                  <span>
+                    {ui.consentLabel}{' '}
+                    <a href="/kvkk/" target="_blank" rel="noopener" className="underline underline-offset-2">
+                      KVKK Aydınlatma Metni
+                    </a>
+                  </span>
                 </label>
 
                 {status === 'error' && (

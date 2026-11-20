@@ -17,13 +17,13 @@
  *
  * Targets are read from the environment, with the deployed services as the
  * default:
- *   VERIFY_API_URL   default https://web-site-backend-3fvs.onrender.com/api/v1
- *   VERIFY_SITE_URL  default https://nexuva-web-site-frontend.onrender.com
+ *   VERIFY_API_URL   default http://localhost:4000/api/v1
+ *   VERIFY_SITE_URL  default http://localhost:3000
  */
 
-const API = (process.env.VERIFY_API_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1')
+const API = (process.env.VERIFY_API_URL ?? 'http://localhost:4000/api/v1')
   .replace(/\/+$/, '');
-const SITE = (process.env.VERIFY_SITE_URL ?? 'https://nexuva-web-site-frontend.onrender.com')
+const SITE = (process.env.VERIFY_SITE_URL ?? 'http://localhost:3000')
   .replace(/\/+$/, '');
 
 /** Render suspends idle instances; a first call can take most of a minute. */

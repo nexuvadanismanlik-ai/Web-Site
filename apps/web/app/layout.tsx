@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { getSiteContent } from '../lib/content';
-import { siteOrigin } from '../lib/origin';
+import { isIndexableDeployment, siteOrigin } from '../lib/origin';
 import { t, getUi } from '../lib/i18n';
 import { Header } from '../components/site/header';
 import { Footer } from '../components/site/footer';
@@ -39,54 +39,31 @@ const inter = Inter({
 
 const playfair = Playfair_Display({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
+  // 500 is not used by any heading; dropping it removes two font files
+  // (upright and italic) from every first visit. 600 is used by the footer's
+  // column titles and card names, 700 by section headings and the logo.
+  weight: ['400', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-heading',
   display: 'swap',
 });
 
 /**
- * Everything the panel's SEO screen controls, with the fallbacks it promises.
+ * Site-wide metadata only.
  *
- * The site had a title and a description and nothing else: no canonical, no
- * OpenGraph, no Twitter card, no icons. A link to it shared anywhere rendered
- * as a bare URL with no image, and the browser tab carried the default globe.
+ * The root layout used to set canonical, description and the OpenGraph card,
+ * and every inner page inherited them — so five pages declared themselves the
+ * home page. Those now come from each page through lib/seo.ts; what stays here
+ * is genuinely shared: the title template, the base for relative URLs, icons,
+ * search-console verification, and the site-wide noindex switch.
  *
- * Every field falls back to something derived from brand and hero content, so
- * an SEO section that has never been filled in leaves the site exactly as it
- * was rather than stripping what it already said.
+ * The origin comes from deployment configuration (lib/origin.ts). The panel's
+ * canonical field is no longer read: it still held the old Render host.
  */
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent();
   const seo = content.seo ?? ({} as Partial<NonNullable<typeof content.seo>>);
-
-  const origin = siteOrigin(content);
-  const fallbackTitle = `${content.brand.siteName} — ${t(content.brand.tagline)}`;
-  const title = seo.title?.trim() || fallbackTitle;
-  const description = seo.description?.trim() || t(content.hero.subtitle);
-  const canonical = seo.canonical?.trim() || origin;
-  const ogTitle = seo.ogTitle?.trim() || title;
-  const ogDescription = seo.ogDescription?.trim() || description;
-  /**
-   * The picture that appears when a link to this site is shared.
-   *
-   * A chain rather than a single field, because a site without one renders as
-   * a bare URL wherever it is posted — which, for a company selling digital
-   * marketing, is an unfortunate advert. The panel's own choice wins; failing
-   * that the hero picture, which is a real image of the work and is almost
-   * always set; failing that the logo.
-   *
-   * The last link is a real 1200×630 card shipped with the site
-   * (scripts/make-og-image.mjs), so the chain can no longer end in nothing.
-   * It had, until recently: every field above it was empty and links to this
-   * site rendered as bare URLs everywhere they were posted. A fallback whose
-   * last step is `''` is not a fallback.
-   */
-  const ogImage =
-    seo.ogImage?.trim() ||
-    content.hero?.image?.trim() ||
-    content.brand?.logoUrl?.trim() ||
-    '/og.png';
+  const origin = siteOrigin();
 
   const integrations = content.integrations ?? {};
   const verification: { google?: string; other?: Record<string, string> } = {};
@@ -106,46 +83,33 @@ export async function generateMetadata(): Promise<Metadata> {
   if (seo.favicon?.trim()) icons.icon = seo.favicon.trim();
   if (seo.appleTouchIcon?.trim()) icons.apple = seo.appleTouchIcon.trim();
 
+  const hidden = seo.noIndex === true || !isIndexableDeployment();
+
   return {
-    // metadataBase resolves any relative image path in the tags below. Without
-    // it Next emits a warning and social networks receive a relative URL they
-    // cannot fetch.
+    // metadataBase resolves relative image paths in every page's tags.
     ...(origin ? { metadataBase: new URL(origin) } : {}),
     title: {
-      default: title,
+      default: `${content.brand.siteName} — ${t(content.brand.tagline)}`,
       template: `%s | ${content.brand.siteName}`,
     },
-    description,
-    ...(seo.keywords && seo.keywords.length > 0 ? { keywords: seo.keywords } : {}),
-    ...(canonical ? { alternates: { canonical } } : {}),
-    // noIndex is off unless somebody deliberately turns it on, and the panel
-    // says in as many words what turning it on does.
-    robots: seo.noIndex
-      ? { index: false, follow: false }
-      : { index: true, follow: true },
+    applicationName: content.brand.siteName,
+    // Only the deviation is stated. Pages are indexable by default; emitting
+    // "index, follow" here is what put two contradictory robots tags on 404s.
+    ...(hidden ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
-      type: 'website',
       siteName: content.brand.siteName,
-      title: ogTitle,
-      description: ogDescription,
-      ...(canonical ? { url: canonical } : {}),
-      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
       locale: 'tr_TR',
+      type: 'website',
     },
-    twitter: {
-      card: (seo.twitterCard === 'summary' ? 'summary' : 'summary_large_image') as
-        | 'summary'
-        | 'summary_large_image',
-      title: ogTitle,
-      description: ogDescription,
-      ...(seo.twitterSite?.trim() ? { site: seo.twitterSite.trim() } : {}),
-      ...(ogImage ? { images: [ogImage] } : {}),
-    },
+    ...(seo.twitterSite?.trim() ? { twitter: { site: seo.twitterSite.trim() } } : {}),
     ...(Object.keys(icons).length > 0 ? { icons } : {}),
-    // Search-console ownership proofs. Plain strings the panel supplies; the
-    // consoles read them from the head and nothing else does.
-    ...(verification.google || verification.other
-      ? { verification }
+    ...(verification.google || verification.other ? { verification } : {}),
+    // The published version this page was rendered from. After a publish the
+    // API reads it back from the live site to confirm visitors are actually
+    // being served the new content — an HTTP 200 from /api/revalidate alone
+    // proves nothing about what the next visitor sees.
+    ...(content.publication
+      ? { other: { 'nexuva-content-version': String(content.publication.version) } }
       : {}),
   };
 }
@@ -194,7 +158,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         {/* What this site is, for search engines and for the models that
             answer questions about it. Built from the CMS so it cannot drift
             from the page. */}
-        <SiteSchema content={content} origin={siteOrigin(content)} />
+        <SiteSchema content={content} origin={siteOrigin()} />
         <Analytics />
         <Integrations config={content.integrations} />
       </body>

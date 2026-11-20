@@ -14,12 +14,12 @@
  *   node scripts/measure-admin.mjs --rounds 3
  */
 
-const ADMIN = (process.env.MEASURE_ADMIN_URL ?? 'https://nexuva-admin.onrender.com').replace(
+const ADMIN = (process.env.MEASURE_ADMIN_URL ?? 'http://localhost:3001').replace(
   /\/+$/,
   '',
 );
 const API = (
-  process.env.MEASURE_API_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1'
+  process.env.MEASURE_API_URL ?? 'http://localhost:4000/api/v1'
 ).replace(/\/+$/, '');
 
 const EMAIL = process.env.VERIFY_ADMIN_EMAIL ?? 'admin@nexuva.com';

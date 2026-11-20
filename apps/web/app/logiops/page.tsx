@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { getSiteContent } from '../../lib/content';
 import { t } from '../../lib/i18n';
-import { siteOrigin } from '../../lib/origin';
+import { absoluteUrl } from '../../lib/origin';
+import { pageMetadata } from '../../lib/seo';
+import { Breadcrumbs } from '../../components/breadcrumbs';
+import { Faq } from '../../components/faq';
+import { LOGIOPS_FAQ } from '../../components/logiops/faq-data';
 import { Reveal, Stagger, StaggerItem } from '../../components/motion';
 import {
   ConvergeDiagram,
@@ -45,58 +49,20 @@ const DESCRIPTION =
   'operasyon dosyasında birleştiren dış ticaret operasyon platformudur.';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const content = await getSiteContent();
-  const origin = siteOrigin(content);
-  const url = `${origin}/logiops`;
-
   return {
-    title: TITLE,
-    description: DESCRIPTION,
+    ...pageMetadata({ path: '/logiops', title: TITLE, absoluteTitle: true, description: DESCRIPTION }),
+    // Named the way the people who buy it search for it. Google ignores this
+    // tag; it is kept as a record of the queries this page targets.
     keywords: [
       'lojistik yazılımı',
       'dış ticaret yazılımı',
       'freight forwarder yazılımı',
       'freight forwarding software',
       'lojistik operasyon yönetimi',
-      'dış ticaret operasyon yönetimi',
-      'operasyon takip sistemi',
       'AWB yazılımı',
-      'BL yönetimi',
-      'CMR',
-      'lojistik ERP',
-      'dış ticaret ERP',
-      'lojistik otomasyon',
-      'operasyon yönetim sistemi',
-      // The air-cargo side, named the way the people who buy it name it. An
-      // IATA agent searching for a system does not type "lojistik yazılımı".
       'IATA acente yazılımı',
-      'IATA kargo acentesi yazılımı',
       'hava kargo operasyon yazılımı',
-      'hava kargo yazılımı',
-      'master AWB takip',
-      'house AWB takip',
-      'konşimento takip sistemi',
-      'nakliye komisyoncusu yazılımı',
     ],
-    alternates: { canonical: url },
-    openGraph: {
-      type: 'website',
-      url,
-      title: TITLE,
-      description: DESCRIPTION,
-      siteName: content.brand?.siteName ?? 'Nexuva',
-      // Set here on purpose. A child route's `openGraph` replaces the parent's
-      // rather than merging into it, so leaving this out did not inherit the
-      // site card — it left the product page, the one most likely to be shared
-      // into a group of forwarders, with no share image at all.
-      images: [{ url: '/og.png' }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: TITLE,
-      description: DESCRIPTION,
-      images: ['/og.png'],
-    },
   };
 }
 
@@ -198,7 +164,6 @@ const VISION = [
 export default async function LogiOpsPage() {
   const content = await getSiteContent();
   const logiops = content.logiops ?? ({} as NonNullable<typeof content.logiops>);
-  const origin = siteOrigin(content);
   const links = siteLinks(content);
 
   // Panel-managed where it should be: the promise at the top, the words at the
@@ -212,7 +177,7 @@ export default async function LogiOpsPage() {
 
   return (
     <>
-      <LogiOpsSchema origin={origin} title={TITLE} description={DESCRIPTION} />
+      <LogiOpsSchema title={TITLE} description={DESCRIPTION} />
 
       {/* ── 01 · Hero ──────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-24">
@@ -228,6 +193,7 @@ export default async function LogiOpsPage() {
         />
         <div className="container-x">
           <div className="max-w-3xl">
+            <Breadcrumbs items={[{ label: 'LogiOps', href: '/logiops' }]} className="mb-8" />
             <Reveal>
               <span className="eyebrow" data-edit="logiops.badge">
                 {t(logiops.badge) || 'Nexuva Ürünü'}
@@ -697,6 +663,12 @@ export default async function LogiOpsPage() {
       <LogiOpsAccess links={links} />
 
       {/* ── 21 / 43 · Close ────────────────────────────────────────────── */}
+      <Faq
+        title="LogiOps hakkında sık sorulan sorular"
+        items={LOGIOPS_FAQ}
+        pageUrl={absoluteUrl('/logiops') || undefined}
+      />
+
       <section className="section border-t border-overlay/8">
         <div className="container-x">
           <Reveal>

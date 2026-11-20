@@ -158,10 +158,10 @@ export function PublishCenter({
             warn={status?.configured === false}
             hint={
               status?.configured === false
-                ? 'Sunucuda yapılandırılmamış — site yeniden derlenemez'
+                ? 'Sunucuda yapılandırılmamış — yayın siteye taşınamaz'
                 : status?.outcomeTracking
-                  ? 'Derleme sonucu izleniyor'
-                  : 'Derleme sonucu izlenemiyor (RENDER_API_KEY tanımlı değil)'
+                  ? 'Yayın, sitenin yeni sürümü sunduğu okunarak doğrulanıyor'
+                  : 'Yayın doğrulanamıyor (SITE_URL tanımlı değil)'
             }
           />
         </div>

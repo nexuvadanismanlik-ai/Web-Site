@@ -18,13 +18,15 @@ import type { IntegrationsContent } from '@nexuva/types';
 export function Integrations({ config }: { config?: IntegrationsContent }) {
   if (!config?.enabled) return null;
 
-  const {
-    ga4MeasurementId,
-    gtmContainerId,
-    metaPixelId,
-    googleAdsId,
-    clarityProjectId,
-  } = config;
+  // Each identifier is written into an inline script, so each must look like
+  // what it claims to be. A value that does not is dropped rather than
+  // escaped: a malformed id would not have worked anyway, and dropping it
+  // means a panel field can never become a script injection.
+  const ga4MeasurementId = valid(config.ga4MeasurementId, /^G-[A-Z0-9]{4,20}$/);
+  const gtmContainerId = valid(config.gtmContainerId, /^GTM-[A-Z0-9]{4,12}$/);
+  const metaPixelId = valid(config.metaPixelId, /^\d{6,20}$/);
+  const googleAdsId = valid(config.googleAdsId, /^AW-\d{6,15}$/);
+  const clarityProjectId = valid(config.clarityProjectId, /^[a-z0-9]{6,20}$/);
 
   // Google's tag serves GA4 and Ads from the same script; loading it twice
   // would double every event it reports.
@@ -76,6 +78,11 @@ y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document
       )}
     </>
   );
+}
+
+function valid(value: string | undefined, pattern: RegExp): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed && pattern.test(trimmed) ? trimmed : undefined;
 }
 
 /**

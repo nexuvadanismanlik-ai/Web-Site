@@ -6,7 +6,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { ALLOWED_MIME_TYPES, checkUploadedFile } from './file-type';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import type { UserRole } from '@nexuva/types';
@@ -64,6 +72,9 @@ const FILE_SELECT = {
   uploadedById: true,
   createdAt: true,
 } as const;
+
+/** Largest file accepted through a presigned (direct-to-R2) upload. */
+const DIRECT_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
 
 @Injectable()
 export class StorageService {
@@ -183,7 +194,10 @@ export class StorageService {
   // ─── R2 primitives ───────────────────────────────────────────────────────
 
   private buildKey(tenantSlug: string, folder: string, filename: string): string {
-    return `${tenantSlug}/${folder}/${Date.now()}-${filename}`;
+    // The name is a label, not a path: anything outside a conservative set is
+    // replaced, so a filename can never add segments or odd bytes to the key.
+    const safe = filename.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(-120) || 'file';
+    return `${tenantSlug}/${folder}/${Date.now()}-${safe}`;
   }
 
   private async r2Upload(key: string, body: Buffer, contentType: string): Promise<void> {
@@ -196,6 +210,132 @@ export class StorageService {
   private async r2Delete(key: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
     this.logger.log(`R2 delete: ${key}`);
+  }
+
+  // ─── Direct (presigned) uploads ──────────────────────────────────────────
+
+  /**
+   * Starts an upload that goes from the browser straight to R2.
+   *
+   * A Vercel Function accepts at most 4.5 MB per request, so anything larger
+   * cannot pass through the API. Instead the API checks who is asking and what
+   * they intend to upload, then returns a short-lived URL that allows exactly
+   * one PUT of that type and size to a key it chose. Nothing is recorded until
+   * completeDirectUpload has inspected what actually arrived.
+   *
+   * Requires R2; the database driver has no equivalent and keeps the 4 MB
+   * multipart path.
+   */
+  async createDirectUpload(params: {
+    tenantId: string;
+    actorRole: UserRole;
+    actorCompanyId?: string | null;
+    folder: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+  }): Promise<{ uploadUrl: string; key: string; headers: Record<string, string>; expiresIn: number }> {
+    if (!this.usesObjectStorage) {
+      throw new BadRequestException(
+        'Doğrudan yükleme için dosya deposu (R2) yapılandırılmamış. 4 MB altındaki dosyalar normal yükleme ile gönderilebilir.',
+      );
+    }
+    if (!ALLOWED_MIME_TYPES.has(params.mimeType)) {
+      throw new BadRequestException(`"${params.mimeType}" türündeki dosyalar kabul edilmiyor.`);
+    }
+    if (!Number.isSafeInteger(params.size) || params.size <= 0 || params.size > DIRECT_UPLOAD_MAX_BYTES) {
+      throw new BadRequestException(
+        `Dosya boyutu 1 bayt ile ${DIRECT_UPLOAD_MAX_BYTES / 1024 / 1024} MB arasında olmalı.`,
+      );
+    }
+
+    const { slug } = await this.assertTenantOwnership(params.tenantId, params.actorRole, params.actorCompanyId);
+    const key = this.buildKey(slug, params.folder, params.filename);
+    const expiresIn = 300;
+    const uploadUrl = await getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: params.mimeType,
+        ContentLength: params.size,
+      }),
+      { expiresIn },
+    );
+    return { uploadUrl, key, headers: { 'Content-Type': params.mimeType }, expiresIn };
+  }
+
+  /**
+   * Records a direct upload after checking what was actually stored.
+   *
+   * The key must be one this tenant could have been given and must not be
+   * registered yet. The object's bytes are read back and must match the
+   * declared type (and, for SVG, contain nothing executable); otherwise the
+   * object is deleted and nothing is recorded.
+   */
+  async completeDirectUpload(params: {
+    tenantId: string;
+    uploadedById: string;
+    actorRole: UserRole;
+    actorCompanyId?: string | null;
+    folder: string;
+    key: string;
+    filename: string;
+    mimeType: string;
+  }) {
+    if (!this.usesObjectStorage) {
+      throw new BadRequestException('Dosya deposu (R2) yapılandırılmamış.');
+    }
+    const { slug } = await this.assertTenantOwnership(params.tenantId, params.actorRole, params.actorCompanyId);
+    if (!params.key.startsWith(`${slug}/${params.folder}/`) || params.key.includes('..')) {
+      throw new BadRequestException('Geçersiz dosya anahtarı.');
+    }
+    const existing = await this.prisma.storageFile.findFirst({ where: { key: params.key }, select: { id: true } });
+    if (existing) throw new BadRequestException('Bu dosya zaten kaydedilmiş.');
+
+    const head = await this.client
+      .send(new HeadObjectCommand({ Bucket: this.bucket, Key: params.key }))
+      .catch(() => null);
+    if (!head || typeof head.ContentLength !== 'number') {
+      throw new BadRequestException('Yüklenen dosya depoda bulunamadı.');
+    }
+
+    // SVG is checked whole (it is text and small); everything else by its
+    // signature, which is in the first bytes.
+    const range = params.mimeType === 'image/svg+xml' ? undefined : 'bytes=0-4095';
+    const object = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: params.key, ...(range ? { Range: range } : {}) }),
+    );
+    const bytes = object.Body ? Buffer.from(await object.Body.transformToByteArray()) : Buffer.alloc(0);
+    const check = checkUploadedFile(params.mimeType, bytes);
+    if (!check.ok) {
+      await this.r2Delete(params.key).catch(() => undefined);
+      throw new BadRequestException(check.reason);
+    }
+
+    const file = await this.prisma.storageFile.create({
+      data: {
+        tenantId: params.tenantId,
+        uploadedById: params.uploadedById,
+        key: params.key,
+        url: `${this.publicUrl}/${params.key}`,
+        mimeType: check.mime,
+        size: head.ContentLength,
+        folder: params.folder,
+        filename: params.filename,
+      },
+      select: FILE_SELECT,
+    });
+
+    await this.auditLog.log({
+      actorId: params.uploadedById,
+      action: 'CREATE_FILE',
+      resource: 'storage_file',
+      resourceId: file.id,
+      tenantId: params.tenantId,
+      after: { key: file.key, url: file.url, mimeType: file.mimeType, size: file.size, folder: file.folder, filename: file.filename, direct: true },
+    });
+    return file;
   }
 
   // ─── Storage driver ──────────────────────────────────────────────────────

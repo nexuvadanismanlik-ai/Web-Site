@@ -4,6 +4,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { WebsiteStateService } from '../website-state.service';
 import { ContentVersionService } from '../versions/content-version.service';
+import { describeOutcome, verifySiteVersion } from './publish-verification';
+import { IndexNowService } from './indexnow.service';
 
 export type PublishStrategy = 'deploy-hook' | 'revalidate' | 'none';
 
@@ -47,7 +49,7 @@ export interface PublishStatus {
   lastPublish: PublishResult | null;
   /** True when a build is in flight, so the panel can say "yayınlanıyor". */
   publishInProgress: boolean;
-  /** False when the deploy result cannot be read back — outcomes stay unknown. */
+  /** False when the live site cannot be read back (no SITE_URL) — outcomes stay unverified. */
   outcomeTracking: boolean;
   history: PublishResult[];
 }
@@ -58,29 +60,23 @@ const HISTORY_LIMIT = 10;
 /** A build that has not settled within this is treated as lost, not running. */
 const DEPLOY_TIMEOUT_MS = 30 * 60_000;
 
-/** Render deploy statuses that mean the build finished successfully. */
-const RENDER_SUCCESS = new Set(['live', 'deactivated']);
-/** Render deploy statuses that mean it will never go live. */
-const RENDER_FAILURE = new Set([
-  'build_failed',
-  'update_failed',
-  'canceled',
-  'pre_deploy_failed',
-]);
+/** Per-read timeout when checking what the live site serves. */
+const VERIFY_TIMEOUT_MS = 8_000;
 
 /**
  * Carries edited content to the public website.
  *
- * Two strategies behind one interface, so moving the frontend from a static
- * export to a server-rendered deployment is a config change:
- *
- *   deploy-hook  Triggers a Render rebuild. Required while the site is a static
- *                export, because published HTML only changes at build time.
- *                Slow (minutes) — hence the explicit Publish action.
- *
  *   revalidate   Calls the site's revalidation endpoint so Next.js regenerates
- *                the affected pages on the next request. Seconds, no deploy.
- *                This is the target once the site runs as a Web Service.
+ *                the pages on the next request. Seconds, no deploy. The
+ *                strategy for the Vercel site.
+ *
+ *   deploy-hook  Triggers a rebuild through a provider's deploy hook. Only for
+ *                a host that has to rebuild; minutes.
+ *
+ * Neither counts as success on the strength of an HTTP 200. After the call,
+ * the live home page is read back and must declare the new content version
+ * (publish-verification.ts). A revalidation is verified in the same request;
+ * a rebuild stays PENDING and is verified when the status is next read.
  *
  * Every attempt is written to PublishLog before anything else happens, so the
  * record survives the restart that a deploy itself often causes. State that
@@ -99,6 +95,7 @@ export class PublishService {
     private readonly tenants: WebsiteTenantService,
     private readonly state: WebsiteStateService,
     private readonly versions: ContentVersionService,
+    private readonly indexNow: IndexNowService,
   ) {}
 
   // ─── Public surface ───────────────────────────────────────────────────────
@@ -144,21 +141,26 @@ export class PublishService {
 
     try {
       if (strategy === 'revalidate') {
-        const detail = await this.triggerRevalidate();
-        // Revalidation is synchronous: if the call returned, the site is updated.
-        return this.write(tenantId, actorId, strategy, {
-          state: 'SUCCEEDED',
-          detail: `Sürüm ${version} yayınlandı. ${detail}`,
+        await this.triggerRevalidate();
+        // The endpoint answered; now prove the site serves the new version.
+        const verdict = await this.verify(version);
+        const result = await this.write(tenantId, actorId, strategy, {
+          state: verdict.ok ? 'SUCCEEDED' : 'FAILED',
+          detail: `Sürüm ${version}: önbellek yenilendi. ${verdict.detail}`,
           version,
         });
+        if (verdict.ok) await this.indexNow.notifyChangedSite();
+        return result;
       }
 
-      const { deployId, detail } = await this.triggerDeployHook();
+      const { deployId } = await this.triggerDeployHook();
       // The hook returns once the build is queued, not once it is live, so the
-      // record stays PENDING until the deploy is read back.
+      // record stays PENDING until the live site is read back.
       return this.write(tenantId, actorId, strategy, {
-        state: this.canTrackOutcome && deployId ? 'PENDING' : 'SUCCEEDED',
-        detail: `Sürüm ${version} alındı. ${detail}`,
+        state: this.canTrackOutcome ? 'PENDING' : 'FAILED',
+        detail: this.canTrackOutcome
+          ? `Sürüm ${version} alındı; derleme başlatıldı. Site yeni sürümü sunduğunda yayın tamamlanmış sayılacak.`
+          : `Sürüm ${version} alındı ve derleme başlatıldı, ancak SITE_URL tanımlı olmadığı için sitede göründüğü doğrulanamayacak.`,
         deployId,
         version,
       });
@@ -209,10 +211,10 @@ export class PublishService {
 
   // ─── Strategies ───────────────────────────────────────────────────────────
 
-  private async triggerDeployHook(): Promise<{ deployId: string | null; detail: string }> {
+  private async triggerDeployHook(): Promise<{ deployId: string | null }> {
     const url = this.config.get<string>('publish.deployHookUrl') ?? '';
     if (!url) {
-      throw new BadRequestException('RENDER_DEPLOY_HOOK_URL is not set');
+      throw new BadRequestException('DEPLOY_HOOK_URL is not set');
     }
 
     const res = await this.post(url);
@@ -220,27 +222,25 @@ export class PublishService {
       throw new Error(`Deploy hook responded with HTTP ${res.status}`);
     }
 
-    const deployId = await this.readDeployId(res);
-    return {
-      deployId,
-      detail: deployId
-        ? 'Rebuild triggered; the site updates when the deploy finishes (usually a few minutes).'
-        : 'Rebuild triggered. The deploy id was not returned, so the outcome cannot be tracked.',
-    };
+    return { deployId: await this.readDeployId(res) };
   }
 
-  /** Render's hook answers with `{"deploy":{"id":"dep-..."}}`. */
+  /**
+   * The provider's id for the triggered build, kept for reference only.
+   * Vercel answers `{"job":{"id":…}}`; Render answered `{"deploy":{"id":…}}`.
+   * Nothing depends on it: the outcome is read from the site itself.
+   */
   private async readDeployId(res: Response): Promise<string | null> {
     try {
-      const body = (await res.json()) as { deploy?: { id?: unknown } };
-      const id = body.deploy?.id;
+      const body = (await res.json()) as { job?: { id?: unknown }; deploy?: { id?: unknown } };
+      const id = body.job?.id ?? body.deploy?.id;
       return typeof id === 'string' && id ? id : null;
     } catch {
       return null;
     }
   }
 
-  private async triggerRevalidate(): Promise<string> {
+  private async triggerRevalidate(): Promise<void> {
     const url = this.config.get<string>('publish.revalidateUrl') ?? '';
     const secret = this.config.get<string>('publish.revalidateSecret') ?? '';
     if (!url) throw new BadRequestException('FRONTEND_REVALIDATE_URL is not set');
@@ -251,9 +251,28 @@ export class PublishService {
       body: JSON.stringify({ tags: ['site-content'] }),
     });
     if (!res.ok) {
-      throw new Error(`Revalidation endpoint responded with HTTP ${res.status}`);
+      throw new Error(`Site yenileme uç noktası HTTP ${res.status} döndürdü; yayın siteye ulaşmadı.`);
     }
-    return 'Site content cache invalidated; the next visitor sees the update.';
+  }
+
+  /**
+   * Whether the live site serves `version`. Never throws: an unverifiable
+   * publish is a failed publish with a reason, not an exception.
+   */
+  private async verify(version: number): Promise<{ ok: boolean; detail: string }> {
+    const siteUrl = this.config.get<string>('publish.siteUrl') ?? '';
+    if (!siteUrl) {
+      return {
+        ok: false,
+        detail: 'SITE_URL tanımlı değil; yayının sitede göründüğü doğrulanamadı.',
+      };
+    }
+    const outcome = await verifySiteVersion(siteUrl, version, {
+      attempts: this.config.get<number>('publish.verifyAttempts') ?? 6,
+      delayMs: this.config.get<number>('publish.verifyDelayMs') ?? 2_000,
+      timeoutMs: VERIFY_TIMEOUT_MS,
+    });
+    return { ok: outcome.status === 'verified', detail: describeOutcome(outcome, version) };
   }
 
   private async post(url: string, init: RequestInit = {}) {
@@ -280,7 +299,7 @@ export class PublishService {
 
     await Promise.all(
       pending.map(async (row) => {
-        const outcome = await this.deployOutcome(row.deployId);
+        const outcome = await this.deployOutcome(row.version);
 
         if (outcome === 'PENDING') {
           // A build that never reported back would otherwise sit as "in
@@ -304,51 +323,29 @@ export class PublishService {
             finishedAt: new Date(),
             detail:
               outcome === 'SUCCEEDED'
-                ? 'Deploy finished; the published site now carries these changes.'
-                : 'Deploy failed. The site still shows the previously published content.',
+                ? `Derleme tamamlandı; site sürüm ${row.version ?? '?'}'i sunuyor (doğrulandı).`
+                : 'Derleme başarısız oldu. Site önceki yayınlanmış içeriği göstermeye devam ediyor.',
           },
         });
+        if (outcome === 'SUCCEEDED') await this.indexNow.notifyChangedSite();
       }),
     );
   }
 
-  private async deployOutcome(deployId: string | null): Promise<PublishState> {
-    if (!deployId || !this.canTrackOutcome) return 'PENDING';
-
-    const apiKey = this.config.get<string>('publish.renderApiKey') ?? '';
-    const serviceId = this.config.get<string>('publish.renderServiceId') ?? '';
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
-      let res: Response;
-      try {
-        res = await fetch(
-          `https://api.render.com/v1/services/${serviceId}/deploys/${deployId}`,
-          {
-            headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
-            signal: controller.signal,
-          },
-        );
-      } finally {
-        clearTimeout(timeout);
-      }
-
-      if (!res.ok) {
-        this.logger.warn(`Deploy status lookup returned HTTP ${res.status}`);
-        return 'PENDING';
-      }
-
-      const body = (await res.json()) as { status?: unknown };
-      const status = typeof body.status === 'string' ? body.status : '';
-      if (RENDER_SUCCESS.has(status)) return 'SUCCEEDED';
-      if (RENDER_FAILURE.has(status)) return 'FAILED';
-      return 'PENDING';
-    } catch (err) {
-      // Unreachable provider is not a failed deploy — leave it pending.
-      this.logger.warn(`Deploy status lookup failed: ${String(err)}`);
-      return 'PENDING';
-    }
+  /**
+   * A rebuild's outcome, read from the site: SUCCEEDED once it serves the
+   * version, otherwise still PENDING (the caller times it out). A single quick
+   * read, since this runs whenever the panel asks for status.
+   */
+  private async deployOutcome(version: number | null): Promise<PublishState> {
+    const siteUrl = this.config.get<string>('publish.siteUrl') ?? '';
+    if (version === null || !siteUrl) return 'PENDING';
+    const outcome = await verifySiteVersion(siteUrl, version, {
+      attempts: 1,
+      delayMs: 0,
+      timeoutMs: VERIFY_TIMEOUT_MS,
+    });
+    return outcome.status === 'verified' ? 'SUCCEEDED' : 'PENDING';
   }
 
   // ─── Internals ────────────────────────────────────────────────────────────
@@ -358,12 +355,9 @@ export class PublishService {
     return raw === 'deploy-hook' || raw === 'revalidate' ? raw : 'none';
   }
 
-  /** Whether a triggered build's result can be read back afterwards. */
+  /** Whether a publish's result can be read back from the live site. */
   private get canTrackOutcome(): boolean {
-    return (
-      !!this.config.get<string>('publish.renderApiKey') &&
-      !!this.config.get<string>('publish.renderServiceId')
-    );
+    return !!this.config.get<string>('publish.siteUrl');
   }
 
   private isConfigured(): boolean {

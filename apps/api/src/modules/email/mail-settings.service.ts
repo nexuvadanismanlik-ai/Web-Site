@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SecretBox } from './secret-box';
 
 /** What the panel may set, and what the sender needs. */
 export interface ResolvedMailSettings {
@@ -31,11 +32,24 @@ export interface ResolvedMailSettings {
 @Injectable()
 export class MailSettingsService {
   private readonly logger = new Logger(MailSettingsService.name);
+  private readonly box: SecretBox;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.box = new SecretBox(process.env['MAIL_ENCRYPTION_KEY']);
+  }
+
+  /** Reads a stored credential; a value that cannot be opened is treated as absent. */
+  private openSecret(value: string | null, field: string): string | null {
+    try {
+      return this.box.open(value);
+    } catch (err) {
+      this.logger.error(`Stored ${field} could not be decrypted: ${String(err)}`);
+      return null;
+    }
+  }
 
   async resolve(tenantId: string): Promise<ResolvedMailSettings> {
     const stored = await this.prisma.mailSettings
@@ -51,11 +65,11 @@ export class MailSettingsService {
         fromName: stored.fromName,
         replyTo: stored.replyTo,
         notifyTo: splitAddresses(stored.notifyTo),
-        apiKey: stored.apiKey,
+        apiKey: this.openSecret(stored.apiKey, 'apiKey'),
         smtpHost: stored.smtpHost,
         smtpPort: stored.smtpPort ?? 587,
         smtpUser: stored.smtpUser,
-        smtpPassword: stored.smtpPassword,
+        smtpPassword: this.openSecret(stored.smtpPassword, 'smtpPassword'),
         smtpSecure: stored.smtpSecure,
         fromDatabase: true,
       };
@@ -146,10 +160,16 @@ export class MailSettingsService {
     },
   ) {
     const secrets: { apiKey?: string; smtpPassword?: string } = {};
-    if (input.apiKey && input.apiKey.trim()) secrets.apiKey = input.apiKey.trim();
-    if (input.smtpPassword && input.smtpPassword.trim()) {
-      secrets.smtpPassword = input.smtpPassword.trim();
+    const newApiKey = input.apiKey?.trim();
+    const newPassword = input.smtpPassword?.trim();
+    if ((newApiKey || newPassword) && !this.box.configured) {
+      // Refuse rather than store a credential in plain text.
+      throw new BadRequestException(
+        'Sunucuda MAIL_ENCRYPTION_KEY tanımlı değil; API anahtarı veya şifre güvenli şekilde saklanamaz.',
+      );
     }
+    if (newApiKey) secrets.apiKey = this.box.seal(newApiKey);
+    if (newPassword) secrets.smtpPassword = this.box.seal(newPassword);
 
     const shared = {
       provider: input.provider,

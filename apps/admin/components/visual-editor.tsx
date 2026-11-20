@@ -114,7 +114,17 @@ export function VisualEditor({
   );
 
   useEffect(() => {
+    // Only the site's own frame may drive the editor. Any other window can
+    // post to this one; without this check a message from it would select and
+    // stage edits in the panel.
+    let siteOrigin = '';
+    try {
+      siteOrigin = new URL(siteUrl).origin;
+    } catch {
+      siteOrigin = '';
+    }
     function onMessage(e: MessageEvent) {
+      if (!siteOrigin || e.origin !== siteOrigin) return;
       const data = e.data as { type?: string; path?: string } | null;
       if (!data || typeof data !== 'object') return;
       if (data.type === 'nexuva:ready') setFrameReady(true);
@@ -128,7 +138,7 @@ export function VisualEditor({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [content]);
+  }, [content, siteUrl]);
 
   const applyLocal = useCallback((path: string, value: LeafValue) => {
     setContent((prev) => {

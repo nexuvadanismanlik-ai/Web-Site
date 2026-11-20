@@ -17,13 +17,13 @@ export class ApiError extends Error {
 }
 
 /**
- * The API may be on a plan that suspends it when idle, in which case the first
- * request after a quiet spell pays the wake-up cost — around a minute. A short
- * default timeout would turn that into a failed page load, so requests are given
- * room and retried once: a cold start looks exactly like a network error, and
- * by the second attempt the service is usually up.
+ * On Vercel the API is a Function with Fluid compute: a cold start costs about
+ * a second, not the minute a suspended Render service took. The first request
+ * after a quiet spell still gets more room than a warm one, and is retried
+ * once, but a request that has not answered in 20 seconds is an outage the
+ * panel should report rather than wait out.
  */
-const WAKE_TIMEOUT_MS = 75_000;
+const WAKE_TIMEOUT_MS = 20_000;
 
 /**
  * How long a request is given once the service is known to be awake.
@@ -39,12 +39,9 @@ const WARM_TIMEOUT_MS = 8_000;
 /**
  * Whether the service has answered recently enough to assume it is still up.
  *
- * Render suspends the API when it is idle, and waking it costs about 70
- * seconds — measured, not estimated. That has to be waited out, or the panel
- * turns a cold start into a failed page. But it must be waited out *once*: the
- * old code gave every request 75 seconds and retried it, so a single call
- * could hold a page for two and a half minutes long after the reason had
- * passed.
+ * The first call after a quiet spell may pay a cold start, so it gets the
+ * longer budget — once. After a success, later calls get the short budget:
+ * the service is known to be up.
  */
 let lastSuccessAt = 0;
 const ASSUME_WARM_FOR_MS = 5 * 60_000;

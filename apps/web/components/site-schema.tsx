@@ -1,119 +1,99 @@
 import type { SiteContent } from '@nexuva/types';
 import { t } from '../lib/i18n';
+import { isProfileUrl, serializeJsonLd } from '../lib/seo';
+import { absoluteUrl } from '../lib/origin';
+import { servicePath } from '../lib/services';
+import { confirmedAddress, confirmedPhone } from '../lib/verified-facts';
 
 /**
  * What this site is, in a form a machine can read.
  *
- * Two audiences and they want the same thing. A search engine uses schema.org
- * to decide what a page is about and whether it earns a rich result. A
- * language model asked "who does Google Ads management in Turkey" answers from
- * pages whose meaning it could extract with confidence — and JSON-LD is
- * meaning already extracted. Prose alone makes the model guess, and it prefers
- * a source that did not make it guess.
+ * A search engine uses schema.org to decide what a page is about; a language
+ * model answering "who does Google Ads management in Turkey" answers from pages
+ * whose meaning it could extract with confidence. JSON-LD is that meaning,
+ * already extracted — so everything in it must be true.
  *
- * Built from the CMS, so it cannot drift from the page. The old failure mode
- * here is a hand-written schema block that still lists a service the company
- * stopped offering two years ago — which is worse than none, because it is a
- * false claim in the one format everything reads automatically.
+ * Built from the CMS so it cannot drift from the page, with three filters:
+ *   - the origin comes from deployment configuration, never the panel;
+ *   - social links count only when they point at an actual profile;
+ *   - phone and address appear only once confirmed (lib/verified-facts.ts).
  */
 export function SiteSchema({ content, origin }: { content: SiteContent; origin: string }) {
+  if (!origin) return null;
+
   const brand = content.brand;
   const services = content.services ?? [];
-  const social = (brand?.social ?? []).map((item) => item.href).filter(Boolean);
+  const sameAs = (brand?.social ?? []).map((item) => item.href).filter(isProfileUrl);
+  const phone = confirmedPhone(brand?.phone);
+  const address = confirmedAddress(t(brand?.address));
+  const home = absoluteUrl('/');
+  const orgId = `${home}#organization`;
+  const description = t(content.footer?.about) || t(brand?.tagline);
 
   const graph = {
     '@context': 'https://schema.org',
     '@graph': [
       {
         '@type': 'Organization',
-        '@id': `${origin}#organization`,
+        '@id': orgId,
         name: brand?.siteName ?? 'Nexuva',
-        url: origin,
-        description: t(brand?.tagline),
+        url: home,
+        ...(description ? { description } : {}),
         ...(brand?.logoUrl ? { logo: brand.logoUrl, image: brand.logoUrl } : {}),
-        ...(social.length > 0 ? { sameAs: social } : {}),
-        ...(brand?.email || brand?.phone
+        ...(sameAs.length > 0 ? { sameAs } : {}),
+        ...(brand?.email || phone
           ? {
               contactPoint: {
                 '@type': 'ContactPoint',
-                contactType: 'sales',
-                ...(brand.email ? { email: brand.email } : {}),
-                ...(brand.phone ? { telephone: brand.phone } : {}),
+                contactType: 'customer service',
+                ...(brand?.email ? { email: brand.email } : {}),
+                ...(phone ? { telephone: phone } : {}),
                 areaServed: 'TR',
                 availableLanguage: ['Turkish'],
               },
             }
           : {}),
-        ...(t(brand?.address)
+        ...(address
           ? {
               address: {
                 '@type': 'PostalAddress',
-                streetAddress: t(brand.address),
+                streetAddress: address,
                 addressCountry: 'TR',
               },
             }
           : {}),
+        areaServed: { '@type': 'Country', name: 'Türkiye' },
       },
       {
         '@type': 'WebSite',
-        '@id': `${origin}#website`,
-        url: origin,
+        '@id': `${home}#website`,
+        url: home,
         name: brand?.siteName ?? 'Nexuva',
         inLanguage: 'tr-TR',
-        publisher: { '@id': `${origin}#organization` },
+        publisher: { '@id': orgId },
       },
-      {
-        /**
-         * The services, from the services.
-         *
-         * A ProfessionalService with an offer catalogue is what lets a search
-         * engine answer "digital marketing agency" with this company rather
-         * than with a directory listing of it — and it is the structure a
-         * model reads when asked what Nexuva actually does.
-         */
-        '@type': 'ProfessionalService',
-        '@id': `${origin}#agency`,
-        name: brand?.siteName ?? 'Nexuva',
-        url: origin,
-        description: t(content.hero?.subtitle),
-        parentOrganization: { '@id': `${origin}#organization` },
-        areaServed: { '@type': 'Country', name: 'Türkiye' },
-        knowsAbout: [
-          'Google Ads yönetimi',
-          'Meta reklam yönetimi',
-          'Arama motoru optimizasyonu (SEO)',
-          'Kurumsal web sitesi geliştirme',
-          'Landing page tasarımı',
-          'Dijital marka danışmanlığı',
-          'Pazarlama otomasyonu',
-          'Dönüşüm ölçümü ve raporlama',
-          'Dış ticaret operasyon yazılımı',
-        ],
-        ...(services.length > 0
-          ? {
-              hasOfferCatalog: {
-                '@type': 'OfferCatalog',
-                name: 'Nexuva Hizmetleri',
-                itemListElement: services.map((service) => ({
-                  '@type': 'Offer',
-                  itemOffered: {
-                    '@type': 'Service',
-                    name: t(service.title),
-                    description: t(service.description),
-                    provider: { '@id': `${origin}#organization` },
-                  },
-                })),
-              },
-            }
-          : {}),
-      },
+      ...(services.length > 0
+        ? [
+            {
+              '@type': 'ItemList',
+              '@id': `${absoluteUrl('/services')}#list`,
+              name: 'Nexuva hizmetleri',
+              itemListElement: services.map((service, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                url: absoluteUrl(servicePath(service)),
+                name: t(service.title),
+              })),
+            },
+          ]
+        : []),
     ],
   };
 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(graph) }}
     />
   );
 }

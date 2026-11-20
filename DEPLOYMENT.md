@@ -1,3 +1,8 @@
+> **Güncel değil — Render dönemine ait.** Platform Vercel'e taşınıyor. Güncel kurulum:
+> [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md), değişkenler: [docs/ENVIRONMENT_VARIABLES.md](docs/ENVIRONMENT_VARIABLES.md),
+> geçiş adımları: [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md). Bu belge, Render servisleri kapatılana kadar
+> çalışan sistemi tarif ettiği için silinmedi.
+
 # Nexuva OS — Deployment Guide
 
 ## Architecture

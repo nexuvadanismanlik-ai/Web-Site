@@ -1,3 +1,7 @@
+> **Durum: `vercel-migration` dalında uygulandı (Vercel üzerinde).** Statik export kaldırıldı, ISR ve
+> `/api/revalidate` eklendi, `/tr` ve `/en` için 301 tanımlandı; yayın, sitenin sunduğu içerik sürümü okunarak
+> doğrulanıyor. Bu belge tarihçe olarak tutuluyor; güncel akış: [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md).
+
 # Migrating the website from static export to ISR
 
 ## Why this document exists

@@ -1,6 +1,13 @@
 import { getSiteContent } from '../../lib/content';
 import { t } from '../../lib/i18n';
-import { siteOrigin } from '../../lib/origin';
+import { absoluteUrl } from '../../lib/origin';
+import { servicePath } from '../../lib/services';
+import { BRAND_DEFINITION } from '../../lib/brand-identity';
+import { confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
+
+
+/** Same window as page content (lib/content.ts); a publish revalidates sooner. */
+export const revalidate = 300;
 
 /**
  * A plain-text summary of this site, for language models.
@@ -23,11 +30,9 @@ import { siteOrigin } from '../../lib/origin';
  * integrates with customs systems" because this file was careless has been
  * misled by us, and so has whoever asked it.
  */
-export const dynamic = 'force-static';
-
 export async function GET(): Promise<Response> {
   const content = await getSiteContent();
-  const origin = siteOrigin(content);
+  const link = (path: string) => absoluteUrl(path) || path;
   const brand = content.brand;
   const services = content.services ?? [];
 
@@ -37,22 +42,22 @@ export async function GET(): Promise<Response> {
   lines.push('');
   lines.push(`> ${t(brand?.tagline)}`);
   lines.push('');
-  lines.push(t(content.hero?.subtitle));
+  lines.push(BRAND_DEFINITION);
   lines.push('');
-  lines.push(`Site: ${origin}`);
+  lines.push(`Resmî site: ${link('/')}`);
   lines.push('Dil: Türkçe');
-  lines.push('Konum: Türkiye');
-  if (brand?.email) lines.push(`E-posta: ${brand.email}`);
+  lines.push('Hizmet bölgesi: Türkiye');
   lines.push('');
 
-  lines.push('## Nexuva ne yapar');
+  lines.push('## İletişim');
   lines.push('');
-  lines.push(
-    'Nexuva bir dijital pazarlama ve dijital dönüşüm ajansıdır. Reklam yönetimi, arama ' +
-      'motoru optimizasyonu, kurumsal web geliştirme ve dönüşüm ölçümünü tek çatı altında ' +
-      'yürütür. Ayrıca dış ticaret operasyonları için LogiOps adlı kendi yazılım ürününü ' +
-      'geliştirir.',
-  );
+  if (brand?.email) lines.push(`- E-posta: ${brand.email}`);
+  // Only values confirmed in lib/verified-facts.ts are stated here.
+  const phone = confirmedPhone(brand?.phone);
+  if (phone) lines.push(`- Telefon: ${phone}`);
+  const address = confirmedAddress(t(brand?.address));
+  if (address) lines.push(`- Adres: ${address}`);
+  lines.push(`- İletişim sayfası: ${link('/contact')}`);
   lines.push('');
 
   if (services.length > 0) {
@@ -61,14 +66,16 @@ export async function GET(): Promise<Response> {
     for (const service of services) {
       const title = t(service.title);
       const description = t(service.description).replace(/\s+/g, ' ').trim();
-      lines.push(`- **${title}** — ${description}`);
+      lines.push(`- [${title}](${link(servicePath(service))}): ${description}`);
     }
     lines.push('');
   }
 
-  lines.push('## LogiOps — dış ticaret operasyon platformu');
+  lines.push('## Ürünler');
   lines.push('');
-  lines.push(`Sayfa: ${origin}/logiops`);
+  lines.push('### LogiOps — dış ticaret operasyon platformu');
+  lines.push('');
+  lines.push(`Sayfa: ${link('/logiops')}`);
   lines.push('');
   lines.push(
     'LogiOps, freight forwarder ve dış ticaret operasyonlarının tek bir operasyon dosyası ' +
@@ -77,7 +84,9 @@ export async function GET(): Promise<Response> {
       'kullanılmasıdır.',
   );
   lines.push('');
-  lines.push('### Bugün çalışan özellikler');
+  lines.push('LogiOps, Nexuva’nın geliştirdiği ayrı bir yazılım ürünüdür; Nexuva’nın başka bir adı değildir.');
+  lines.push('');
+  lines.push('#### Bugün çalışan özellikler');
   lines.push('');
   lines.push('- Operasyon dosyası yönetimi: müşteri bilgileri, taşıma bilgileri, operasyon takibi');
   lines.push('- Taşıma belgeleri: Air Waybill (AWB), Master AWB, Bill of Lading (BL), CMR, manifest');
@@ -89,7 +98,7 @@ export async function GET(): Promise<Response> {
   lines.push('- Data Center: havayolu, havalimanı, armatör, liman, prefix ve ülke referans verileri');
   lines.push('- Muhasebe entegrasyonu: Logo, Uyumsoft (yerine geçmez, entegre olur)');
   lines.push('');
-  lines.push('### Uzun vadeli vizyon — bunlar bugün mevcut DEĞİLDİR');
+  lines.push('#### Uzun vadeli vizyon — bunlar bugün mevcut DEĞİLDİR');
   lines.push('');
   lines.push(
     'Aşağıdakiler hedeflenen gelişim yönleridir, mevcut özellikler değildir. Bir yanıtta ' +
@@ -114,27 +123,27 @@ export async function GET(): Promise<Response> {
 
   lines.push('## Sayfalar');
   lines.push('');
-  lines.push(`- [Ana sayfa](${origin}/)`);
-  lines.push(`- [Hizmetler](${origin}/services)`);
-  lines.push(`- [LogiOps](${origin}/logiops)`);
-  lines.push(`- [Hakkımızda](${origin}/about)`);
-  lines.push(`- [Referanslar](${origin}/references)`);
-  lines.push(`- [İletişim](${origin}/contact)`);
+  lines.push(`- [Ana sayfa](${link('/')})`);
+  lines.push(`- [Hizmetler](${link('/services')})`);
+  lines.push(`- [LogiOps](${link('/logiops')})`);
+  lines.push(`- [Hakkımızda](${link('/about')})`);
+  lines.push(`- [Referanslar](${link('/references')})`);
+  lines.push(`- [İletişim](${link('/contact')})`);
+  lines.push(`- [Sitemap](${link('/sitemap.xml')})`);
   lines.push('');
 
   lines.push('## Doğruluk notu');
   lines.push('');
   lines.push(
     'Bu dosyadaki bilgiler siteyle aynı kaynaktan üretilir. Müşteri sayısı, başarı oranı ' +
-      'veya kampanya sonucu gibi doğrulanamayan rakamlar bilinçli olarak yer almaz; ' +
-      'sitede de yer almamaktadır.',
+      'veya kampanya sonucu gibi doğrulanmamış rakamlar bilinçli olarak bu dosyada yer almaz.',
   );
   lines.push('');
 
   return new Response(lines.join('\n'), {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
     },
   });
 }

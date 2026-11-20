@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, LogIn } from 'lucide-react';
 import { getSiteContent } from '../../../lib/content';
-import { siteOrigin } from '../../../lib/origin';
+import { pageMetadata } from '../../../lib/seo';
 import { resolveLink, siteLinks } from '../../../lib/links';
 import { Reveal } from '../../../components/motion';
 import { LogiOpsApplicationForm } from '../../../components/logiops/application-form';
@@ -26,26 +26,15 @@ const DESCRIPTION =
   'doküman ve muhasebe süreçlerini tek platformda yönetin.';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const content = await getSiteContent();
-  const url = `${siteOrigin(content)}/logiops/basvuru`;
-  return {
+  // An application form is not a page anybody should reach from a search
+  // result — it is reached from the product page, having read the argument.
+  // Indexing it competes with /logiops for the same query and answers it worse.
+  return pageMetadata({
+    path: '/logiops/basvuru',
     title: TITLE,
     description: DESCRIPTION,
-    alternates: { canonical: url },
-    // An application form is not a page anybody should reach from a search
-    // result — it is reached from the product page, having read the argument.
-    // Indexing it competes with /logiops for the same query and answers it
-    // worse.
-    robots: { index: false, follow: true },
-    openGraph: {
-      type: 'website',
-      url,
-      title: TITLE,
-      description: DESCRIPTION,
-      siteName: content.brand?.siteName ?? 'Nexuva',
-      images: [{ url: '/og.png' }],
-    },
-  };
+    noIndex: true,
+  });
 }
 
 export default async function LogiOpsApplicationPage() {

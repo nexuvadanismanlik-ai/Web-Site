@@ -5,9 +5,11 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev --port 3000",
-    "preview": "npx --yes serve out -l 4173",
     "lint": "eslint \"{app,components,lib}/**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "start": "next start",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test \".test-dist/apps/web/test/*.test.js\"",
+    "test:build": "node --test test/build-output.check.mjs"
   },
   "dependencies": {
     "@nexuva/shared": "workspace:*",

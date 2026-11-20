@@ -1,0 +1,143 @@
+# Quality gate for every push and pull request.
+#
+# Nothing here touches a real database or a real deployment:
+#   - the site is built from a content fixture (NEXUVA_CONTENT_FIXTURE);
+#   - API end-to-end tests run against a throwaway PostgreSQL container that
+#     exists only for the length of the job.
+# Secrets are not needed: every credential below is generated per run.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  quality:
+    name: Typecheck, lint, unit tests, builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm --filter @nexuva/shared run build
+
+      - name: Prisma client
+        run: pnpm --filter @nexuva/api exec prisma generate
+
+      - name: Typecheck
+        run: |
+          pnpm --filter @nexuva/api run typecheck
+          pnpm --filter @nexuva/web run typecheck
+          pnpm --filter @nexuva/admin run typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: API build and unit tests
+        run: |
+          pnpm --filter @nexuva/api run build
+          pnpm --filter @nexuva/api run test
+
+      - name: Web unit tests
+        run: pnpm --filter @nexuva/web run test
+
+      - name: Web build (fixture content) and SEO checks
+        env:
+          NEXUVA_CONTENT_FIXTURE: test/fixtures/site-content.json
+          NEXT_PUBLIC_SITE_URL: https://nexuva.example
+          NEXT_PUBLIC_API_URL: https://api.nexuva.example/api/v1
+        run: |
+          pnpm --filter @nexuva/web run build
+          pnpm --filter @nexuva/web run test:build
+
+      - name: Admin build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.nexuva.example/api/v1
+          NEXTAUTH_URL: https://admin.nexuva.example
+          NEXTAUTH_SECRET: ci-only-secret-not-used-anywhere-else-0000
+        run: pnpm --filter @nexuva/admin run build
+
+  api-e2e:
+    name: API end-to-end (throwaway database)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: nexuva
+          POSTGRES_PASSWORD: nexuva
+          POSTGRES_DB: nexuva_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U nexuva"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://nexuva:nexuva@localhost:5432/nexuva_ci
+      DIRECT_URL: postgresql://nexuva:nexuva@localhost:5432/nexuva_ci
+      APP_ENV: development
+      NODE_ENV: test
+      PORT: '4000'
+      CORS_ORIGINS: http://localhost:3000
+      E2E_ALLOW_WRITES: 'yes'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @nexuva/shared run build
+
+      - name: Per-run credentials
+        run: |
+          echo "JWT_ACCESS_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "ADMIN_EMAIL=ci-admin@example.com" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+
+      - name: Schema and seed
+        run: |
+          pnpm --filter @nexuva/api exec prisma migrate deploy
+          pnpm --filter @nexuva/api run db:seed
+
+      - name: Build and start the API
+        run: |
+          pnpm --filter @nexuva/api run build
+          (cd apps/api && node dist/apps/api/src/main > /tmp/api.log 2>&1 &)
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4000/api/v1/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:4000/api/v1/health || (cat /tmp/api.log; exit 1)
+
+      - name: End-to-end tests
+        env:
+          API_URL: http://localhost:4000/api/v1
+        run: node --test "apps/api/test/e2e/*.e2e.mjs"
+
+      - name: API log on failure
+        if: failure()
+        run: cat /tmp/api.log || true

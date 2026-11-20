@@ -1,3 +1,6 @@
+> **Barındırma ve yayın akışı için güncel belge:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (Vercel). Aşağıdaki
+> uygulama içi mimari (modüller, veri modeli) geçerliliğini korur.
+
 # Mimari
 
 Bu belge dondurulmuş mimariyi tanımlar. Sonraki fazlar bu yapının **üzerine**

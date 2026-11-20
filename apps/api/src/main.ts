@@ -78,6 +78,32 @@ async function bootstrap() {
     timeWindow: '1 minute',
   });
 
+  // Baseline security headers on every API response. The API serves JSON and
+  // stored files, never pages, so it can refuse to be framed and send no
+  // referrer. Routes that need something stricter (storage file serving) set
+  // their own headers, which this leaves alone.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onSend', async (_req, reply, payload) => {
+      const defaults: Record<string, string> = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+      };
+      for (const [name, value] of Object.entries(defaults)) {
+        if (!reply.hasHeader(name)) void reply.header(name, value);
+      }
+      if (
+        process.env['NODE_ENV'] === 'production' &&
+        !reply.hasHeader('Strict-Transport-Security')
+      ) {
+        void reply.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+      }
+      return payload;
+    });
+
   const config = app.get(ConfigService);
 
   // Before anything writes: is this the database this process belongs to?

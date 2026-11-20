@@ -166,7 +166,10 @@ export function LogiOpsApplicationForm() {
         />
         <span>
           Başvurumun değerlendirilmesi ve benimle iletişime geçilmesi amacıyla paylaştığım
-          bilgilerin işlenmesini kabul ediyorum.
+          bilgilerin işlenmesini kabul ediyorum.{' '}
+          <a href="/kvkk/" target="_blank" rel="noopener" className="underline underline-offset-2">
+            KVKK Aydınlatma Metni
+          </a>
         </span>
       </label>
 

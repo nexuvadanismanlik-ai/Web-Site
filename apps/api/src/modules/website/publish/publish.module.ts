@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PublishService } from './publish.service';
+import { IndexNowService } from './indexnow.service';
 import { PublishController } from './publish.controller';
 import { WebsiteTenantService } from '../website-tenant.service';
 import { SiteContentModule } from '../site-content/site-content.module';
@@ -13,7 +14,7 @@ import { ContentVersionModule } from '../versions/content-version.module';
  */
 @Module({
   imports: [SiteContentModule, ContentVersionModule],
-  providers: [PublishService, WebsiteTenantService],
+  providers: [PublishService, IndexNowService, WebsiteTenantService],
   controllers: [PublishController],
   exports: [PublishService],
 })

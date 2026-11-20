@@ -11,7 +11,7 @@
  */
 
 const SITE = (
-  process.env.VERIFY_SITE_URL ?? 'https://nexuva-web-site-frontend.onrender.com'
+  process.env.VERIFY_SITE_URL ?? 'http://localhost:3000'
 ).replace(/\/+$/, '');
 
 const PAGES = [
@@ -337,12 +337,12 @@ async function main() {
   // nothing — only the rendered page says whether the content reached it.
   console.log('\n13. LogiOps erişimi');
   const logiopsHtml = logiopsPage?.html ?? '';
-  const LOGIOPS_APP = 'logiops-frontend.onrender.com';
+  const LOGIOPS_APP = (process.env.LOGIOPS_APP_HOST ?? 'logiops-frontend.onrender.com').replace(/^https?:\/\//, '');
 
   check(logiopsHtml.includes(`${LOGIOPS_APP}/login`), 'Giriş bağlantısı sayfada');
   check(
-    /href="[^"]*logiops-frontend[^"]*"[^>]*target="_blank"/.test(logiopsHtml) ||
-      /target="_blank"[^>]*href="[^"]*logiops-frontend/.test(logiopsHtml),
+    new RegExp(`href="[^"]*${LOGIOPS_APP.split('/')[0]}[^"]*"[^>]*target="_blank"`).test(logiopsHtml) ||
+      new RegExp(`target="_blank"[^>]*href="[^"]*${LOGIOPS_APP.split('/')[0]}`).test(logiopsHtml),
     'Giriş yeni sekmede açılıyor',
   );
   // rel is not cosmetic here: without noopener the page we hand the visitor to

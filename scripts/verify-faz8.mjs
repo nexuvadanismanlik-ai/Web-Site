@@ -9,7 +9,7 @@
  */
 
 const API = (
-  process.env.VERIFY_API_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1'
+  process.env.VERIFY_API_URL ?? 'http://localhost:4000/api/v1'
 ).replace(/\/+$/, '');
 
 const EMAIL = process.env.VERIFY_ADMIN_EMAIL ?? 'admin@nexuva.com';

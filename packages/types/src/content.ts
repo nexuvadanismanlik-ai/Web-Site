@@ -328,7 +328,20 @@ export interface LinksContent {
   logiopsRegister: LinkTarget;
 }
 
+/**
+ * Which published version a document is, attached by the API to the public
+ * content response. The site prints the number into every page so the API can
+ * check, after a publish, that visitors are actually being served it.
+ */
+export interface ContentPublication {
+  version: number;
+  /** ISO timestamp; null for a version published before this was recorded. */
+  publishedAt: string | null;
+}
+
 export interface SiteContent {
+  /** Present on the published document only; absent on drafts. */
+  publication?: ContentPublication;
   brand: BrandConfig;
   links: LinksContent;
   seo: SeoContent;

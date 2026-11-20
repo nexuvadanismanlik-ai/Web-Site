@@ -51,7 +51,7 @@ const SLOTS: Slot[] = [
     hint: 'Hesabı olan firmaların operasyon paneline girdiği adres.',
     icon: LogIn,
     usedBy: 'LogiOps sayfasının hero bölümü ve erişim kartları; başvuru sayfasının üst satırı.',
-    placeholder: 'https://logiops-frontend.onrender.com/login',
+    placeholder: 'https://app.ornek.com/login',
   },
   {
     key: 'logiopsRegister',
@@ -69,7 +69,7 @@ const SLOTS: Slot[] = [
     hint: 'Uygulamanın ana adresi. Şu an sitede bir butona bağlı değil; ileride kullanılmak üzere burada tutulur.',
     icon: ExternalLink,
     usedBy: 'Henüz kullanılmıyor.',
-    placeholder: 'https://logiops-frontend.onrender.com/',
+    placeholder: 'https://app.ornek.com/',
   },
 ];
 

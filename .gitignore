@@ -54,3 +54,6 @@ coverage
 # Uploads
 uploads/
 *.tsbuildinfo
+
+# Compiled unit tests
+.test-dist

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { verifySiteVersion } from '../website/publish/publish-verification';
 
 /** What a connection is doing, in the three words an operator needs. */
 export type ConnectionState = 'connected' | 'broken' | 'missing';
@@ -49,10 +50,10 @@ export class ReadinessService {
   }> {
     const connections = await Promise.all([
       this.database(),
-      Promise.resolve(this.migrations()),
+      this.migrations(),
       Promise.resolve(this.storage()),
       Promise.resolve(this.deploy()),
-      this.renderService(),
+      this.publishedSite(),
       this.email(),
       this.website(),
       this.domain(),
@@ -95,46 +96,49 @@ export class ReadinessService {
   }
 
   /**
-   * Migration status written by the application startup process.
+   * Migration state, read from the database itself.
+   *
+   * On Vercel there is no start command to run migrations and report back, so
+   * this asks Prisma's own bookkeeping table: how many migrations finished, and
+   * whether any is stuck half-applied. A stuck one blocks every later
+   * `prisma migrate deploy`, which is exactly what needs to be visible.
    */
-  private migrations(): ConnectionReport {
-    const status = process.env['NEXUVA_MIGRATION_STATUS'];
-    const detail = process.env['NEXUVA_MIGRATION_DETAIL'] ?? '';
+  private async migrations(): Promise<ConnectionReport> {
+    try {
+      const rows = await this.prisma.$queryRaw<
+        { migration_name: string; finished_at: Date | null; rolled_back_at: Date | null }[]
+      >`SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations`;
 
-    if (status === 'failed') {
-      return {
-        key: 'migrations',
-        label: 'Veritabanı Şeması',
-        state: 'broken',
-        detail: `${detail} Şema beklenenden geride olabilir.`.trim(),
-      };
-    }
+      const applied = rows.filter((row) => row.finished_at !== null && row.rolled_back_at === null);
+      const stuck = rows.filter((row) => row.finished_at === null && row.rolled_back_at === null);
 
-    if (status === 'skipped') {
-      return {
-        key: 'migrations',
-        label: 'Veritabanı Şeması',
-        state: 'missing',
-        detail: `Migration atlandı${detail ? ` (${detail})` : ''}.`,
-      };
-    }
+      if (stuck.length > 0) {
+        return {
+          key: 'migrations',
+          label: 'Veritabanı Şeması',
+          state: 'broken',
+          detail:
+            `${applied.length} migration uygulanmış, ancak yarım kalmış kayıt var: ` +
+            `${stuck.map((row) => row.migration_name).join(', ')}. ` +
+            'Bu çözülmeden yeni migration uygulanamaz (DATABASE_MIGRATION.md).',
+        };
+      }
 
-    if (status === 'ok') {
       return {
         key: 'migrations',
         label: 'Veritabanı Şeması',
         state: 'connected',
-        detail: detail || 'Migration’lar güncel.',
+        detail: `${applied.length} migration uygulanmış; yarım kalmış kayıt yok.`,
+      };
+    } catch (err) {
+      this.logger.warn(`Migration table probe failed: ${String(err)}`);
+      return {
+        key: 'migrations',
+        label: 'Veritabanı Şeması',
+        state: 'broken',
+        detail: 'Migration kayıtları okunamadı.',
       };
     }
-
-    return {
-      key: 'migrations',
-      label: 'Veritabanı Şeması',
-      state: 'missing',
-      detail:
-        'Bu süreç migration adımından geçmeden başlatılmış. Şemanın güncel olduğu doğrulanamıyor.',
-    };
   }
 
   /**
@@ -182,219 +186,121 @@ export class ReadinessService {
    * Publish strategy configuration.
    */
   private deploy(): ConnectionReport {
-    const strategy =
-      this.config.get<string>('publish.strategy') ?? 'none';
+    const strategy = this.config.get<string>('publish.strategy') ?? 'none';
+    const siteUrl = this.config.get<string>('publish.siteUrl') ?? '';
 
     if (strategy !== 'deploy-hook' && strategy !== 'revalidate') {
       return {
         key: 'deploy',
-        label: 'Yayın (Render Deploy)',
+        label: 'Yayın',
         state: 'missing',
         detail:
-          'Yayın stratejisi seçilmemiş. İçerik kaydedilebilir ancak sitenin yeniden yayınlanması otomatik olarak doğrulanamıyor.',
+          'Yayın stratejisi seçilmemiş. İçerik kaydedilebilir ancak siteye taşınamıyor.',
         missing: ['PUBLISH_STRATEGY'],
       };
     }
 
+    const missing: string[] = [];
     if (strategy === 'revalidate') {
-      const missing: string[] = [];
-
-      const revalidateUrl =
-        this.config.get<string>('publish.revalidateUrl');
-
-      const revalidateSecret =
-        this.config.get<string>('publish.revalidateSecret');
-
-      if (!revalidateUrl) {
-        missing.push('FRONTEND_REVALIDATE_URL');
-      }
-
-      if (!revalidateSecret) {
+      if (!this.config.get<string>('publish.revalidateUrl')) missing.push('FRONTEND_REVALIDATE_URL');
+      if (!this.config.get<string>('publish.revalidateSecret')) {
         missing.push('FRONTEND_REVALIDATE_SECRET');
       }
-
-      if (missing.length > 0) {
-        return {
-          key: 'deploy',
-          label: 'Yayın (ISR revalidate)',
-          state: 'missing',
-          detail:
-            'Yayın stratejisi revalidate olarak seçilmiş ancak gerekli adres veya anahtar tanımlı değil.',
-          missing,
-        };
-      }
-
-      return {
-        key: 'deploy',
-        label: 'Yayın (ISR revalidate)',
-        state: 'connected',
-        detail:
-          'Yayın sonrası frontend önbelleğinin yenilenmesi için gerekli yapılandırma mevcut.',
-      };
+    } else if (!this.config.get<string>('publish.deployHookUrl')) {
+      missing.push('DEPLOY_HOOK_URL');
     }
+    // Without the site address a publish cannot be verified, and an unverified
+    // publish is recorded as failed — so this is a missing setting, not a nicety.
+    if (!siteUrl) missing.push('SITE_URL');
 
-    const deployHookUrl =
-      this.config.get<string>('publish.deployHookUrl');
-
-    if (!deployHookUrl) {
-      return {
-        key: 'deploy',
-        label: 'Yayın (Render Deploy)',
-        state: 'missing',
-        detail:
-          'Deploy hook stratejisi seçilmiş ancak Render deploy hook adresi tanımlı değil.',
-        missing: ['RENDER_DEPLOY_HOOK_URL'],
-      };
-    }
-
-    const renderApiKey =
-      this.config.get<string>('publish.renderApiKey');
-
-    const renderServiceId =
-      this.config.get<string>('publish.renderServiceId');
-
-    const missing: string[] = [];
-
-    if (!renderApiKey) {
-      missing.push('RENDER_API_KEY');
-    }
-
-    if (!renderServiceId) {
-      missing.push('RENDER_FRONTEND_SERVICE_ID');
-    }
-
+    const label = strategy === 'revalidate' ? 'Yayın (ISR revalidate)' : 'Yayın (deploy hook)';
     if (missing.length > 0) {
       return {
         key: 'deploy',
-        label: 'Yayın (Render Deploy)',
-        state: 'broken',
-        detail:
-          'Deploy tetikleme yapılandırılmış ancak Render servisinin sonucunu takip etmek için gerekli bilgiler eksik.',
+        label,
+        state: 'missing',
+        detail: 'Yayın stratejisi seçilmiş ancak gerekli ayarlar eksik.',
         missing,
       };
     }
 
     return {
       key: 'deploy',
-      label: 'Yayın (Render Deploy)',
+      label,
       state: 'connected',
       detail:
-        'Render deploy hook ve deploy sonucu takibi için gerekli yapılandırma mevcut.',
+        strategy === 'revalidate'
+          ? 'Yayın sonrası site önbelleği yenilenir ve sitenin yeni sürümü sunduğu doğrulanır.'
+          : 'Yayın sonrası derleme tetiklenir ve sitenin yeni sürümü sunduğu doğrulanır.',
     };
   }
 
   /**
-   * Checks the Render service through Render's HTTP API.
+   * Whether the live site serves the latest published content version.
+   *
+   * Replaces the Render API lookup: instead of asking a hosting provider about
+   * its service, it asks the site what it is serving — which works on any host
+   * and catches the failure that matters (visitors seeing old content).
    */
-  private async renderService(): Promise<ConnectionReport> {
-    const key =
-      this.config.get<string>('publish.renderApiKey') ?? '';
-
-    const serviceId =
-      this.config.get<string>('publish.renderServiceId') ?? '';
-
-    if (!key || !serviceId) {
-      const missing: string[] = [];
-
-      if (!key) {
-        missing.push('RENDER_API_KEY');
-      }
-
-      if (!serviceId) {
-        missing.push('RENDER_FRONTEND_SERVICE_ID');
-      }
-
+  private async publishedSite(): Promise<ConnectionReport> {
+    const siteUrl = this.config.get<string>('publish.siteUrl') ?? '';
+    if (!siteUrl) {
       return {
-        key: 'render',
-        label: 'Render (barındırma)',
+        key: 'hosting',
+        label: 'Yayındaki site',
         state: 'missing',
-        detail:
-          'Render API bilgileri tanımlı olmadığı için barındırma servisinin durumu doğrulanamıyor.',
-        missing,
+        detail: 'Site adresi tanımlı olmadığı için sunulan içerik sürümü doğrulanamıyor.',
+        missing: ['SITE_URL'],
       };
     }
 
-    try {
-      const result = await httpRequest(
-        `https://api.render.com/v1/services/${encodeURIComponent(serviceId)}`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${key}`,
-            Accept: 'application/json',
-          },
-          timeoutMs: 10_000,
-        },
-      );
+    const latest = await this.prisma.contentVersion
+      .findFirst({
+        where: { isPublished: true },
+        orderBy: { number: 'desc' },
+        select: { number: true },
+      })
+      .catch(() => null);
 
-      if (result.status === 401 || result.status === 403) {
-        return {
-          key: 'render',
-          label: 'Render (barındırma)',
-          state: 'broken',
-          detail:
-            'Render API anahtarı reddedildi. Anahtar yanlış, süresi dolmuş veya yetkisiz olabilir.',
-        };
-      }
+    const outcome = await verifySiteVersion(siteUrl, latest?.number ?? 0, {
+      attempts: 1,
+      delayMs: 0,
+      timeoutMs: 8_000,
+    });
 
-      if (result.status === 404) {
-        return {
-          key: 'render',
-          label: 'Render (barındırma)',
-          state: 'broken',
-          detail:
-            `Render servisi bulunamadı (${serviceId}). Servis kimliği yanlış veya servis silinmiş olabilir.`,
-        };
-      }
-
-      if (result.status < 200 || result.status >= 300) {
-        return {
-          key: 'render',
-          label: 'Render (barındırma)',
-          state: 'broken',
-          detail:
-            `Render API HTTP ${result.status} döndürdü.`,
-        };
-      }
-
-      let body: {
-        name?: string;
-        suspended?: string;
-      } = {};
-
-      try {
-        body = JSON.parse(result.body) as {
-          name?: string;
-          suspended?: string;
-        };
-      } catch {
-        // API response was successful but did not contain valid JSON.
-      }
-
-      const suspended =
-        body.suspended === 'suspended';
-
+    if (outcome.status === 'unreachable') {
       return {
-        key: 'render',
-        label: 'Render (barındırma)',
-        state: suspended ? 'broken' : 'connected',
-        detail: suspended
-          ? `"${body.name ?? serviceId}" askıya alınmış.`
-          : `"${body.name ?? serviceId}" Render servisi erişilebilir.`,
-      };
-    } catch (err) {
-      this.logger.warn(
-        `Render API probe failed: ${String(err)}`,
-      );
-
-      return {
-        key: 'render',
-        label: 'Render (barındırma)',
+        key: 'hosting',
+        label: 'Yayındaki site',
         state: 'broken',
-        detail:
-          'Render API’sine ulaşılamadı.',
+        detail: `Siteye ulaşılamadı (${outcome.detail}).`,
       };
     }
+    if (!latest) {
+      return {
+        key: 'hosting',
+        label: 'Yayındaki site',
+        state: 'connected',
+        detail: 'Site erişilebilir; henüz yayınlanmış bir içerik sürümü yok.',
+      };
+    }
+    if (outcome.status === 'verified') {
+      return {
+        key: 'hosting',
+        label: 'Yayındaki site',
+        state: 'connected',
+        detail: `Site en son yayınlanan içeriği (sürüm ${outcome.served}) sunuyor.`,
+      };
+    }
+    return {
+      key: 'hosting',
+      label: 'Yayındaki site',
+      state: 'broken',
+      detail:
+        outcome.served === null
+          ? `Site erişilebilir ama içerik sürümü bildirmiyor; en son yayınlanan sürüm ${latest.number}.`
+          : `Site sürüm ${outcome.served}'i sunuyor, en son yayınlanan sürüm ${latest.number}.`,
+    };
   }
 
   /**
@@ -432,14 +338,14 @@ export class ReadinessService {
       const { address } = await lookup(host);
 
       const isPlatformDefault =
-        host.endsWith('.onrender.com');
+        host.endsWith('.vercel.app');
 
       return {
         key: 'domain',
         label: 'Alan Adı',
         state: 'connected',
         detail: isPlatformDefault
-          ? `${host} → ${address}. Render varsayılan alan adı kullanılıyor.`
+          ? `${host} → ${address}. Vercel varsayılan alan adı kullanılıyor; kalıcı alan adı bağlanmamış.`
           : `${host} → ${address}. DNS çözümlemesi çalışıyor.`,
       };
     } catch {

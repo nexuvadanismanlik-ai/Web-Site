@@ -16,10 +16,7 @@
  *   node scripts/verify-admin-screens.mjs
  */
 
-const ADMIN = (process.env.VERIFY_ADMIN_URL ?? 'https://nexuva-admin.onrender.com').replace(
-  /\/+$/,
-  '',
-);
+const ADMIN = (process.env.VERIFY_ADMIN_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
 const EMAIL = process.env.VERIFY_ADMIN_EMAIL ?? 'admin@nexuva.com';
 const PASSWORD = process.env.VERIFY_ADMIN_PASSWORD ?? 'nexuva123';
 

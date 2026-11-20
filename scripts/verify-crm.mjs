@@ -14,7 +14,7 @@
  * veritabanından okunan cevapta arar. Sürükle-bırak testi, tahtanın bıraktığı
  * yerde çağırdığı ucun ta kendisidir.
  *
- *   VERIFY_API_URL=https://nexuva-api.onrender.com/api/v1 \
+ *   VERIFY_API_URL=https://<api-host>/api/v1 \
  *   VERIFY_ADMIN_EMAIL=... VERIFY_ADMIN_PASSWORD=... VERIFY_ALLOW_WRITES=1 \
  *   node scripts/verify-crm.mjs
  *

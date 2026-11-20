@@ -1,0 +1,481 @@
+{
+  "publication": { "version": 23, "publishedAt": "2026-08-19T01:21:03.583Z" },
+  "cta": {
+    "title": {
+      "en": "Ready to start your digital transformation?",
+      "tr": "Dijital dönüşümünüzü başlatmaya hazır mısınız?"
+    },
+    "button": {
+      "href": "/contact",
+      "label": { "en": "Book a Free Consultation", "tr": "Ücretsiz Görüşme Planla" }
+    },
+    "subtitle": {
+      "en": "Let's talk about your idea and build a roadmap tailored to you. The first consultation is always on us.",
+      "tr": "Fikrinizi konuşalım, size özel bir yol haritası çıkaralım. İlk görüşme her zaman bizden."
+    }
+  },
+  "nav": [
+    { "href": "/", "label": { "en": "Home", "tr": "Anasayfa" } },
+    { "href": "/services", "label": { "en": "Services", "tr": "Hizmetler" } },
+    { "href": "/logiops", "label": { "en": "LogiOps", "tr": "LogiOps" } },
+    { "href": "/about", "label": { "en": "About", "tr": "Hakkımızda" } },
+    { "href": "/references", "label": { "en": "References", "tr": "Referanslar" } },
+    { "href": "/contact", "label": { "en": "Contact", "tr": "İletişim" } }
+  ],
+  "seo": {
+    "title": "Nexuva Danışmanlık | Dijital Pazarlama, Google Ads ve SEO Ajansı",
+    "favicon": "",
+    "noIndex": false,
+    "ogImage": "",
+    "ogTitle": "",
+    "keywords": ["dijital pazarlama ajansı", "google ads yönetimi"],
+    "canonical": "https://nexuva-web-site-frontend.onrender.com",
+    "themeColor": "",
+    "description": "Google Ads, Meta reklam yönetimi, SEO ve kurumsal web sitesi hizmetleri. Lojistik ve dış ticaret firmaları için LogiOps operasyon platformu.",
+    "twitterCard": "summary_large_image",
+    "twitterSite": "",
+    "ogDescription": "",
+    "appleTouchIcon": ""
+  },
+  "hero": {
+    "badge": {
+      "en": "Your corporate digital transformation partner",
+      "tr": "Kurumsal Dijital Dönüşüm Partneriniz"
+    },
+    "image": "",
+    "metrics": [],
+    "imageAlt": "",
+    "subtitle": {
+      "en": "Nexuva brings digital marketing, advertising and web experience together under one roof.",
+      "tr": "Nexuva; dijital pazarlama, reklam yönetimi ve web deneyimini tek çatı altında birleştirir. Google ve Meta reklamlarından SEO’ya, kurumsal web sitesinden dönüşüm ölçümüne kadar markanızın dijitalde büyümesi için gereken her adımda yanınızdayız."
+    },
+    "titleLead": { "en": "Build tomorrow’s business", "tr": "Geleceğin işini bugünden" },
+    "primaryCta": {
+      "href": "/contact",
+      "label": { "en": "Let’s talk about your project", "tr": "Projenizi Konuşalım" }
+    },
+    "secondaryCta": {
+      "href": "/services",
+      "label": { "en": "Explore our services", "tr": "Hizmetleri Keşfet" }
+    },
+    "titleHighlight": { "en": "together, today", "tr": "birlikte inşa edelim" }
+  },
+  "about": {
+    "badge": { "en": "Who We Are", "tr": "Biz Kimiz" },
+    "title": {
+      "en": "A team that turns technology into meaningful work",
+      "tr": "Teknolojiyi anlamlı işlere dönüştüren ekip"
+    },
+    "highlights": [
+      {
+        "icon": "target",
+        "text": {
+          "en": "We lock onto measurable business goals.",
+          "tr": "Ölçülebilir iş hedeflerine kilitleniyoruz."
+        },
+        "title": { "en": "Outcome Driven", "tr": "Sonuç Odaklı" }
+      },
+      {
+        "icon": "users",
+        "text": {
+          "en": "8+ years of average industry experience.",
+          "tr": "Ortalama 8+ yıl sektör tecrübesi."
+        },
+        "title": { "en": "Seasoned Team", "tr": "Deneyimli Ekip" }
+      },
+      {
+        "icon": "zap",
+        "text": {
+          "en": "Rapid iteration with agile processes.",
+          "tr": "Çevik süreçlerle hızlı iterasyon."
+        },
+        "title": { "en": "Fast Delivery", "tr": "Hızlı Teslim" }
+      },
+      {
+        "icon": "shield",
+        "text": {
+          "en": "End-to-end security and transparency.",
+          "tr": "Uçtan uca güvenlik ve şeffaflık."
+        },
+        "title": { "en": "Reliable", "tr": "Güvenilir" }
+      }
+    ],
+    "paragraphs": [
+      {
+        "en": "We accompany brands of every scale on their digital journey.",
+        "tr": "Girişimlerden kurumsal holdinglere kadar farklı ölçeklerdeki markaların dijital yolculuğuna eşlik ediyoruz. Her projeye stratejik bir ortak gibi yaklaşıyor, sadece kod yazmıyor; iş sonuçları üretiyoruz."
+      },
+      {
+        "en": "We unite strategy, design, engineering and growth disciplines in a single team.",
+        "tr": "Strateji, tasarım, mühendislik ve büyüme disiplinlerini tek ekipte birleştiriyoruz. Bu bütünsel yaklaşım, fikirlerin daha hızlı ve daha az riskle ürüne dönüşmesini sağlıyor."
+      }
+    ]
+  },
+  "brand": {
+    "email": "nexuvadanismanlik@gmail.com",
+    "phone": "+90 212 555 0100",
+    "theme": "light",
+    "social": [
+      { "href": "https://linkedin.com", "icon": "linkedin", "label": "LinkedIn" },
+      { "href": "https://x.com", "icon": "twitter", "label": "X" },
+      { "href": "https://instagram.com", "icon": "instagram", "label": "Instagram" },
+      { "href": "https://github.com", "icon": "github", "label": "GitHub" }
+    ],
+    "address": {
+      "en": "Levent, 34330 Besiktas / Istanbul, Türkiye",
+      "tr": "Levent, 34330 Beşiktaş / İstanbul"
+    },
+    "tagline": { "en": "Architects of digital transformation", "tr": "Dijital dönüşümün mimarı" },
+    "logoText": "Nexuva",
+    "siteName": "Nexuva",
+    "accentColor": "#39415a",
+    "primaryColor": "#1c2130"
+  },
+  "links": {
+    "logiopsApp": {
+      "url": "https://logiops-frontend.onrender.com/",
+      "label": { "en": "Go to LogiOps", "tr": "LogiOps’a Git" },
+      "newTab": true,
+      "enabled": true,
+      "description": { "en": "", "tr": "" }
+    },
+    "logiopsLogin": {
+      "url": "https://logiops-frontend.onrender.com/login",
+      "label": { "en": "Sign In", "tr": "Giriş Yap" },
+      "newTab": true,
+      "enabled": true,
+      "description": {
+        "en": "Sign in to your operations panel.",
+        "tr": "Hesabınız varsa operasyon panelinize buradan girin."
+      }
+    },
+    "logiopsRegister": {
+      "url": "/logiops/basvuru",
+      "label": { "en": "Apply for Access", "tr": "Üyelik Başvurusu Oluştur" },
+      "newTab": false,
+      "enabled": true,
+      "description": {
+        "en": "Request access for your company.",
+        "tr": "Firmanız için erişim talebi bırakın, operasyonunuzu konuşalım."
+      }
+    }
+  },
+  "logos": [],
+  "stats": [],
+  "footer": {
+    "cta": { "href": "/contact", "label": { "en": "Get in touch", "tr": "Talep Oluştur" } },
+    "about": {
+      "en": "Nexuva is a digital transformation agency uniting strategy, software and design to grow brands in the digital world.",
+      "tr": "Nexuva, markaların dijitalde büyümesi için strateji, yazılım ve tasarımı bir araya getiren dijital dönüşüm ajansıdır."
+    },
+    "columns": [
+      {
+        "links": [
+          { "href": "/about", "label": { "en": "About", "tr": "Hakkımızda" } },
+          { "href": "/references", "label": { "en": "References", "tr": "Referanslar" } },
+          { "href": "/contact", "label": { "en": "Contact", "tr": "İletişim" } }
+        ],
+        "title": { "en": "Company", "tr": "Kurumsal" }
+      }
+    ],
+    "copyright": { "en": "All rights reserved.", "tr": "Tüm hakları saklıdır." }
+  },
+  "uiText": {},
+  "contact": {
+    "badge": { "en": "Contact", "tr": "İletişim" },
+    "email": "nexuvadanismanlik@gmail.com",
+    "phone": "+90 212 555 0100",
+    "title": {
+      "en": "Let's grab a coffee and talk about your project",
+      "tr": "Bir kahve içelim, projenizi konuşalım"
+    },
+    "address": {
+      "en": "Levent, 34330 Besiktas / Istanbul, Türkiye",
+      "tr": "Levent, 34330 Beşiktaş / İstanbul"
+    },
+    "description": {
+      "en": "Fill out the form and we'll get back to you within 24 hours.",
+      "tr": "Formu doldurun, 24 saat içinde size dönüş yapalım. Ya da doğrudan bize ulaşın."
+    }
+  },
+  "logiops": {
+    "flow": [
+      {
+        "body": {
+          "en": "We map the current operation together.",
+          "tr": "Mevcut operasyonu birlikte çıkarırız: hangi iş nerede başlıyor, nerede bekliyor, nerede bitiyor."
+        },
+        "title": { "en": "Discovery", "tr": "Keşif" }
+      },
+      {
+        "body": {
+          "en": "We define the flow.",
+          "tr": "Akışı, sorumlulukları ve ölçülecek noktaları tanımlarız."
+        },
+        "title": { "en": "Design", "tr": "Tasarım" }
+      },
+      {
+        "body": {
+          "en": "The flow goes live.",
+          "tr": "Akış devreye alınır, mevcut sistemlerle bağlantılar kurulur, veri aktarımı yapılır."
+        },
+        "title": { "en": "Setup", "tr": "Kurulum" }
+      },
+      {
+        "body": {
+          "en": "The team takes it over.",
+          "tr": "Ekip kendi işini kendi yürütecek şekilde sistemi devralır."
+        },
+        "title": { "en": "Handover", "tr": "Devreye alma" }
+      },
+      {
+        "body": {
+          "en": "The flow is adjusted.",
+          "tr": "Ölçüm başladıktan sonra akış üzerinde düzeltmeler yapılır."
+        },
+        "title": { "en": "Monitoring and improvement", "tr": "İzleme ve iyileştirme" }
+      }
+    ],
+    "badge": { "en": "A Nexuva product", "tr": "Nexuva Ürünü" },
+    "approach": [
+      {
+        "body": {
+          "en": "We map what already happens.",
+          "tr": "Yeni bir düzen dayatmadan önce işin bugün nasıl yürüdüğünü adım adım yazarız."
+        },
+        "title": { "en": "We map what already happens", "tr": "Önce mevcut akışı çıkarırız" }
+      }
+    ],
+    "problems": [
+      {
+        "body": {
+          "en": "Work scatters across tools.",
+          "tr": "Talepler e-postada, takip tabloda, onay mesajlaşmada durur."
+        },
+        "title": { "en": "Work scatters across tools", "tr": "İş birden fazla araca dağılır" }
+      }
+    ],
+    "subtitle": {
+      "en": "LogiOps brings operations into a single flow.",
+      "tr": "LogiOps, dağınık araçlarda yürüyen operasyonu tek bir akışta toplayan bir yaklaşımdır."
+    },
+    "flowTitle": { "en": "How we work", "tr": "Nasıl ilerliyoruz" },
+    "titleLead": { "en": "Make your operations", "tr": "Operasyonunuzu" },
+    "primaryCta": {
+      "href": "/contact",
+      "label": { "en": "Talk to us about LogiOps", "tr": "LogiOps’u Konuşalım" }
+    },
+    "closingBody": {
+      "en": "Whether LogiOps fits you is not something to claim without seeing how you work.",
+      "tr": "LogiOps’un size uygun olup olmadığını, mevcut akışınızı görmeden söylemek doğru olmaz."
+    },
+    "closingTitle": {
+      "en": "Let’s start by talking about your operation",
+      "tr": "Operasyonunuzu konuşmakla başlayalım"
+    },
+    "secondaryCta": {
+      "href": "/services",
+      "label": { "en": "Our services", "tr": "Hizmetlerimiz" }
+    },
+    "approachTitle": { "en": "The LogiOps approach", "tr": "LogiOps yaklaşımı" },
+    "problemsTitle": {
+      "en": "What happens as operations grow",
+      "tr": "Operasyon büyüdükçe ne olur?"
+    },
+    "titleHighlight": { "en": "visible", "tr": "görünür kılın" }
+  },
+  "process": [
+    {
+      "id": "p1",
+      "title": { "en": "Discovery & Strategy", "tr": "Keşif & Strateji" },
+      "description": {
+        "en": "We analyze your needs.",
+        "tr": "İhtiyaçlarınızı derinlemesine analiz eder, hedefleri ve kapsamı netleştiririz."
+      }
+    },
+    {
+      "id": "p2",
+      "title": { "en": "Design & Prototype", "tr": "Tasarım & Prototip" },
+      "description": {
+        "en": "We craft the experience.",
+        "tr": "Kullanıcı deneyimini kurgular, tıklanabilir prototiplerle fikri doğrularız."
+      }
+    },
+    {
+      "id": "p3",
+      "title": { "en": "Build & Test", "tr": "Geliştirme & Test" },
+      "description": {
+        "en": "We build in sprints.",
+        "tr": "Çevik sprintlerle geliştirir, her adımda kalite ve güvenliği test ederiz."
+      }
+    },
+    {
+      "id": "p4",
+      "title": { "en": "Launch & Grow", "tr": "Lansman & Büyüme" },
+      "description": {
+        "en": "We launch and optimize.",
+        "tr": "Ürünü yayına alır, veriyle optimize eder ve büyümeyi sürdürülebilir kılarız."
+      }
+    }
+  ],
+  "services": [
+    {
+      "id": "s1",
+      "icon": "target",
+      "title": { "en": "Google Ads Yönetimi", "tr": "Google Ads Yönetimi" },
+      "features": [
+        { "en": "Arama & alışveriş kampanyaları", "tr": "Arama & alışveriş kampanyaları" },
+        { "en": "Dönüşüm takibi kurulumu", "tr": "Dönüşüm takibi kurulumu" },
+        { "en": "Aylık performans raporu", "tr": "Aylık performans raporu" }
+      ],
+      "description": {
+        "en": "Arama, görüntülü ve alışveriş kampanyalarını kuruyor, bütçeyi dönüşüm getiren aramalara yönlendiriyoruz.",
+        "tr": "Arama, görüntülü ve alışveriş kampanyalarını kuruyor, bütçeyi dönüşüm getiren aramalara yönlendiriyoruz. Kampanyalar haftalık olarak izlenir ve teklif stratejisi verilere göre güncellenir."
+      }
+    },
+    {
+      "id": "s2",
+      "icon": "users",
+      "title": { "en": "Meta Reklam Yönetimi", "tr": "Meta Reklam Yönetimi" },
+      "features": [
+        { "en": "Hedef kitle & yeniden pazarlama", "tr": "Hedef kitle & yeniden pazarlama" },
+        { "en": "Kreatif testleri", "tr": "Kreatif testleri" },
+        { "en": "Piksel ve olay kurulumu", "tr": "Piksel ve olay kurulumu" }
+      ],
+      "description": {
+        "en": "Facebook ve Instagram reklamlarını yönetiyoruz.",
+        "tr": "Facebook ve Instagram reklamlarını hedef kitle, kreatif ve teklif düzeyinde yönetiyoruz. Reklam setleri test edilerek ilerler; çalışan kurgu ölçeklenir, çalışmayan durdurulur."
+      }
+    },
+    {
+      "id": "s3",
+      "icon": "trending-up",
+      "title": { "en": "SEO", "tr": "SEO" },
+      "features": [
+        { "en": "Teknik SEO denetimi", "tr": "Teknik SEO denetimi" },
+        { "en": "Anahtar kelime & içerik planı", "tr": "Anahtar kelime & içerik planı" },
+        { "en": "Sıralama ve trafik takibi", "tr": "Sıralama ve trafik takibi" }
+      ],
+      "description": {
+        "en": "Teknik altyapı ve içerik.",
+        "tr": "Teknik altyapı, içerik ve site içi yapıyı arama motorlarının anlayacağı hâle getiriyoruz. Teknik denetimle başlar, içerik planı ve ölçümle devam eder."
+      }
+    },
+    {
+      "id": "s4",
+      "icon": "code",
+      "title": { "en": "Kurumsal Web Sitesi", "tr": "Kurumsal Web Sitesi" },
+      "features": [
+        { "en": "Tasarım ve geliştirme", "tr": "Tasarım ve geliştirme" },
+        { "en": "Yönetim paneli", "tr": "Yönetim paneli" },
+        { "en": "Mobil uyumluluk ve hız", "tr": "Mobil uyumluluk ve hız" }
+      ],
+      "description": {
+        "en": "Hızlı ve yönetilebilir web siteleri.",
+        "tr": "Şirketinizi doğru anlatan, hızlı ve yönetilebilir web siteleri geliştiriyoruz. İçeriği kendi ekibinizin güncelleyebilmesi için yönetim paneliyle birlikte teslim edilir."
+      }
+    },
+    {
+      "id": "s5",
+      "icon": "zap",
+      "title": { "en": "Landing Page", "tr": "Landing Page" },
+      "features": [
+        { "en": "Kampanyaya özel tasarım", "tr": "Kampanyaya özel tasarım" },
+        { "en": "Form ve dönüşüm takibi", "tr": "Form ve dönüşüm takibi" },
+        { "en": "A/B test altyapısı", "tr": "A/B test altyapısı" }
+      ],
+      "description": {
+        "en": "Tek bir eyleme odaklanan sayfalar.",
+        "tr": "Tek bir kampanya veya ürün için, tek bir eyleme odaklanan sayfalar kuruyoruz. Reklam trafiğini karşılamak üzere tasarlanır ve ölçülebilir biçimde yayına alınır."
+      }
+    },
+    {
+      "id": "s6",
+      "icon": "compass",
+      "title": { "en": "Dijital Marka Danışmanlığı", "tr": "Dijital Marka Danışmanlığı" },
+      "features": [
+        { "en": "Konumlandırma ve mesaj", "tr": "Konumlandırma ve mesaj" },
+        { "en": "Kanal stratejisi", "tr": "Kanal stratejisi" },
+        { "en": "İçerik yönü", "tr": "İçerik yönü" }
+      ],
+      "description": {
+        "en": "Dijital konumlandırma.",
+        "tr": "Markanın dijitalde nasıl konumlanacağını, hangi kanalda ne anlatacağını birlikte belirliyoruz. Mevcut durumun analiziyle başlar, uygulanabilir bir plana bağlanır."
+      }
+    },
+    {
+      "id": "s7",
+      "icon": "layers",
+      "title": { "en": "Otomasyon Sistemleri", "tr": "Otomasyon Sistemleri" },
+      "features": [
+        { "en": "Süreç analizi", "tr": "Süreç analizi" },
+        { "en": "Entegrasyon ve veri aktarımı", "tr": "Entegrasyon ve veri aktarımı" },
+        { "en": "Otomatik raporlama", "tr": "Otomatik raporlama" }
+      ],
+      "description": {
+        "en": "Tekrar eden işleri yazılıma devrediyoruz.",
+        "tr": "Tekrar eden işleri yazılıma devrediyoruz: form ve talep akışları, raporlama, sistemler arası veri aktarımı. Hangi işin otomatikleşmeye değdiğini birlikte tespit ediyoruz."
+      }
+    },
+    {
+      "id": "s8",
+      "icon": "rocket",
+      "title": { "en": "LogiOps Entegrasyonu", "tr": "LogiOps Entegrasyonu" },
+      "features": [
+        { "en": "Kurulum ve yapılandırma", "tr": "Kurulum ve yapılandırma" },
+        { "en": "Mevcut veriyle entegrasyon", "tr": "Mevcut veriyle entegrasyon" },
+        { "en": "Ekip eğitimi", "tr": "Ekip eğitimi" }
+      ],
+      "description": {
+        "en": "LogiOps entegrasyonu.",
+        "tr": "Nexuva’nın geliştirdiği LogiOps’u mevcut operasyonunuza bağlıyoruz. Kurulum, veri aktarımı ve ekip eğitimi dahil olmak üzere uçtan uca yürütülür."
+      }
+    }
+  ],
+  "references": [
+    {
+      "id": "r1",
+      "name": "Arvens",
+      "category": { "en": "Clothing & Accessories", "tr": "Giyim & Aksesuar" }
+    },
+    {
+      "id": "r2",
+      "name": "Scorpius Global Lojistik",
+      "category": { "en": "International Logistics", "tr": "Uluslararası Lojistik" }
+    }
+  ],
+  "processMeta": {
+    "badge": { "en": "How We Work", "tr": "Nasıl Çalışıyoruz" },
+    "title": { "en": "From idea to product in four steps", "tr": "Fikirden ürüne dört adımda" },
+    "subtitle": {
+      "en": "Transparent process.",
+      "tr": "Şeffaf, çevik ve öngörülebilir bir süreçle projelerinizi hayata geçiriyoruz."
+    }
+  },
+  "integrations": {},
+  "servicesMeta": {
+    "badge": { "en": "What We Do", "tr": "Ne Yapıyoruz" },
+    "title": { "en": "End-to-end digital solutions", "tr": "Uçtan uca dijital çözümler" },
+    "subtitle": {
+      "en": "Strategic and technological services.",
+      "tr": "Markanızı bir sonraki seviyeye taşıyacak stratejik ve teknolojik hizmetler."
+    }
+  },
+  "testimonials": [],
+  "referencesMeta": {
+    "badge": { "en": "References", "tr": "Referanslar" },
+    "title": { "en": "Leading brands trust us", "tr": "Türkiye'nin öncü markaları bize güveniyor" },
+    "subtitle": {
+      "en": "120+ brands.",
+      "tr": "Farklı sektörlerden 120'den fazla markayla dijital başarı hikâyeleri yazdık."
+    }
+  },
+  "testimonialsMeta": {
+    "badge": { "en": "Testimonials", "tr": "Görüşler" },
+    "title": { "en": "What our clients say", "tr": "Müşterilerimiz ne diyor?" },
+    "subtitle": {
+      "en": "Words of brands.",
+      "tr": "Başarı, birlikte çalıştığımız markaların sözlerinde gizli."
+    }
+  }
+}

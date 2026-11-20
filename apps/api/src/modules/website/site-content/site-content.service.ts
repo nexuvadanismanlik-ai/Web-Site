@@ -62,7 +62,7 @@ export class SiteContentService {
     const version = await this.prisma.contentVersion.findFirst({
       where: { tenantId, isPublished: true },
       orderBy: { number: 'desc' },
-      select: { snapshot: true },
+      select: { snapshot: true, number: true, publishedAt: true },
     });
 
     if (!version) {
@@ -83,7 +83,15 @@ export class SiteContentService {
       );
     }
 
-    return fromJson<SiteContent>(version.snapshot);
+    // Which version this is travels with the document: the site prints it into
+    // every page so a publish can be verified against what visitors are served.
+    return {
+      ...fromJson<SiteContent>(version.snapshot),
+      publication: {
+        version: version.number,
+        publishedAt: version.publishedAt?.toISOString() ?? null,
+      },
+    };
   }
 
   /**

@@ -13,7 +13,7 @@
  */
 
 const API = (
-  process.env.MEASURE_API_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1'
+  process.env.MEASURE_API_URL ?? 'http://localhost:4000/api/v1'
 ).replace(/\/+$/, '');
 const EMAIL = process.env.VERIFY_ADMIN_EMAIL ?? 'admin@nexuva.com';
 const PASSWORD = process.env.VERIFY_ADMIN_PASSWORD ?? 'nexuva123';

@@ -1,4 +1,9 @@
-# Render Infrastructure-as-Code
+# Render Infrastructure-as-Code — LEGACY
+#
+# The platform is moving to Vercel (docs/VERCEL_DEPLOYMENT.md). This file and the
+# Render services stay until the owner approves switching them off
+# (docs/PRODUCTION_CHECKLIST.md, step 13); delete it then.
+#
 # Deploy three services from this monorepo:
 #   1. nexuva-api   — NestJS backend
 #   2. nexuva-web   — Next.js public website

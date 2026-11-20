@@ -62,7 +62,9 @@ export class AnalyticsService {
         tenantId: params.tenantId,
         path: normalisePath(params.path),
         referrer: params.referrer?.slice(0, 300) ?? null,
-        source: params.utm?.source?.trim() || classifySource(params.referrer),
+        source:
+          aiSourceFromUtm(params.utm?.source) ??
+          (params.utm?.source?.trim() || classifySource(params.referrer)),
         device: classifyDevice(params.userAgent),
         browser: classifyBrowser(params.userAgent),
         country: params.country?.slice(0, 2).toUpperCase() ?? '',
@@ -512,6 +514,45 @@ function normalisePath(raw: string): string {
  * A referrer URL is not an answer to "where do my visitors come from" — the
  * answer is "Google", "Instagram", "direct", and that is what this returns.
  */
+/**
+ * AI assistants and answer engines, by the host their links come from.
+ *
+ * Reported as `ai:<name>` so the panel can total AI-referred traffic as one
+ * channel and still break it down. Checked before the search engines because
+ * Gemini lives on a google.com host and Copilot on Microsoft/Bing hosts.
+ * ChatGPT also tags outbound links with utm_source=chatgpt.com; that value is
+ * normalised the same way (aiSourceFromUtm).
+ */
+const AI_SOURCES: [RegExp, string][] = [
+  [/(^|\.)chatgpt\.com$|(^|\.)chat\.openai\.com$|(^|\.)openai\.com$/, 'ai:chatgpt'],
+  [/(^|\.)perplexity\.ai$/, 'ai:perplexity'],
+  [/(^|\.)claude\.ai$/, 'ai:claude'],
+  [/^gemini\.google\.com$|^bard\.google\.com$/, 'ai:gemini'],
+  [/(^|\.)copilot\.microsoft\.com$|(^|\.)copilot\.cloud\.microsoft$/, 'ai:copilot'],
+  [/(^|\.)deepseek\.com$/, 'ai:deepseek'],
+  [/(^|\.)meta\.ai$/, 'ai:meta'],
+  [/(^|\.)you\.com$/, 'ai:you'],
+  [/(^|\.)phind\.com$/, 'ai:phind'],
+  [/(^|\.)grok\.com$/, 'ai:grok'],
+];
+
+/** `chatgpt.com`, `perplexity` … in a utm_source, mapped to the same names. */
+export function aiSourceFromUtm(utmSource?: string): string | null {
+  const value = utmSource?.trim().toLowerCase();
+  if (!value) return null;
+  const host = value.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] ?? '';
+  for (const [pattern, name] of AI_SOURCES) if (pattern.test(host)) return name;
+  const bare: Record<string, string> = {
+    chatgpt: 'ai:chatgpt',
+    openai: 'ai:chatgpt',
+    perplexity: 'ai:perplexity',
+    claude: 'ai:claude',
+    gemini: 'ai:gemini',
+    copilot: 'ai:copilot',
+  };
+  return bare[host] ?? null;
+}
+
 export function classifySource(referrer?: string): string {
   if (!referrer) return 'direct';
   let host: string;
@@ -520,6 +561,8 @@ export function classifySource(referrer?: string): string {
   } catch {
     return 'direct';
   }
+
+  for (const [pattern, name] of AI_SOURCES) if (pattern.test(host)) return name;
 
   const known: [RegExp, string][] = [
     [/google\./, 'google'],

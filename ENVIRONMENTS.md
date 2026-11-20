@@ -1,3 +1,8 @@
+> **Not (Vercel geçişi):** Ortam ayrımı ilkesi aynen geçerli. Render'a özgü adımlar (Render → Environment)
+> artık Vercel proje ayarlarında yapılır: [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md#3-ortam-ayrımı).
+> Migration artık API açılışında değil, ayrı bir adımda çalışır: `pnpm --filter @nexuva/api run migrate:release`
+> ([docs/DATABASE_MIGRATION.md](docs/DATABASE_MIGRATION.md)).
+
 # Ortamlar
 
 Bu proje dört ortam kullanır. Hiçbiri diğerinin veritabanına yazmaz.

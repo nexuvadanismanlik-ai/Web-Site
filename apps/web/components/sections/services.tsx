@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { servicePath } from '../../lib/services';
 import type { ServiceItem, SectionMeta } from '@nexuva/types';
 import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
@@ -67,7 +68,9 @@ export function Services({
                 </div>
                 )}
                 <h3 className="font-heading text-xl text-fg" data-edit={`services.${i}.title`}>
-                  {t(svc.title)}
+                  <Link href={servicePath(svc)} className="hover:underline hover:underline-offset-4">
+                    {t(svc.title)}
+                  </Link>
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted" data-edit={`services.${i}.description`}>
                   {t(svc.description)}
@@ -89,11 +92,18 @@ export function Services({
                   ))}
                 </ul>
 
+                <Link
+                  href={servicePath(svc)}
+                  className="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-fg underline-offset-4 hover:underline"
+                >
+                  {t(svc.title)} hakkında detaylı bilgi
+                  <Icon name="arrow-right" className="h-3.5 w-3.5" />
+                </Link>
                 {svc.cta?.label?.tr && (
                   <Link
                     href={svc.cta.href || '/contact'}
                     data-cta={`service-${svc.id}`}
-                    className="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-brand-dyn transition-opacity hover:opacity-75"
+                    className="mt-3 inline-flex items-center gap-1.5 self-start text-sm font-medium text-brand-dyn transition-opacity hover:opacity-75"
                   >
                     {t(svc.cta.label)}
                     <Icon name="arrow-right" className="h-3.5 w-3.5" />

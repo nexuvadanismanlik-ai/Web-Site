@@ -22,14 +22,19 @@
  *   node scripts/seed-links.mjs --write
  */
 
-const API = (
-  process.env.VERIFY_API_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1'
-).replace(/\/+$/, '');
+const API = (process.env.VERIFY_API_URL ?? 'http://localhost:4000/api/v1').replace(/\/+$/, '');
 const EMAIL = process.env.VERIFY_ADMIN_EMAIL ?? 'admin@nexuva.com';
 const PASSWORD = process.env.VERIFY_ADMIN_PASSWORD ?? 'nexuva123';
 const WRITE = process.argv.includes('--write');
 
-const APP = 'https://logiops-frontend.onrender.com';
+// The LogiOps application's address is LogiOps' own concern; it is passed in
+// rather than written here so this repository never points at a host that
+// may move independently of it.
+const APP = (process.env.LOGIOPS_APP_URL ?? '').replace(/\/+$/, '');
+if (!APP) {
+  console.error('LOGIOPS_APP_URL is required (the LogiOps application address).');
+  process.exit(1);
+}
 
 const LINKS = {
   logiopsLogin: {

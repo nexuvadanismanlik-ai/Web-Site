@@ -1,4 +1,5 @@
 import { Reveal } from '../motion';
+import { Breadcrumbs, type Crumb } from '../breadcrumbs';
 
 /**
  * The opening of an inner page.
@@ -17,10 +18,13 @@ export function PageHero({
   badge,
   title,
   subtitle,
+  breadcrumbs,
 }: {
   badge?: string;
   title: string;
   subtitle?: string;
+  /** The trail after "Ana Sayfa"; the last item is this page. */
+  breadcrumbs?: Crumb[];
 }) {
   return (
     <section className="relative overflow-hidden pt-36 pb-14 sm:pt-44 sm:pb-18">
@@ -34,6 +38,9 @@ export function PageHero({
       />
       <div className="container-x">
         <div className="max-w-3xl">
+          {breadcrumbs && breadcrumbs.length > 0 && (
+            <Breadcrumbs items={breadcrumbs} className="mb-8" />
+          )}
           {badge && (
             <Reveal>
               <span className="eyebrow">{badge}</span>

@@ -118,7 +118,10 @@ async function refreshAccessToken(token: Record<string, unknown>): Promise<Recor
  * NextAuth JWT so server actions can call the API on the user's behalf.
  */
 export const authOptions: NextAuthOptions = {
-  session: { strategy: 'jwt' },
+  // An admin session ends after 8 hours without activity (NextAuth's default
+  // is 30 days). Activity extends it, at most every 30 minutes. The API's
+  // refresh token still caps a session at its own 7-day lifetime.
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60, updateAge: 30 * 60 },
   pages: { signIn: adminPath('/login') },
   providers: [
     CredentialsProvider({

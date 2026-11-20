@@ -324,7 +324,7 @@ export interface PublishStatus {
   lastPublish: PublishResult | null;
   /** A rebuild is in flight — saying "Yayınlandı" yet would be premature. */
   publishInProgress: boolean;
-  /** False when deploy outcomes cannot be read back, so results stay unknown. */
+  /** False when the live site cannot be read back (no SITE_URL), so results stay unverified. */
   outcomeTracking: boolean;
   history: PublishResult[];
 }

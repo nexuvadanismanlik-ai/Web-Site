@@ -18,10 +18,10 @@
  * VERIFY_SITE_URL.
  */
 const API = (
-  process.env.VERIFY_API_URL ?? 'https://web-site-backend-3fvs.onrender.com/api/v1'
+  process.env.VERIFY_API_URL ?? 'http://localhost:4000/api/v1'
 ).replace(/\/+$/, '');
 const SITE = (
-  process.env.VERIFY_SITE_URL ?? 'https://nexuva-web-site-frontend.onrender.com'
+  process.env.VERIFY_SITE_URL ?? 'http://localhost:3000'
 ).replace(/\/+$/, '');
 const EMAIL = process.env.VERIFY_ADMIN_EMAIL;
 const PASSWORD = process.env.VERIFY_ADMIN_PASSWORD;

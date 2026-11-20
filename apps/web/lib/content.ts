@@ -1,98 +1,76 @@
+import { cache } from 'react';
 import type { SiteContent } from '@nexuva/types';
+import { SITE_CONTENT_TAG } from './cache-tags';
+
+export { SITE_CONTENT_TAG };
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
 
 /**
- * Cache tag the API's revalidation call targets once this site runs as a
- * server deployment. Under `output: 'export'` Next ignores tags, so keeping it
- * here costs nothing and removes a step from the migration.
- */
-export const SITE_CONTENT_TAG = 'site-content';
-
-/**
- * Seconds before a cached copy is considered stale, once this site runs with
- * ISR. Not applied under `output: 'export'` — Next warns if a fetch specifies
- * both `cache` and `revalidate`, so it is wired up as part of the migration
- * rather than kept inert here. See apps/web/MIGRATION.md.
+ * Seconds before a cached copy is considered stale even without a publish.
+ *
+ * The safety net: if a revalidation call is ever lost, the site still picks
+ * up the published content within this window. Do not set it to false.
  */
 export const REVALIDATE_SECONDS = 300;
 
 /**
  * Site content comes from the Nexuva API, which owns the database.
  *
- * ── Today (static export on a Render Static Site) ──────────────────────────
- * There is no runtime, so this runs during `next build` and the result is baked
- * into the generated HTML. Publishing edited content therefore means rebuilding,
- * which the API triggers through its Render deploy hook.
+ * The site runs on Vercel with ISR. This is a cached server fetch: the first
+ * request renders the page and stores it; later requests are served from the
+ * cache. Publishing in the panel makes the API call /api/revalidate, which
+ * invalidates SITE_CONTENT_TAG, and the next request renders with the new
+ * content — no rebuild, no deploy.
  *
- * ── Target (Render Web Service, ISR) ───────────────────────────────────────
- * The same call becomes a cached server fetch. Editing content then invalidates
- * `SITE_CONTENT_TAG` through the site's /api/revalidate route and the next
- * request re-renders — no deploy. See apps/web/MIGRATION.md; the only change
- * needed in this file is the `cache` field below.
+ * If the API is unreachable when a page is regenerated, the fetch throws and
+ * Next keeps serving the last good page rather than an error. A build with no
+ * reachable API still fails, which is deliberate: there is no safe default
+ * content for a company's website.
  *
- * Kept in one place on purpose: every page reads content through this function,
- * so the caching policy is a single decision rather than a scattered one.
+ * Kept in one place on purpose: every page reads content through this
+ * function, so the caching policy is a single decision.
  */
-let cached: Promise<SiteContent> | null = null;
+export const getSiteContent = cache(async (): Promise<SiteContent> => {
+  const fixture = process.env['NEXUVA_CONTENT_FIXTURE'];
+  if (fixture) return readFixture(fixture);
+  return fetchSiteContent();
+});
 
 /**
- * Makes the request URL unique per build.
+ * Two attempts, close together.
  *
- * Publishing content triggers a rebuild of the same commit, and `force-cache`
- * writes the API response into `.next/cache`, which the host restores between
- * builds. Without this the second and every later build reuses the response
- * captured by the first, so the site is built successfully and still shows the
- * content from whenever the cache was first populated — which is exactly what
- * happened in production. A per-build value gives the fetch a cache key that
- * cannot survive into the next build.
- *
- * The commit hash would not work: a content-only publish rebuilds the same
- * commit.
+ * The longer back-off this replaced (up to 50 seconds) existed for a Render
+ * service that suspended when idle. A Vercel Function wakes in about a second;
+ * one quick retry covers that, and anything slower is a real outage the page
+ * should not wait out.
  */
-const BUILD_NONCE = Date.now().toString(36);
-
-/**
- * A build must not fail because the API was asleep.
- *
- * The API suspends when idle on its current plan, and a publish triggers this
- * build immediately after — so the first request of a deploy is very often the
- * one that pays the wake-up. Without this the deploy fails and the site keeps
- * serving the previous build, which looks exactly like a publish that did
- * nothing.
- */
-const ATTEMPTS = 4;
-const BACKOFF_MS = [0, 5_000, 15_000, 30_000];
+const ATTEMPTS = 2;
+const RETRY_DELAY_MS = 1_000;
 
 async function fetchSiteContent(): Promise<SiteContent> {
-  const url = `${API_BASE}/website/content?_build=${BUILD_NONCE}`;
+  const url = `${API_BASE}/website/content`;
 
   let res: Response | undefined;
   let lastError = '';
 
   for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-    const wait = BACKOFF_MS[attempt] ?? 0;
-    if (wait > 0) {
-      console.warn(`Site content fetch failed (${lastError}); retrying in ${wait / 1000}s...`);
-      await new Promise((resolve) => setTimeout(resolve, wait));
+    if (attempt > 0) {
+      console.warn(`Site content fetch failed (${lastError}); retrying...`);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
     }
 
     try {
       res = await fetch(url, {
-        // MIGRATION SEAM — 'force-cache' is required by static export: 'no-store'
-        // would mark the fetch dynamic and a static export cannot prerender that.
-        // Moving to ISR means replacing this single line with:
-        //   next: { revalidate: REVALIDATE_SECONDS, tags: [SITE_CONTENT_TAG] }
-        cache: 'force-cache',
-        next: { tags: [SITE_CONTENT_TAG] },
+        next: { revalidate: REVALIDATE_SECONDS, tags: [SITE_CONTENT_TAG] },
       });
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
+      res = undefined;
       continue;
     }
 
-    // A 5xx is the API waking or briefly unwell; a 4xx is a real answer that
-    // retrying cannot change.
+    // A 5xx is the API briefly unwell; a 4xx is a real answer retrying cannot change.
     if (res.ok || res.status < 500) break;
     lastError = `HTTP ${res.status}`;
   }
@@ -108,18 +86,37 @@ async function fetchSiteContent(): Promise<SiteContent> {
     throw new Error(`Site content request to ${url} failed with HTTP ${res.status}.`);
   }
 
-  // The API answers in the standard envelope: {success, message, data}.
-  const body = (await res.json()) as { data?: SiteContent } | SiteContent;
+  return normalise(unwrapEnvelope(await res.json(), url));
+}
+
+/** The API answers in the standard envelope: {success, message, data}. */
+function unwrapEnvelope(body: unknown, source: string): SiteContent {
   const content =
     body !== null && typeof body === 'object' && 'success' in body && 'data' in body
-      ? (body as { data: SiteContent }).data
-      : (body as SiteContent);
-
+      ? (body as { data: unknown }).data
+      : body;
   if (!content || typeof content !== 'object') {
-    throw new Error(`Site content request to ${url} returned an unexpected body.`);
+    throw new Error(`Site content from ${source} has an unexpected shape.`);
   }
+  return content as SiteContent;
+}
 
-  return normalise(content);
+/**
+ * Content from a JSON file instead of the API.
+ *
+ * For CI and local builds that must not touch any database: set
+ * NEXUVA_CONTENT_FIXTURE to a file such as test/fixtures/site-content.json.
+ * Refused on a Vercel production deployment, so a stray variable can never put
+ * fixture text on the live site.
+ */
+async function readFixture(file: string): Promise<SiteContent> {
+  if (process.env['VERCEL_ENV'] === 'production') {
+    throw new Error('NEXUVA_CONTENT_FIXTURE is not allowed on a production deployment.');
+  }
+  const { readFile } = await import('node:fs/promises');
+  const path = await import('node:path');
+  const raw = await readFile(path.resolve(process.cwd(), file), 'utf8');
+  return normalise(unwrapEnvelope(JSON.parse(raw), file));
 }
 
 /**
@@ -142,9 +139,4 @@ function normalise(content: SiteContent): SiteContent {
     : [];
 
   return { ...content, logos };
-}
-
-export async function getSiteContent(): Promise<SiteContent> {
-  cached ??= fetchSiteContent();
-  return cached;
 }

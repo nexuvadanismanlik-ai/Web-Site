@@ -14,7 +14,9 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "migrate:deploy": "prisma migrate deploy"
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:release": "node scripts/migrate-release.mjs",
+    "test": "node --test \"test/*.test.mjs\""
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"

@@ -21,22 +21,39 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { NoEnvelope, ResponseMessage } from '../../common/decorators/response.decorator';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import type { UserRole } from '@nexuva/types';
 
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/svg+xml',
-  'application/pdf',
-]);
+import { ALLOWED_MIME_TYPES, checkUploadedFile } from './file-type';
 
 // Allowlist prevents path traversal via folder name
 const ALLOWED_FOLDERS = new Set(['images', 'documents', 'logos', 'uploads', 'attachments']);
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+/**
+ * 4 MB through the API. A Vercel Function accepts at most 4.5 MB per request
+ * body, multipart overhead included; a larger upload would be cut off by the
+ * platform with a bare 413 before this code could explain why. Larger files go
+ * straight to object storage through a presigned URL (POST storage/upload-url).
+ */
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024;
+
+/** Asks for a presigned URL to upload one file directly to R2. */
+export class DirectUploadDto {
+  @IsString() @MaxLength(40) tenantId!: string;
+  @IsIn(['images', 'documents', 'logos', 'uploads', 'attachments']) folder!: string;
+  @IsString() @MaxLength(200) filename!: string;
+  @IsString() @MaxLength(100) mimeType!: string;
+  @IsInt() @Min(1) @Max(25 * 1024 * 1024) size!: number;
+}
+
+/** Registers a direct upload once the browser has PUT the bytes. */
+export class CompleteDirectUploadDto {
+  @IsString() @MaxLength(40) tenantId!: string;
+  @IsIn(['images', 'documents', 'logos', 'uploads', 'attachments']) folder!: string;
+  @IsString() @MaxLength(400) key!: string;
+  @IsString() @MaxLength(200) filename!: string;
+  @IsString() @MaxLength(100) mimeType!: string;
+}
 
 /** What may be changed about a stored file. Both are labels, not addresses. */
 export class UpdateFileDto {
@@ -59,6 +76,42 @@ export class StorageController {
     private readonly mediaUsage: MediaUsageService,
     private readonly tenants: WebsiteTenantService,
   ) {}
+
+  /**
+   * Step 1 of a direct upload: a short-lived URL the browser PUTs the file to.
+   * For files the 4.5 MB Vercel request limit would cut off. Requires R2.
+   */
+  @Post('upload-url')
+  @Roles('CONTENT_EDITOR')
+  @ApiOperation({ summary: 'Presigned URL for a direct-to-R2 upload (large files)' })
+  async createUploadUrl(@Body() body: DirectUploadDto, @CurrentUser() user: AuthUser) {
+    return this.storageService.createDirectUpload({
+      tenantId: body.tenantId,
+      actorRole: user.role,
+      actorCompanyId: user.companyId,
+      folder: body.folder,
+      filename: body.filename,
+      mimeType: body.mimeType,
+      size: body.size,
+    });
+  }
+
+  /** Step 2: verifies what arrived in R2 and records it. */
+  @Post('upload-complete')
+  @Roles('CONTENT_EDITOR')
+  @ApiOperation({ summary: 'Register a direct-to-R2 upload after verifying its content' })
+  async completeUpload(@Body() body: CompleteDirectUploadDto, @CurrentUser() user: AuthUser) {
+    return this.storageService.completeDirectUpload({
+      tenantId: body.tenantId,
+      uploadedById: user.id,
+      actorRole: user.role,
+      actorCompanyId: user.companyId,
+      folder: body.folder,
+      key: body.key,
+      filename: body.filename,
+      mimeType: body.mimeType,
+    });
+  }
 
   /**
    * Upload a file to Cloudflare R2 for a specific tenant.
@@ -117,6 +170,10 @@ export class StorageController {
 
     const buffer = Buffer.concat(chunks);
 
+    // The declared type is the sender's claim; the bytes are the evidence.
+    const check = checkUploadedFile(mimetype, buffer);
+    if (!check.ok) throw new BadRequestException(check.reason);
+
     const file = await this.storageService.uploadFile({
       tenantId,
       uploadedById: user.id,
@@ -124,7 +181,7 @@ export class StorageController {
       actorCompanyId: user.companyId,
       folder,
       buffer,
-      mimeType: mimetype,
+      mimeType: check.mime,
       filename,
     });
 
@@ -151,6 +208,12 @@ export class StorageController {
     void reply
       .header('Content-Type', file.mimeType)
       .header('Content-Disposition', `inline; filename="${encodeURIComponent(file.filename)}"`)
+      // The browser must take the declared type as final, and a file opened
+      // directly runs nothing: an SVG viewed at this address is a picture, not
+      // a page with script on the API's origin.
+      .header('X-Content-Type-Options', 'nosniff')
+      .header('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
+      .header('Cross-Origin-Resource-Policy', 'cross-origin')
       // Immutable: the address contains a record id that is never reused, so a
       // cached copy can never be the wrong file. Uploading a replacement
       // produces a new id and therefore a new address.
@@ -294,14 +357,18 @@ export class StorageController {
       chunks.push(chunk);
     }
 
+    const buffer = Buffer.concat(chunks);
+    const check = checkUploadedFile(part.mimetype, buffer);
+    if (!check.ok) throw new BadRequestException(check.reason);
+
     const replacement = await this.storageService.uploadFile({
       tenantId: existing.tenantId,
       uploadedById: user.id,
       actorRole: user.role,
       actorCompanyId: user.companyId,
       folder: existing.folder,
-      buffer: Buffer.concat(chunks),
-      mimeType: part.mimetype,
+      buffer,
+      mimeType: check.mime,
       filename: part.filename,
     });
 

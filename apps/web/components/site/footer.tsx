@@ -1,9 +1,13 @@
+import { isProfileUrl } from '../../lib/seo';
+import { confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
 import Link from 'next/link';
 import type { SiteContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
 import { Icon } from '../icon';
 
 export function Footer({ content }: { content: SiteContent }) {
+  const phone = confirmedPhone(content.brand.phone);
+  const address = confirmedAddress(t(content.brand.address));
   const { brand, footer } = content;
   const services = content.services ?? [];
   const year = new Date().getFullYear();
@@ -23,7 +27,7 @@ export function Footer({ content }: { content: SiteContent }) {
   });
 
   return (
-    <footer className="relative mt-10 border-t border-overlay/10">
+    <footer className="border-overlay/10 relative mt-10 border-t">
       <div className="rule-gold pointer-events-none absolute inset-x-0 -top-px" aria-hidden />
       <div className="container-x py-16">
         <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr_1fr_1.1fr] lg:gap-16">
@@ -40,21 +44,28 @@ export function Footer({ content }: { content: SiteContent }) {
               ) : (
                 <>
                   <span
-                    className="relative flex h-10 w-10 items-center justify-center rounded-full font-heading text-base"
+                    className="font-heading relative flex h-10 w-10 items-center justify-center rounded-full text-base"
                     style={{ border: '1px solid var(--gold)', color: 'var(--gold)' }}
                     aria-hidden
                   >
                     <span
                       className="absolute inset-[3px] rounded-full"
-                      style={{ border: '1px solid color-mix(in srgb, var(--gold) 55%, transparent)' }}
+                      style={{
+                        border: '1px solid color-mix(in srgb, var(--gold) 55%, transparent)',
+                      }}
                     />
                     <span className="relative">{brand.logoText.charAt(0)}</span>
                   </span>
-                  <span className="font-heading text-xl tracking-wide text-fg">{brand.logoText}</span>
+                  <span className="font-heading text-fg text-xl tracking-wide">
+                    {brand.logoText}
+                  </span>
                 </>
               )}
             </Link>
-            <p data-edit="footer.about" className="mt-6 max-w-sm text-[0.95rem] leading-relaxed text-muted">
+            <p
+              data-edit="footer.about"
+              className="text-muted mt-6 max-w-sm text-[0.95rem] leading-relaxed"
+            >
               {t(footer.about)}
             </p>
             {/* The footer is where a reader lands after everything else has
@@ -72,18 +83,20 @@ export function Footer({ content }: { content: SiteContent }) {
             )}
 
             <div className="mt-6 flex gap-3">
-              {brand.social.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={s.label}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-overlay/10 bg-overlay/5 text-muted transition-all hover:-translate-y-0.5 hover:border-overlay/25 hover:text-fg"
-                >
-                  <Icon name={s.icon} className="h-4 w-4" />
-                </a>
-              ))}
+              {brand.social
+                .filter((s) => isProfileUrl(s.href))
+                .map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={s.label}
+                    className="border-overlay/10 bg-overlay/5 text-muted hover:border-overlay/25 hover:text-fg flex h-10 w-10 items-center justify-center rounded-full border transition-all hover:-translate-y-0.5"
+                  >
+                    <Icon name={s.icon} className="h-4 w-4" />
+                  </a>
+                ))}
             </div>
           </div>
 
@@ -96,7 +109,7 @@ export function Footer({ content }: { content: SiteContent }) {
               services page does, so adding one in the panel puts it here too. */}
           {services.length > 0 && (
             <div>
-              <h4 className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-faint">
+              <h4 className="text-faint text-[0.7rem] font-semibold uppercase tracking-[0.18em]">
                 Hizmetler
               </h4>
               <ul className="mt-5 space-y-3">
@@ -104,7 +117,7 @@ export function Footer({ content }: { content: SiteContent }) {
                   <li key={service.id}>
                     <Link
                       href="/services"
-                      className="text-sm text-muted transition-colors hover:text-fg"
+                      className="text-muted hover:text-fg text-sm transition-colors"
                     >
                       {t(service.title)}
                     </Link>
@@ -114,7 +127,7 @@ export function Footer({ content }: { content: SiteContent }) {
                   <li>
                     <Link
                       href="/services"
-                      className="text-sm font-medium text-brand-dyn transition-opacity hover:opacity-75"
+                      className="text-brand-dyn text-sm font-medium transition-opacity hover:opacity-75"
                     >
                       Tüm hizmetler
                     </Link>
@@ -127,7 +140,10 @@ export function Footer({ content }: { content: SiteContent }) {
           {/* Link columns */}
           {panelColumns.map((col, ci) => (
             <div key={t(col.title)}>
-              <h4 data-edit={`footer.columns.${ci}.title`} className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-faint">
+              <h4
+                data-edit={`footer.columns.${ci}.title`}
+                className="text-faint text-[0.7rem] font-semibold uppercase tracking-[0.18em]"
+              >
                 {t(col.title)}
               </h4>
               <ul className="mt-5 space-y-3">
@@ -136,7 +152,7 @@ export function Footer({ content }: { content: SiteContent }) {
                     <Link
                       href={link.href}
                       data-edit={`footer.columns.${ci}.links.${i}.label`}
-                      className="text-sm text-muted transition-colors hover:text-fg"
+                      className="text-muted hover:text-fg text-sm transition-colors"
                     >
                       {t(link.label)}
                     </Link>
@@ -148,33 +164,44 @@ export function Footer({ content }: { content: SiteContent }) {
 
           {/* Contact */}
           <div>
-            <h4 className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-faint">
+            <h4 className="text-faint text-[0.7rem] font-semibold uppercase tracking-[0.18em]">
               {'İletişim'}
             </h4>
-            <ul className="mt-5 space-y-4 text-sm text-muted">
+            <ul className="text-muted mt-5 space-y-4 text-sm">
               <li className="flex items-start gap-3">
-                <Icon name="mail" className="mt-0.5 h-4 w-4 text-brand-dyn" />
+                <Icon name="mail" className="text-brand-dyn mt-0.5 h-4 w-4" />
                 <a
                   href={`mailto:${brand.email}`}
                   data-edit="brand.email"
-                  className="min-w-0 break-all hover:text-fg"
+                  className="hover:text-fg min-w-0 break-all"
                 >
                   {brand.email}
                 </a>
               </li>
-              <li className="flex items-start gap-3">
-                <Icon name="phone" className="mt-0.5 h-4 w-4 text-brand-dyn" />
-                <a href={`tel:${brand.phone.replace(/\s/g, '')}`} data-edit="brand.phone" className="hover:text-fg">{brand.phone}</a>
-              </li>
-              <li className="flex items-start gap-3">
-                <Icon name="map-pin" className="mt-0.5 h-4 w-4 text-brand-dyn" />
-                <span data-edit="brand.address">{t(brand.address)}</span>
-              </li>
+              {/* Shown only once confirmed (lib/verified-facts.ts). */}
+              {phone && (
+                <li className="flex items-start gap-3">
+                  <Icon name="phone" className="text-brand-dyn mt-0.5 h-4 w-4" />
+                  <a
+                    href={`tel:${phone.replace(/\s/g, '')}`}
+                    data-edit="brand.phone"
+                    className="hover:text-fg"
+                  >
+                    {phone}
+                  </a>
+                </li>
+              )}
+              {address && (
+                <li className="flex items-start gap-3">
+                  <Icon name="map-pin" className="text-brand-dyn mt-0.5 h-4 w-4" />
+                  <span data-edit="brand.address">{address}</span>
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-overlay/10 pt-8 text-sm text-faint sm:flex-row">
+        <div className="border-overlay/10 text-faint mt-14 flex flex-col items-center justify-between gap-4 border-t pt-8 text-sm sm:flex-row">
           <p>
             © {year} {brand.siteName}. {t(footer.copyright)}
           </p>

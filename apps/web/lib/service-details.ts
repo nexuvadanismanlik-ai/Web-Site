@@ -409,7 +409,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
       {
         question: 'LogiOps ile Nexuva arasındaki ilişki nedir?',
         answer:
-          'LogiOps, Nexuva tarafından geliştirilen ayrı bir yazılım ürünüdür. Nexuva hem ürünü geliştirir hem de firmalara kurulum, entegrasyon ve eğitim hizmeti verir.',
+          'LogiOps, Nexuva tarafından geliştirilen ayrı bir lojistik ve dış ticaret yazılım ürünüdür. Nexuva ana markadır; LogiOps onun ürün markalarından biridir. Nexuva ayrıca LogiOps’u kullanacak firmalara kurulum, entegrasyon ve eğitim hizmeti verir.',
       },
       {
         question: 'LogiOps entegrasyonu neleri kapsar?',

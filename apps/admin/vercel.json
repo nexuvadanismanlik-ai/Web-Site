@@ -6,7 +6,8 @@
   "buildCommand": "cd ../.. && pnpm --filter @nexuva/shared run build && pnpm --filter @nexuva/admin run build",
   "git": {
     "deploymentEnabled": {
-      "main": false
+      "main": false,
+      "vercel-migration": false
     }
   }
 }

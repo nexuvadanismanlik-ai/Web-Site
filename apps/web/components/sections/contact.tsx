@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent, IntegrationsContent, UiText } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
@@ -79,10 +80,25 @@ export function Contact({
         ? ui.formInvalid
         : ui.formError;
 
+  // Phone and address are shown only once confirmed (lib/verified-facts.ts);
+  // until then the panel's values stay out of the page entirely.
+  const phone = confirmedPhone(contact.phone);
+  const address = confirmedAddress(t(contact.address));
   const infoItems = [
-    { icon: Mail, label: contact.email, href: `mailto:${contact.email}` },
-    { icon: Phone, label: contact.phone, href: `tel:${contact.phone.replace(/\s/g, '')}` },
-    { icon: MapPin, label: t(contact.address), href: undefined },
+    { icon: Mail, label: contact.email, href: `mailto:${contact.email}`, path: 'contact.email' },
+    ...(phone
+      ? [
+          {
+            icon: Phone,
+            label: phone,
+            href: `tel:${phone.replace(/\s/g, '')}`,
+            path: 'contact.phone',
+          },
+        ]
+      : []),
+    ...(address
+      ? [{ icon: MapPin, label: address, href: undefined, path: 'contact.address' }]
+      : []),
   ];
 
   return (
@@ -94,65 +110,68 @@ export function Contact({
             {!hideHeading && (
               <>
                 <span className="eyebrow" data-edit="contact.badge">
-                  <span className="h-1.5 w-1.5 rounded-full brand-gradient-bg" />
+                  <span className="brand-gradient-bg h-1.5 w-1.5 rounded-full" />
                   {t(contact.badge)}
                 </span>
                 <h2
-                  className="mt-5 font-heading text-3xl font-bold text-fg text-balance sm:text-4xl md:text-[2.6rem] md:leading-[1.1]"
+                  className="font-heading text-fg mt-5 text-balance text-3xl font-bold sm:text-4xl md:text-[2.6rem] md:leading-[1.1]"
                   data-edit="contact.title"
                 >
                   {t(contact.title)}
                 </h2>
-                <p className="mt-5 max-w-md text-base leading-relaxed text-muted" data-edit="contact.description">
+                <p
+                  className="text-muted mt-5 max-w-md text-base leading-relaxed"
+                  data-edit="contact.description"
+                >
                   {t(contact.description)}
                 </p>
               </>
             )}
 
             <div className={hideHeading ? 'space-y-3' : 'mt-9 space-y-3'}>
-              {infoItems.map((item, i) => {
-                const paths = ['contact.email', 'contact.phone', 'contact.address'];
+              {infoItems.map((item) => {
                 const Inner = (
-                  <div className="flex items-center gap-4 rounded-2xl border border-overlay/10 bg-card px-5 py-4 shadow-card transition-colors hover:border-overlay/25">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl brand-gradient-bg">
+                  <div className="border-overlay/10 bg-card shadow-card hover:border-overlay/25 flex items-center gap-4 rounded-2xl border px-5 py-4 transition-colors">
+                    <div className="brand-gradient-bg flex h-11 w-11 items-center justify-center rounded-xl">
                       <item.icon className="h-5 w-5 text-white" />
                     </div>
-                    <span className="min-w-0 break-all text-sm text-fg" data-edit={paths[i]}>
+                    <span className="text-fg min-w-0 break-all text-sm" data-edit={item.path}>
                       {item.label}
                     </span>
                   </div>
                 );
                 return item.href ? (
-                  <a key={i} href={item.href} className="block">
+                  <a key={item.path} href={item.href} className="block">
                     {Inner}
                   </a>
                 ) : (
-                  <div key={i}>{Inner}</div>
+                  <div key={item.path}>{Inner}</div>
                 );
               })}
             </div>
           </div>
 
           {/* Form */}
-          <div className="glass rounded-4xl p-6 shadow-card sm:p-9">
+          <div className="glass rounded-4xl shadow-card p-6 sm:p-9">
             {status === 'success' ? (
               <div className="flex h-full min-h-[24rem] flex-col items-center justify-center text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/15">
                   <CheckCircle2 className="h-8 w-8 text-green-400" />
                 </div>
-                <p className="mt-6 max-w-sm text-lg text-fg">{ui.formSuccess}</p>
-                <button
-                  onClick={() => setStatus('idle')}
-                  className="btn-ghost mt-8"
-                  type="button"
-                >
+                <p className="text-fg mt-6 max-w-sm text-lg">{ui.formSuccess}</p>
+                <button onClick={() => setStatus('idle')} className="btn-ghost mt-8" type="button">
                   {'Yeni mesaj gönder'}
                 </button>
               </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-5">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field name="name" label={ui.formName} placeholder={ui.namePlaceholder} required />
+                  <Field
+                    name="name"
+                    label={ui.formName}
+                    placeholder={ui.namePlaceholder}
+                    required
+                  />
                   <Field
                     name="email"
                     label={ui.formEmail}
@@ -163,7 +182,11 @@ export function Contact({
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field name="phone" label={ui.formPhone} placeholder={ui.phonePlaceholder} />
-                  <Field name="company" label={ui.formCompany} placeholder={ui.companyPlaceholder} />
+                  <Field
+                    name="company"
+                    label={ui.formCompany}
+                    placeholder={ui.companyPlaceholder}
+                  />
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Choice name="service" label={ui.formService} options={services} />
@@ -189,19 +212,30 @@ export function Contact({
                     anyone using a screen reader or the keyboard. */}
                 <div className="absolute left-[-9999px]" aria-hidden="true">
                   <label htmlFor="contact-website">Web sitesi</label>
-                  <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+                  <input
+                    id="contact-website"
+                    name="website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
                 </div>
 
-                <label className="flex items-start gap-2.5 text-xs leading-relaxed text-muted">
+                <label className="text-muted flex items-start gap-2.5 text-xs leading-relaxed">
                   <input
                     type="checkbox"
                     name="consent"
                     required
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-overlay/30 accent-[var(--brand)]"
+                    className="border-overlay/30 mt-0.5 h-4 w-4 shrink-0 rounded accent-[var(--brand)]"
                   />
                   <span>
                     {ui.consentLabel}{' '}
-                    <a href="/kvkk/" target="_blank" rel="noopener" className="underline underline-offset-2">
+                    <a
+                      href="/kvkk/"
+                      target="_blank"
+                      rel="noopener"
+                      className="underline underline-offset-2"
+                    >
                       KVKK Aydınlatma Metni
                     </a>
                   </span>
@@ -239,27 +273,14 @@ export function Contact({
 }
 
 /** A dropdown that stays optional: "not sure yet" is a real answer. */
-function Choice({
-  name,
-  label,
-  options,
-}: {
-  name: string;
-  label: string;
-  options: string[];
-}) {
+function Choice({ name, label, options }: { name: string; label: string; options: string[] }) {
   if (options.length === 0) return null;
   return (
     <div>
       <label htmlFor={`contact-${name}`} className="nx-label">
         {label}
       </label>
-      <select
-        id={`contact-${name}`}
-        name={name}
-        defaultValue=""
-        className="nx-field nx-select"
-      >
+      <select id={`contact-${name}`} name={name} defaultValue="" className="nx-field nx-select">
         <option value="">Seçiniz</option>
         {options.map((option) => (
           <option key={option} value={option}>

@@ -1,3 +1,4 @@
+import { publicContact } from '../../lib/verified-facts';
 import { LEAD_BUDGET_BANDS } from '@nexuva/shared';
 import type { Metadata } from 'next';
 import { getSiteContent } from '../../lib/content';
@@ -26,7 +27,7 @@ export default async function ContactPage() {
         subtitle={t(content.contact.description)}
       />
       <Contact
-        contact={content.contact}
+        contact={publicContact(content.contact)}
         services={content.services.map((s) => t(s.title))}
         budgets={[...LEAD_BUDGET_BANDS]}
         uiText={content.uiText}

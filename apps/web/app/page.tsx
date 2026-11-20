@@ -1,3 +1,4 @@
+import { publicContact } from '../lib/verified-facts';
 import { LEAD_BUDGET_BANDS } from '@nexuva/shared';
 import type { Metadata } from 'next';
 import { pageMetadata } from '../lib/seo';
@@ -53,15 +54,12 @@ export default async function HomePage() {
       <Stats stats={content.stats} />
       <About about={content.about} />
       <References meta={content.referencesMeta} references={content.references} />
-      <Testimonials
-        meta={content.testimonialsMeta}
-        testimonials={content.testimonials}
-      />
+      <Testimonials meta={content.testimonialsMeta} testimonials={content.testimonials} />
       <Process meta={content.processMeta} steps={content.process} />
       <Faq items={HOME_FAQ} pageUrl={absoluteUrl('/') || undefined} />
       <Cta cta={content.cta} />
       <Contact
-        contact={content.contact}
+        contact={publicContact(content.contact)}
         services={content.services.map((s) => t(s.title))}
         budgets={[...LEAD_BUDGET_BANDS]}
         uiText={content.uiText}

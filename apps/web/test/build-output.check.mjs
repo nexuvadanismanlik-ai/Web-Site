@@ -137,3 +137,21 @@ test('robots.txt points at this sitemap and keeps /api/ out', () => {
 test('pages declare the content version they were rendered from', () => {
   assert.match(read('index.html'), /<meta name="nexuva-content-version" content="\d+"\/>/);
 });
+
+test('unconfirmed phone, address and placeholder social links are not on any page', () => {
+  for (const file of [...Object.keys(PAGES), 'llms.txt.body']) {
+    const html = read(file);
+    assert.ok(!html.includes('555 0100'), `${file}: phone`);
+    assert.ok(!html.includes('Levent, 34330'), `${file}: address`);
+    assert.ok(
+      !/href="https:\/\/(linkedin|x|instagram|github)\.com\/?"/.test(html),
+      `${file}: social`,
+    );
+  }
+});
+
+test('the approved brand definition is what machines are told', () => {
+  const definition = 'teknoloji ve danışmanlık şirketidir';
+  assert.ok(read('llms.txt.body').includes(definition));
+  assert.ok(read('index.html').includes(definition), 'home JSON-LD / FAQ');
+});

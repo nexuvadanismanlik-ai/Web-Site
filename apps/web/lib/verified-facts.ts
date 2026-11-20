@@ -31,3 +31,18 @@ export function confirmedAddress(value: string | undefined): string | undefined 
   if (!address) return undefined;
   return CONFIRMED_ADDRESSES.includes(address) ? address : undefined;
 }
+
+/**
+ * The contact block as it may be sent to the browser.
+ *
+ * Client components receive their props serialized into the page, so a value
+ * a component chooses not to render still ships in the HTML. Unconfirmed phone
+ * and address are blanked here, on the server, before that happens.
+ */
+export function publicContact<T extends { phone: string; address: { tr?: string; en?: string } }>(
+  contact: T,
+): T {
+  const phone = confirmedPhone(contact.phone) ?? '';
+  const tr = confirmedAddress(contact.address.tr);
+  return { ...contact, phone, address: tr ? contact.address : { tr: '', en: '' } };
+}

@@ -7,18 +7,20 @@
  * "software company" there, LogiOps sometimes a product and sometimes another
  * name for the company. Every machine-facing description reads from here.
  *
- * Status: PENDING OWNER APPROVAL. This is the wording already published in
- * llms.txt, unchanged in substance. The brief keeps the definitive brand
- * definition open until it is approved; change it here and every surface
- * follows.
+ * Status: APPROVED by the owner (21.11.2026), verbatim. Nexuva is the parent
+ * brand; LogiOps is a product brand. Change it here and every machine-facing
+ * surface follows.
  */
 export const BRAND_DEFINITION =
-  'Nexuva; dijital pazarlama, reklam yönetimi, SEO, kurumsal web geliştirme ve iş süreci ' +
-  'otomasyonu hizmetleri veren bir dijital dönüşüm şirketidir. Ayrıca dış ticaret ' +
-  'operasyonları için LogiOps adlı yazılım ürününü geliştirir.';
+  'Nexuva, işletmelerin dijital büyüme ve operasyonel dönüşüm süreçlerine danışmanlık, ' +
+  'yazılım, web teknolojileri, dijital pazarlama ve otomasyon çözümleri sunan bir ' +
+  'teknoloji ve danışmanlık şirketidir.';
 
-/** LogiOps, always as a product Nexuva makes — never as another name for it. */
+/**
+ * LogiOps: a product brand under Nexuva, never another name for it and never
+ * the basis of Nexuva's identity.
+ */
 export const LOGIOPS_DEFINITION =
-  'LogiOps, Nexuva tarafından geliştirilen bir dış ticaret ve lojistik operasyon ' +
-  'platformudur. Operasyon bilgisi bir kez girilir ve AWB, manifest, fatura, muhasebe ' +
-  've doküman süreçlerinde yeniden kullanılır.';
+  'LogiOps, Nexuva tarafından geliştirilen ayrı bir lojistik ve dış ticaret yazılım ' +
+  'ürünüdür. Operasyon bilgisi bir kez girilir ve AWB, manifest, fatura, muhasebe ve ' +
+  'doküman süreçlerinde yeniden kullanılır.';

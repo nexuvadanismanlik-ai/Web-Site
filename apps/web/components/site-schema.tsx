@@ -4,6 +4,7 @@ import { isProfileUrl, serializeJsonLd } from '../lib/seo';
 import { absoluteUrl } from '../lib/origin';
 import { servicePath } from '../lib/services';
 import { confirmedAddress, confirmedPhone } from '../lib/verified-facts';
+import { BRAND_DEFINITION } from '../lib/brand-identity';
 
 /**
  * What this site is, in a form a machine can read.
@@ -28,7 +29,9 @@ export function SiteSchema({ content, origin }: { content: SiteContent; origin: 
   const address = confirmedAddress(t(brand?.address));
   const home = absoluteUrl('/');
   const orgId = `${home}#organization`;
-  const description = t(content.footer?.about) || t(brand?.tagline);
+  // The approved definition, not the panel's footer text (which still calls
+  // Nexuva an agency) — one description for every machine-facing surface.
+  const description = BRAND_DEFINITION;
 
   const graph = {
     '@context': 'https://schema.org',

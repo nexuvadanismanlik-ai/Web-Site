@@ -57,7 +57,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
       'Hesap ve kampanya yapısının kurulması veya mevcut hesabın denetlenmesi',
       'Anahtar kelime ve negatif anahtar kelime planı',
       'Reklam metinleri ve uzantıları',
-      'Google Analytics 4 ve Google Ads dönüşüm takibinin kurulumu',
+      'Dönüşüm takibinin yapılandırılması',
       'Teklif stratejisi ve bütçe dağılımı',
       'Aylık performans raporu',
     ],
@@ -85,12 +85,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
       {
         question: 'Mevcut Google Ads hesabımla çalışabilir misiniz?',
         answer:
-          'Evet. Çalışma, mevcut hesabın yapısı, harcaması ve dönüşüm ölçümünün denetlenmesiyle başlar. Hesap ve geçmiş veriler işletmenizde kalır.',
-      },
-      {
-        question: 'Reklam bütçesi Nexuva ücretine dahil mi?',
-        answer:
-          'Hayır. Google’a ödenen reklam bütçesi ile yönetim hizmeti birbirinden ayrıdır. Reklam harcaması doğrudan sizin Google Ads hesabınızdan yapılır.',
+          'Evet. Çalışma, mevcut hesabın yapısı, harcaması ve dönüşüm ölçümünün denetlenmesiyle başlar.',
       },
     ],
     related: ['landing-page', 'meta-ads', 'seo'],
@@ -170,7 +165,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
       'Yapılandırılmış veri (schema.org)',
       'Anahtar kelime araştırması ve içerik planı',
       'İç bağlantı yapısı',
-      'Google Search Console ve Bing Webmaster Tools kurulumu, sıralama ve trafik takibi',
+      'Sıralama ve trafik takibi',
     ],
     steps: [
       {
@@ -185,7 +180,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
       {
         question: 'SEO çalışması ne kadar sürede sonuç verir?',
         answer:
-          'Teknik düzeltmelerin etkisi arama motorlarının sayfaları yeniden taramasıyla birkaç hafta içinde görülmeye başlayabilir; içerik ve otorite kaynaklı gelişmeler genellikle daha uzun sürer. Kesin bir süre veya sıralama garanti edilemez.',
+          'Teknik düzeltmelerin etkisi arama motorlarının sayfaları yeniden taramasıyla zaman içinde görülmeye başlar; içerik ve otorite kaynaklı gelişmeler genellikle daha uzun sürer. Kesin bir süre veya sıralama garanti edilemez.',
       },
       {
         question: 'Teknik SEO denetimi neleri inceler?',
@@ -234,16 +229,6 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
         question: 'Kurumsal web sitesinin içeriğini kendimiz güncelleyebilir miyiz?',
         answer:
           'Evet. Nexuva’nın geliştirdiği kurumsal web siteleri bir yönetim paneliyle teslim edilir; metinler, görseller ve hizmet bilgileri geliştirici gerekmeden bu panelden güncellenebilir.',
-      },
-      {
-        question: 'Web sitesi mobil cihazlara uyumlu mu olacak?',
-        answer:
-          'Evet. Siteler mobil öncelikli olarak tasarlanır ve telefon, tablet ve masaüstü ekranlarda test edilir.',
-      },
-      {
-        question: 'Web sitesi SEO’ya uygun teslim ediliyor mu?',
-        answer:
-          'Teknik SEO altyapısı geliştirmenin parçasıdır: sayfa başlıkları ve açıklamaları, canonical adresler, sitemap, robots.txt ve yapılandırılmış veri kurulmuş olarak teslim edilir. Kapsamlı içerik ve SEO çalışması ayrı bir hizmettir.',
       },
     ],
     related: ['seo', 'landing-page', 'marka-danismanligi'],
@@ -327,11 +312,6 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
         answer:
           'Dijital marka danışmanlığı, markanın web sitesi, sosyal medya ve reklamlarda tutarlı bir kimlikle görünmesini sağlar. Reklam ve içerik çalışmalarının aynı mesajı desteklemesi için yön belirler.',
       },
-      {
-        question: 'Danışmanlığın çıktısı nedir?',
-        answer:
-          'Çalışmanın sonunda konumlandırma, temel mesaj, kanal stratejisi ve içerik yönünü içeren, ekibin uygulayabileceği bir plan teslim edilir.',
-      },
     ],
     related: ['kurumsal-web-sitesi', 'meta-ads', 'seo'],
   },
@@ -361,18 +341,13 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
       { title: 'Süreç analizi', body: 'İşin bugün nasıl yürüdüğü adım adım çıkarılır.' },
       { title: 'Önceliklendirme', body: 'Otomatikleşmeye değer adımlar seçilir.' },
       { title: 'Kurulum', body: 'Akışlar ve entegrasyonlar kurulur, test edilir.' },
-      { title: 'Devreye alma', body: 'Ekip yeni akışla çalışmaya başlar, ilk dönem izlenir.' },
+      { title: 'Devreye alma', body: 'Ekip yeni akışla çalışmaya başlar.' },
     ],
     faq: [
       {
         question: 'Hangi işler otomatikleştirilebilir?',
         answer:
           'Her seferinde aynı kurallarla yapılan işler otomasyona uygundur: form verisinin ilgili sisteme aktarılması, talep yönlendirme, düzenli raporların hazırlanması ve bildirimler gibi. Karar gerektiren adımlar insanda kalır.',
-      },
-      {
-        question: 'Kullandığımız yazılımları değiştirmemiz gerekir mi?',
-        answer:
-          'Genellikle hayır. Otomasyonun amacı mevcut araçların ürettiği bilgiyi tek akışta buluşturmaktır; entegrasyon olanakları kullanılan sistemlere göre belirlenir.',
       },
     ],
     related: ['logiops-entegrasyonu', 'kurumsal-web-sitesi', 'marka-danismanligi'],
@@ -395,9 +370,8 @@ export const SERVICE_DETAILS: Record<string, ServiceDetail> = {
     scope: [
       'Kurulum ve yapılandırma',
       'Mevcut veriyle entegrasyon ve veri aktarımı',
-      'Muhasebe sistemleriyle bağlantı (Logo, Uyumsoft)',
+      'Muhasebe sistemleriyle bağlantı',
       'Ekip eğitimi',
-      'İlk dönem desteği',
     ],
     steps: [
       { title: 'Keşif', body: 'Mevcut operasyon akışı birlikte çıkarılır.' },

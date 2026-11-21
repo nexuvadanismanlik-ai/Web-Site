@@ -1,13 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nestjs",
-  "regions": ["fra1"],
+  "regions": [
+    "fra1"
+  ],
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @nexuva/shared run build && pnpm --filter @nexuva/api run build",
   "git": {
     "deploymentEnabled": {
       "main": false,
-      "vercel-migration": false
+      "vercel-migration": false,
+      "feat/admin-vercel": false
     }
   }
 }

@@ -5,25 +5,17 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import type { HeroContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
-import { CampaignVisual } from './campaign-visual';
-import { Magnetic, WordReveal } from '../motion';
+import { PHOTOS, photoSrcSet, photoUrl } from '../../lib/imagery';
+import { Magnetic } from '../motion';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 /**
- * The first screen.
+ * The first screen: one full-bleed photograph with the headline over it.
  *
- * Two layouts, chosen by whether there is an image to show. With one, the
- * headline and the composition sit side by side and the section has something
- * to look at; without one it stays centred, because a two-column layout with an
- * empty column is worse than no column at all.
- *
- * The image is framed rather than dropped in flat — a border, a soft shadow and
- * a highlight behind it — so that a plain screenshot reads as a product rather
- * than as a stock photo pasted onto a gradient.
- *
- * Everything here comes from the panel, including both images. Nothing on this
- * screen is written in this file.
+ * The photograph is the panel's background image when one is uploaded, and
+ * the Istanbul night photo otherwise. Headline, subtitle and buttons come from
+ * the panel. The metric row is not shown: its figures are not verified.
  */
 export function Hero({ hero }: { hero: HeroContent }) {
   // The hero animates on load, so it is the first thing a reduced-motion
@@ -37,171 +29,86 @@ export function Hero({ hero }: { hero: HeroContent }) {
   // what a page looks like when it has nothing to show — and every reader can
   // tell.
 
-  const enter = (delay: number) => ({
-    initial: { opacity: 0, y: 22 * rise },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.7, ease: EASE, delay },
-  });
+
+  const bg = hero.backgroundImage || photoUrl(PHOTOS.istanbul, 2400);
+  const srcSet = hero.backgroundImage ? undefined : photoSrcSet(PHOTOS.istanbul);
 
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
-      {/* Backdrop. A chosen photograph when there is one, and the house
-          gradient otherwise — never both, or the section becomes soup. */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        {hero.backgroundImage ? (
-          <>
-            {/* Deliberately not next/image: static export with unoptimized
-                images, and this is a full-bleed backdrop rather than content. */}
-            <img
-              src={hero.backgroundImage}
-              alt=""
-              className="h-full w-full object-cover"
-              aria-hidden="true"
-            />
-            {/* Text has to stay readable over whatever was uploaded. */}
-            <div className="absolute inset-0 bg-[var(--c-bg)]/88" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[var(--c-bg)] via-transparent to-[var(--c-bg)]" />
-          </>
-        ) : (
-          <>
-            {/* One cool wash and one warm one. The brand colour is charcoal
-                now, so two brand-derived blurs would be two greys — technically
-                a backdrop, visually a smudge. The gold gives the composition a
-                warm side to sit against, which is the whole reason the logo
-                has one. */}
-            <div className="absolute left-1/2 top-0 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand)_9%,transparent),transparent)]" />
-            <div className="absolute right-[6%] top-40 h-80 w-80 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--gold)_20%,transparent),transparent)]" />
-            <div className="absolute inset-0 bg-grid-slate bg-[size:56px_56px] opacity-25 [mask-image:radial-gradient(60%_50%_at_50%_30%,black,transparent)]" />
-          </>
-        )}
-      </div>
+    <section
+      data-dark-hero
+      className="on-photo relative isolate flex min-h-[100svh] items-end overflow-hidden bg-[#0d1420] pb-16 pt-36 text-white sm:pb-24"
+    >
+      {/* One full-bleed photograph, settling into place on load. That slow
+          settle is the page's single orchestrated moment. */}
+      <motion.img
+        src={bg}
+        srcSet={srcSet}
+        sizes="100vw"
+        alt=""
+        aria-hidden="true"
+        fetchPriority="high"
+        initial={{ scale: 1 + 0.08 * rise }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 2.4, ease: EASE }}
+        className="absolute inset-0 -z-20 h-full w-full object-cover"
+      />
+      {/* Darker towards the words, so they read over any photograph. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(8,12,20,0.88)_0%,rgba(8,12,20,0.62)_45%,rgba(8,12,20,0.18)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-t from-[rgba(8,12,20,0.7)] to-transparent"
+      />
 
-      <div className="container-x">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
-          {/* ── Words ──────────────────────────────────────────────────── */}
-          <div>
-            <motion.div {...enter(0)}>
-              {/* A gold rule and small caps. The pill-with-a-sparkle is the
-                  badge every generated landing page opens with, and it was the
-                  first thing on the page saying "template". */}
-              <span className="eyebrow" data-edit="hero.badge">
-                {t(hero.badge)}
-              </span>
-            </motion.div>
-
-            <motion.h1 {...enter(0.08)} className="display-1 mt-7 text-fg">
-              {/* The one place on the site with a word-by-word entrance. A
-                  stagger is a way of saying "read this first", and a page that
-                  says it about six things has said it about none. */}
-              <span data-edit="hero.titleLead">
-                <WordReveal text={t(hero.titleLead)} delay={0.1} />
-              </span>{' '}
-              {/* Italic serif rather than a gradient fill. A gradient on a
-                  headline is decoration applied to type; an italic is the type
-                  itself doing the emphasis, which is what the wordmark does. */}
-              <span className="italic" style={{ color: 'var(--gold)' }} data-edit="hero.titleHighlight">
-                <WordReveal
-                  text={t(hero.titleHighlight)}
-                  delay={0.1 + 0.055 * t(hero.titleLead).split(' ').length}
-                />
-              </span>
-            </motion.h1>
-
-            <motion.p {...enter(0.16)} className="lede mt-7" data-edit="hero.subtitle">
-              {t(hero.subtitle)}
-            </motion.p>
-
-            <motion.div
-              {...enter(0.24)}
-              className="mt-9 flex flex-col gap-3 sm:flex-row"
-            >
-              {/* Six pixels of lean towards the cursor. Meant to be felt
-                  rather than noticed — a button that visibly chases the
-                  pointer is a toy, and this is the page's main action. */}
-              <Magnetic>
-                <Link
-                  href={hero.primaryCta.href}
-                  className="btn-primary group"
-                  data-cta="hero-primary"
-                  data-edit="hero.primaryCta.label"
-                >
-                  {t(hero.primaryCta.label)}
-                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </Link>
-              </Magnetic>
-              <Link
-                href={hero.secondaryCta.href}
-                className="btn-ghost group"
-                data-cta="hero-secondary"
-                data-edit="hero.secondaryCta.label"
-              >
-                {t(hero.secondaryCta.label)}
-                <ArrowUpRight className="h-4 w-4 opacity-60 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
-            </motion.div>
-
-            {/* Metrics sit on the line rather than in a boxed panel: a panel
-                announces itself, and these are supposed to be read in passing.
-                Hidden entirely when there are none — a half-filled row of
-                figures looks broken as well as unearned. */}
-            {hero.metrics.length > 0 && (
-              <motion.dl
-                {...enter(0.34)}
-                className="mt-12 flex flex-wrap gap-x-10 gap-y-6"
-              >
-                {hero.metrics.map((m, i) => (
-                  <div key={i}>
-                    <dt
-                      className="font-heading text-3xl text-fg"
-                      data-edit={`hero.metrics.${i}.value`}
-                    >
-                      {m.value}
-                    </dt>
-                    <dd
-                      className="mt-1 text-sm text-muted"
-                      data-edit={`hero.metrics.${i}.label`}
-                    >
-                      {t(m.label)}
-                    </dd>
-                  </div>
-                ))}
-              </motion.dl>
-            )}
+      <div className="container-x w-full">
+        <div className="max-w-3xl">
+          <div className="hero-rise" style={{ animationDelay: '0.3s' }}>
+            <span className="hero-kicker" data-edit="hero.badge">
+              {t(hero.badge)}
+            </span>
           </div>
 
-          {/* ── Composition ────────────────────────────────────────────── */}
-          <motion.div
-              initial={{ opacity: 0, y: 34 * rise, scale: 1 - 0.02 * rise }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
-              className="relative"
+          <h1 className="hero-rise display-1 mt-6 text-white" style={{ animationDelay: '0.42s' }}>
+            <span data-edit="hero.titleLead">
+              {t(hero.titleLead)}
+            </span>{' '}
+            <span className="italic" style={{ color: 'var(--gold)' }} data-edit="hero.titleHighlight">
+              {t(hero.titleHighlight)}
+            </span>
+          </h1>
+
+          <p
+            style={{ animationDelay: '0.56s' }}
+            className="hero-rise mt-7 max-w-[56ch] text-lg leading-relaxed text-white/80 sm:text-xl"
+            data-edit="hero.subtitle"
+          >
+            {t(hero.subtitle)}
+          </p>
+
+          <div style={{ animationDelay: '0.7s' }} className="hero-rise mt-10 flex flex-col gap-3 sm:flex-row">
+            <Magnetic>
+              <Link
+                href={hero.primaryCta.href}
+                className="btn-primary group"
+                data-cta="hero-primary"
+                data-edit="hero.primaryCta.label"
+              >
+                {t(hero.primaryCta.label)}
+                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </Link>
+            </Magnetic>
+            <Link
+              href={hero.secondaryCta.href}
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/35 px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:border-white hover:bg-white/10"
+              data-cta="hero-secondary"
+              data-edit="hero.secondaryCta.label"
             >
-              {/* A glow behind the frame gives the image somewhere to sit;
-                  without it a screenshot floats on the background. */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--gold)_28%,transparent),transparent)] blur-2xl"
-              />
-              {hero.image ? (
-                <div className="overflow-hidden rounded-[var(--r-lg)] border border-overlay/15 bg-card shadow-[var(--shadow-float)]">
-                  <img
-                    src={hero.image}
-                    alt={hero.imageAlt ?? ''}
-                    className="block h-auto w-full"
-                    loading="eager"
-                    // Told to the browser so the layout does not jump while it
-                    // loads. Overridden by the aspect the file actually has.
-                    width={1200}
-                    height={800}
-                  />
-                </div>
-              ) : (
-                /* Replaced the moment a picture is uploaded in the panel —
-                   the chain is untouched, this is only what stands there
-                   until then. */
-                <CampaignVisual />
-              )}
-          </motion.div>
+              {t(hero.secondaryCta.label)}
+              <ArrowUpRight className="h-4 w-4 opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>

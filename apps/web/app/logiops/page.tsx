@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { PHOTOS, photoSrcSet, photoUrl } from '../../lib/imagery';
+import { ModesMerge } from '../../components/logiops/modes-merge';
 import { ArrowUpRight } from 'lucide-react';
 import { getSiteContent } from '../../lib/content';
 import { t } from '../../lib/i18n';
@@ -180,16 +182,23 @@ export default async function LogiOpsPage() {
       <LogiOpsSchema title={TITLE} description={DESCRIPTION} />
 
       {/* ── 01 · Hero ──────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-24">
+      <section
+        data-dark-hero
+        className="on-photo relative isolate flex min-h-[88svh] items-end overflow-hidden bg-[#0d1420] pt-36 pb-20 text-white sm:pb-24"
+      >
+        {/* A container port from above: the world this product works in. */}
+        <img
+          src={photoUrl(PHOTOS.port, 2400)}
+          srcSet={photoSrcSet(PHOTOS.port)}
+          sizes="100vw"
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
+        />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            backgroundImage:
-              // Warm, because the brand colour is charcoal and a charcoal wash
-              // on a near-white page is a smudge rather than a backdrop.
-              'radial-gradient(60% 45% at 50% 0%, color-mix(in srgb, var(--gold) 16%, transparent) 0%, transparent 70%)',
-          }}
+          className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(8,12,20,0.9)_0%,rgba(8,12,20,0.65)_50%,rgba(8,12,20,0.25)_100%)]"
         />
         <div className="container-x">
           <div className="max-w-3xl">
@@ -247,8 +256,24 @@ export default async function LogiOpsPage() {
             </Reveal>
           </div>
 
+        </div>
+      </section>
+
+      {/* ── Air, sea, road → one file ───────────────────────────────── */}
+      <section className="section">
+        <div className="container-x">
+          <Reveal>
+            <Heading
+              eyebrow="Hava, deniz, kara"
+              title="Üç taşıma şekli, tek dosya."
+              lede="Uçakla, gemiyle ya da tırla giden her yükün bilgisi aynı operasyon dosyasında toplanır; belgeler ve faturalar bu dosyadan üretilir."
+            />
+          </Reveal>
+          <div className="mt-14">
+            <ModesMerge />
+          </div>
           <Reveal delay={0.24}>
-            <div className="mt-14">
+            <div className="mt-20">
               {logiops.image ? (
                 <div className="overflow-hidden rounded-[var(--r-lg)] border border-overlay/15 bg-card shadow-[var(--shadow-float)]">
                   <img

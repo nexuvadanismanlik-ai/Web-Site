@@ -18,6 +18,8 @@ import { Testimonials } from '../components/sections/testimonials';
 import { Process } from '../components/sections/process';
 import { Cta } from '../components/sections/cta';
 import { Contact } from '../components/sections/contact';
+import { ImageBand } from '../components/sections/image-band';
+import { PHOTOS } from '../lib/imagery';
 
 /**
  * The home page's own metadata. Title and description stay in the panel's SEO
@@ -51,11 +53,22 @@ export default async function HomePage() {
         <CapabilityStrip items={content.services.map((s) => t(s.title))} />
       )}
       <Services meta={content.servicesMeta} services={content.services} />
+      <ImageBand
+        photo={PHOTOS.office}
+        title="Danışmanlık, yazılım ve pazarlama tek çatı altında."
+        text="Web sitesi, reklam ve otomasyon işleri ayrı ayrı değil, aynı hedefe bağlı tek bir planla yürür."
+      />
       <Stats stats={content.stats} />
       <About about={content.about} />
       <References meta={content.referencesMeta} references={content.references} />
       <Testimonials meta={content.testimonialsMeta} testimonials={content.testimonials} />
       <Process meta={content.processMeta} steps={content.process} />
+      <ImageBand
+        photo={PHOTOS.dashboard}
+        align="right"
+        title="Ölçülmeyen iş büyütülemez."
+        text="Her çalışma, neyin ölçüleceğine birlikte karar vererek başlar."
+      />
       <Faq items={HOME_FAQ} pageUrl={absoluteUrl('/') || undefined} />
       <Cta cta={content.cta} />
       <Contact

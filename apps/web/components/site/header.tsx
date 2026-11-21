@@ -61,6 +61,14 @@ export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProp
     };
   }, [open]);
 
+  // Pages that open on a dark photograph get light header text until the
+  // visitor scrolls and the header turns solid.
+  const [overPhoto, setOverPhoto] = useState(false);
+  useEffect(() => {
+    setOverPhoto(document.querySelector('[data-dark-hero]') !== null);
+  }, [pathname]);
+  const onDark = overPhoto && !scrolled && !open;
+
   const isActive = (href: string) => {
     const target = href;
     if (href === '/') return pathname === target || pathname === '/';
@@ -86,7 +94,7 @@ export function Header({ logoText, logoUrl, nav, ctaLabel, ctaHref }: HeaderProp
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
           scrolled ? 'py-3' : 'py-5'
-        }`}
+        } ${onDark ? 'header-on-dark' : ''}`}
       >
         <div className="container-x">
           <div

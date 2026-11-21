@@ -365,7 +365,13 @@
   .service-card:hover {
     border-color: color-mix(in srgb, var(--gold) 55%, transparent);
     box-shadow: var(--shadow-float);
-    transform: translateY(-3px);
+    transform: translateY(-6px) scale(1.02);
+  }
+  .service-card img {
+    transition: transform 900ms var(--ease-out);
+  }
+  .service-card:hover img {
+    transform: scale(1.08);
   }
   @media (prefers-reduced-motion: reduce) {
     .service-card:hover {
@@ -552,5 +558,90 @@
   /** The gold asterisk. Required is information, not a warning. */
   .nx-required {
     color: var(--gold);
+  }
+}
+
+@layer components {
+  /* The small line above the hero headline, on a photograph. */
+  .hero-kicker {
+    @apply inline-flex items-center gap-3 text-sm font-medium text-white/85;
+  }
+  .hero-kicker::before {
+    content: '';
+    @apply h-px w-8;
+    background: var(--gold);
+  }
+
+  /* Header text while it sits transparent over a dark photograph. */
+  .header-on-dark .text-fg,
+  .header-on-dark .text-muted {
+    color: #fff;
+  }
+  .header-on-dark .text-muted {
+    color: rgb(255 255 255 / 0.78);
+  }
+
+  /* A photograph that grows a little under the pointer. */
+  .zoom-frame {
+    @apply overflow-hidden;
+  }
+  .zoom-frame img {
+    transition: transform 900ms var(--ease-out);
+  }
+  .zoom-frame:hover img {
+    transform: scale(1.07);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zoom-frame:hover img,
+    .service-card:hover img {
+      transform: none;
+    }
+  }
+}
+
+@layer components {
+  /* Text inside a hero that sits on a dark photograph. */
+  .on-photo .text-fg,
+  .on-photo .eyebrow,
+  .on-photo .display-1 {
+    color: #fff;
+  }
+  .on-photo .prose-measure,
+  .on-photo .text-muted,
+  .on-photo nav[aria-label] a,
+  .on-photo nav[aria-label] span {
+    color: rgb(255 255 255 / 0.8);
+  }
+  .on-photo .btn-ghost {
+    color: #fff;
+    border-color: rgb(255 255 255 / 0.35);
+    background: transparent;
+  }
+  .on-photo .btn-ghost:hover {
+    border-color: #fff;
+    background: rgb(255 255 255 / 0.1);
+  }
+}
+
+@layer components {
+  /* The hero's words rise in once on load. Pure CSS, so the text is there
+     even before (or without) JavaScript. */
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .hero-rise {
+    animation: hero-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-rise {
+      animation: none;
+    }
   }
 }

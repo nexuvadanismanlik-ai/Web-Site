@@ -8,6 +8,9 @@ const config: Config = {
     '../../packages/ui/src/**/*.{ts,tsx}',
   ],
   presets: [nexuvaPreset as Config],
+  // hover: utilities apply only on devices that can hover. On a phone a tap
+  // would otherwise leave a card enlarged until the next tap elsewhere.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {},
   },

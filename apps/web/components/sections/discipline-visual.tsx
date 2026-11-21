@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotionSafe } from '../motion';
+import { motion } from 'framer-motion';
 
 /**
  * Four disciplines arriving at one team.
@@ -33,7 +34,7 @@ const DISCIPLINES = [
 const HUB = { x: 296, y: 115, r: 40 };
 
 export function DisciplineVisual() {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   // Reduced motion gets the finished drawing, immediately — the same picture,
   // already complete, rather than a lesser version of it.
@@ -48,7 +49,7 @@ export function DisciplineVisual() {
         };
 
   return (
-    <figure className="rounded-[var(--r-lg)] border border-overlay/10 bg-card p-5 sm:p-7">
+    <figure className="border-overlay/10 bg-card rounded-[var(--r-lg)] border p-5 sm:p-7">
       <svg
         viewBox="0 0 400 230"
         role="img"
@@ -100,7 +101,11 @@ export function DisciplineVisual() {
           x={HUB.x}
           y={HUB.y + 5}
           textAnchor="middle"
-          style={{ fill: 'rgb(var(--c-fg))', fontSize: 14, fontFamily: 'var(--font-heading, inherit)' }}
+          style={{
+            fill: 'rgb(var(--c-fg))',
+            fontSize: 14,
+            fontFamily: 'var(--font-heading, inherit)',
+          }}
           initial={reduced ? { opacity: 1 } : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: '-60px' }}
@@ -109,7 +114,7 @@ export function DisciplineVisual() {
           Tek ekip
         </motion.text>
       </svg>
-      <figcaption className="mt-1 text-center text-xs text-faint">
+      <figcaption className="text-faint mt-1 text-center text-xs">
         Dört disiplin, tek sorumluluk. Aradaki devir teslimler kayıp üretir.
       </figcaption>
     </figure>

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useInView, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
+import { motion, useInView, type HTMLMotionProps } from 'framer-motion';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -13,8 +13,28 @@ const EASE = [0.16, 1, 0.3, 1] as const;
  *
  * Content still appears; it just appears rather than travelling.
  */
+/**
+ * Whether the visitor asked for less motion — but `false` on the first render.
+ *
+ * The server cannot know the setting, so anything rendered from it must start
+ * the same in the browser or React reports a hydration mismatch (#418) and
+ * re-renders the page. The real value lands one effect later and tracks
+ * changes to the setting.
+ */
+export function useReducedMotionSafe(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return reduced;
+}
+
 function useMotionDistance(y: number): number {
-  return useReducedMotion() ? 0 : y;
+  return useReducedMotionSafe() ? 0 : y;
 }
 
 interface RevealProps {
@@ -50,7 +70,7 @@ interface StaggerProps {
 /** Container whose direct <Stagger.Item> children reveal one after another. */
 export function Stagger({ children, className, gap = 0.1 }: StaggerProps) {
   // A stagger is motion made of waiting. Reduced motion means no wait either.
-  const step = useReducedMotion() ? 0 : gap;
+  const step = useReducedMotionSafe() ? 0 : gap;
   return (
     <motion.div
       className={className}
@@ -108,7 +128,7 @@ export function CountUp({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -165,7 +185,7 @@ export function WordReveal({
   className?: string;
   delay?: number;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const words = text.split(' ').filter(Boolean);
 
   if (reduced || words.length === 0) {
@@ -177,7 +197,10 @@ export function WordReveal({
       className={className}
       initial="hidden"
       animate="visible"
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.055, delayChildren: delay } } }}
+      variants={{
+        hidden: {},
+        visible: { transition: { staggerChildren: 0.055, delayChildren: delay } },
+      }}
     >
       {words.map((word, index) => (
         <motion.span
@@ -221,7 +244,7 @@ export function Magnetic({
   strength?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
@@ -250,7 +273,10 @@ export function Magnetic({
       onMouseMove={move}
       onMouseLeave={reset}
       className={className}
-      style={{ display: 'inline-block', transition: 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+      style={{
+        display: 'inline-block',
+        transition: 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
     >
       {children}
     </span>

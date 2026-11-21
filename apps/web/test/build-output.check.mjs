@@ -141,8 +141,9 @@ test('pages declare the content version they were rendered from', () => {
 test('unconfirmed phone, address and placeholder social links are not on any page', () => {
   for (const file of [...Object.keys(PAGES), 'llms.txt.body']) {
     const html = read(file);
-    assert.ok(!html.includes('555 0100'), `${file}: phone`);
-    assert.ok(!html.includes('Levent, 34330'), `${file}: address`);
+    for (const claim of ['555 0100', 'Levent', '34330', '120+', '120’den fazla', "120'den fazla", '8+ yıl', 'öncü marka', 'holding']) {
+      assert.ok(!html.includes(claim), `${file}: still says "${claim}"`);
+    }
     assert.ok(
       !/href="https:\/\/(linkedin|x|instagram|github)\.com\/?"/.test(html),
       `${file}: social`,
@@ -154,4 +155,23 @@ test('the approved brand definition is what machines are told', () => {
   const definition = 'teknoloji ve danışmanlık şirketidir';
   assert.ok(read('llms.txt.body').includes(definition));
   assert.ok(read('index.html').includes(definition), 'home JSON-LD / FAQ');
+});
+
+test('the confirmed phone, address and start year are on the home, contact pages and footer', () => {
+  for (const file of ['index.html', 'contact.html']) {
+    const html = read(file);
+    assert.ok(html.includes('0535 529 5700'), `${file}: phone`);
+    assert.ok(html.includes('href="tel:+905355295700"'), `${file}: tel link`);
+    assert.ok(html.includes('Beylikdüzü, İstanbul'), `${file}: address`);
+    assert.ok(html.includes('2022’den beri'), `${file}: since 2022`);
+  }
+  const llms = read('llms.txt.body');
+  assert.ok(llms.includes('0535 529 5700') && llms.includes('Beylikdüzü'), 'llms.txt contact');
+});
+
+test('JSON-LD carries the confirmed phone, locality and founding year', () => {
+  const html = read('index.html');
+  assert.ok(html.includes('"telephone":"+905355295700"'), 'telephone');
+  assert.ok(html.includes('"addressLocality":"Beylikdüzü"'), 'locality');
+  assert.ok(html.includes('"foundingDate":"2022"'), 'foundingDate');
 });

@@ -362,16 +362,18 @@
     transition: border-color var(--t-slow) var(--ease-out),
       box-shadow var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out);
   }
-  .service-card:hover {
-    border-color: color-mix(in srgb, var(--gold) 55%, transparent);
-    box-shadow: var(--shadow-float);
-    transform: translateY(-6px) scale(1.02);
-  }
   .service-card img {
     transition: transform 900ms var(--ease-out);
   }
-  .service-card:hover img {
-    transform: scale(1.08);
+  @media (hover: hover) {
+    .service-card:hover {
+      border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+      box-shadow: var(--shadow-float);
+      transform: translateY(-6px) scale(1.02);
+    }
+    .service-card:hover img {
+      transform: scale(1.08);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .service-card:hover {
@@ -588,8 +590,10 @@
   .zoom-frame img {
     transition: transform 900ms var(--ease-out);
   }
-  .zoom-frame:hover img {
-    transform: scale(1.07);
+  @media (hover: hover) {
+    .zoom-frame:hover img {
+      transform: scale(1.07);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .zoom-frame:hover img,
@@ -641,6 +645,26 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .hero-rise {
+      animation: none;
+    }
+  }
+}
+
+@layer components {
+  /* The hero photograph settles from slightly larger on load. */
+  @keyframes hero-settle {
+    from {
+      transform: scale(1.08);
+    }
+    to {
+      transform: none;
+    }
+  }
+  .hero-settle {
+    animation: hero-settle 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-settle {
       animation: none;
     }
   }

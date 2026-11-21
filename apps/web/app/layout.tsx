@@ -144,6 +144,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* The hero photograph comes from Unsplash's CDN; open the
+            connection before the image is requested. */}
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
+      </head>
       <body style={brandStyle}>
         <Header
           logoText={content.brand.logoText}

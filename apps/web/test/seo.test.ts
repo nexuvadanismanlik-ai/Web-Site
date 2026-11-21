@@ -104,10 +104,9 @@ test('descriptions are clamped at a word boundary', () => {
   assert.ok(!out.includes('kelim…'));
 });
 
-test('unconfirmed contact facts never reach structured data', () => {
-  assert.equal(confirmedPhone('+90 212 555 0100'), undefined);
-  assert.equal(confirmedPhone('+90 212 000 0000'), undefined, 'not in the confirmed list');
-  assert.equal(confirmedAddress('Levent, 34330 Beşiktaş / İstanbul'), undefined);
+test('the panel\'s old contact facts are replaced by the confirmed ones', () => {
+  assert.equal(confirmedPhone('+90 212 555 0100'), '0535 529 5700');
+  assert.equal(confirmedAddress('Levent, 34330 Beşiktaş / İstanbul'), 'Beylikdüzü, İstanbul');
 });
 
 test('service slugs: agreed addresses and Turkish transliteration', () => {

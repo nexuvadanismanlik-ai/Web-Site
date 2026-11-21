@@ -1,48 +1,44 @@
 /**
- * Facts about Nexuva that machines are allowed to repeat.
+ * Facts about Nexuva that the site may state, on the page and to machines.
  *
- * Structured data is read automatically and repeated with confidence: a phone
- * number in JSON-LD ends up in a knowledge panel, an address in an assistant's
- * answer. The panel's contact fields were seeded with values that have not been
- * confirmed (the phone number is in the 555 range used for examples), so they
- * are kept out of structured data and llms.txt until somebody who knows says
- * they are right.
- *
- * The visible page still shows whatever the panel holds — that is editorial and
- * fixed in the panel. This list governs only what is asserted to machines.
- *
- * To confirm a value: add it here exactly as it appears in the panel, in a
- * reviewed commit. To withdraw one: remove it.
+ * Confirmed by the owner on 21.11.2026. These replace whatever the panel's
+ * contact fields hold: the panel was seeded with an example phone number
+ * (+90 212 555 0100) and an address in Levent that were never Nexuva's, and
+ * the database is not edited from here. Change a value only in a reviewed
+ * commit, after the owner confirms it.
  */
-const CONFIRMED_PHONES: readonly string[] = [];
-const CONFIRMED_ADDRESSES: readonly string[] = [];
+export const COMPANY = {
+  phone: '0535 529 5700',
+  /** E.164, for tel: links and structured data. */
+  phoneE164: '+905355295700',
+  locality: 'Beylikdüzü',
+  region: 'İstanbul',
+  address: 'Beylikdüzü, İstanbul',
+  foundingYear: 2022,
+  since: '2022’den beri',
+} as const;
 
-/** Example and test ranges that must never be published as real. */
-const PLACEHOLDER_PHONE = /\b555\s?0[01]\d\d\b/;
-
-export function confirmedPhone(value: string | undefined): string | undefined {
-  const phone = value?.trim();
-  if (!phone || PLACEHOLDER_PHONE.test(phone)) return undefined;
-  return CONFIRMED_PHONES.includes(phone) ? phone : undefined;
+/** A tel: link for a displayed number. */
+export function telHref(): string {
+  return `tel:${COMPANY.phoneE164}`;
 }
 
-export function confirmedAddress(value: string | undefined): string | undefined {
-  const address = value?.trim();
-  if (!address) return undefined;
-  return CONFIRMED_ADDRESSES.includes(address) ? address : undefined;
+/** The confirmed phone number, whatever the panel holds. */
+export function confirmedPhone(_value?: string): string {
+  return COMPANY.phone;
+}
+
+/** The confirmed address, whatever the panel holds. */
+export function confirmedAddress(_value?: string): string {
+  return COMPANY.address;
 }
 
 /**
- * The contact block as it may be sent to the browser.
- *
- * Client components receive their props serialized into the page, so a value
- * a component chooses not to render still ships in the HTML. Unconfirmed phone
- * and address are blanked here, on the server, before that happens.
+ * The contact block as it may be sent to the browser: the confirmed phone and
+ * address in place of the panel's.
  */
 export function publicContact<T extends { phone: string; address: { tr?: string; en?: string } }>(
   contact: T,
 ): T {
-  const phone = confirmedPhone(contact.phone) ?? '';
-  const tr = confirmedAddress(contact.address.tr);
-  return { ...contact, phone, address: tr ? contact.address : { tr: '', en: '' } };
+  return { ...contact, phone: COMPANY.phone, address: { tr: COMPANY.address, en: 'Beylikdüzü, Istanbul' } };
 }

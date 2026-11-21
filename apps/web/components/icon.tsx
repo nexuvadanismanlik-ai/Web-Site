@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import {
+  CalendarDays,
   Compass,
   Code2,
   Cloud,
@@ -92,6 +93,7 @@ export const iconMap: Record<string, IconComponent> = {
   mail: Mail,
   phone: Phone,
   'map-pin': MapPin,
+  calendar: CalendarDays,
   sparkles: Sparkles,
   quote: Quote,
   'chevron-right': ChevronRight,

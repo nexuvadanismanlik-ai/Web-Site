@@ -3,7 +3,7 @@ import { t } from '../../lib/i18n';
 import { absoluteUrl } from '../../lib/origin';
 import { servicePath } from '../../lib/services';
 import { BRAND_DEFINITION } from '../../lib/brand-identity';
-import { confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
+import { COMPANY, confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
 
 
 /** Same window as page content (lib/content.ts); a publish revalidates sooner. */
@@ -57,6 +57,7 @@ export async function GET(): Promise<Response> {
   if (phone) lines.push(`- Telefon: ${phone}`);
   const address = confirmedAddress(t(brand?.address));
   if (address) lines.push(`- Adres: ${address}`);
+  lines.push(`- Faaliyet: ${COMPANY.since}`);
   lines.push(`- İletişim sayfası: ${link('/contact')}`);
   lines.push('');
 

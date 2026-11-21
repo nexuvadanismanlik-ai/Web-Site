@@ -3,7 +3,7 @@ import { t } from '../lib/i18n';
 import { isProfileUrl, serializeJsonLd } from '../lib/seo';
 import { absoluteUrl } from '../lib/origin';
 import { servicePath } from '../lib/services';
-import { confirmedAddress, confirmedPhone } from '../lib/verified-facts';
+import { COMPANY } from '../lib/verified-facts';
 import { BRAND_DEFINITION } from '../lib/brand-identity';
 
 /**
@@ -25,8 +25,7 @@ export function SiteSchema({ content, origin }: { content: SiteContent; origin: 
   const brand = content.brand;
   const services = content.services ?? [];
   const sameAs = (brand?.social ?? []).map((item) => item.href).filter(isProfileUrl);
-  const phone = confirmedPhone(brand?.phone);
-  const address = confirmedAddress(t(brand?.address));
+  const phone = COMPANY.phoneE164;
   const home = absoluteUrl('/');
   const orgId = `${home}#organization`;
   // The approved definition, not the panel's footer text (which still calls
@@ -44,7 +43,7 @@ export function SiteSchema({ content, origin }: { content: SiteContent; origin: 
         ...(description ? { description } : {}),
         ...(brand?.logoUrl ? { logo: brand.logoUrl, image: brand.logoUrl } : {}),
         ...(sameAs.length > 0 ? { sameAs } : {}),
-        ...(brand?.email || phone
+        ...(phone
           ? {
               contactPoint: {
                 '@type': 'ContactPoint',
@@ -56,15 +55,14 @@ export function SiteSchema({ content, origin }: { content: SiteContent; origin: 
               },
             }
           : {}),
-        ...(address
-          ? {
-              address: {
-                '@type': 'PostalAddress',
-                streetAddress: address,
-                addressCountry: 'TR',
-              },
-            }
-          : {}),
+        telephone: COMPANY.phoneE164,
+        foundingDate: String(COMPANY.foundingYear),
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: COMPANY.locality,
+          addressRegion: COMPANY.region,
+          addressCountry: 'TR',
+        },
         areaServed: { '@type': 'Country', name: 'Türkiye' },
       },
       {

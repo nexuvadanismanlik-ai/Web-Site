@@ -1,14 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import type { HeroContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
 import { PHOTOS, photoSrcSet, photoUrl } from '../../lib/imagery';
 import { Magnetic } from '../motion';
-
-const EASE = [0.16, 1, 0.3, 1] as const;
 
 /**
  * The first screen: one full-bleed photograph with the headline over it.
@@ -18,17 +15,15 @@ const EASE = [0.16, 1, 0.3, 1] as const;
  * the panel. The metric row is not shown: its figures are not verified.
  */
 export function Hero({ hero }: { hero: HeroContent }) {
-  // The hero animates on load, so it is the first thing a reduced-motion
-  // visitor would be shown moving. Collapsed to zero rather than removed, which
-  // keeps one code path.
-  const rise = useReducedMotion() ? 0 : 1;
+  // All load motion here is CSS (hero-settle, hero-rise in globals.css), so the
+  // server and the browser render the same markup whatever the visitor's
+  // reduced-motion setting, and the motion is switched off in CSS for them.
 
   // There is always something to look at now: an uploaded picture when the
   // panel has one, and an interface illustration otherwise. The section used
   // to fall back to a centred column of text over two coloured blurs, which is
   // what a page looks like when it has nothing to show — and every reader can
   // tell.
-
 
   const bg = hero.backgroundImage || photoUrl(PHOTOS.istanbul, 2400);
   const srcSet = hero.backgroundImage ? undefined : photoSrcSet(PHOTOS.istanbul);
@@ -40,17 +35,14 @@ export function Hero({ hero }: { hero: HeroContent }) {
     >
       {/* One full-bleed photograph, settling into place on load. That slow
           settle is the page's single orchestrated moment. */}
-      <motion.img
+      <img
         src={bg}
         srcSet={srcSet}
         sizes="100vw"
         alt=""
         aria-hidden="true"
         fetchPriority="high"
-        initial={{ scale: 1 + 0.08 * rise }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 2.4, ease: EASE }}
-        className="absolute inset-0 -z-20 h-full w-full object-cover"
+        className="hero-settle absolute inset-0 -z-20 h-full w-full object-cover"
       />
       {/* Darker towards the words, so they read over any photograph. */}
       <div
@@ -71,10 +63,12 @@ export function Hero({ hero }: { hero: HeroContent }) {
           </div>
 
           <h1 className="hero-rise display-1 mt-6 text-white" style={{ animationDelay: '0.42s' }}>
-            <span data-edit="hero.titleLead">
-              {t(hero.titleLead)}
-            </span>{' '}
-            <span className="italic" style={{ color: 'var(--gold)' }} data-edit="hero.titleHighlight">
+            <span data-edit="hero.titleLead">{t(hero.titleLead)}</span>{' '}
+            <span
+              className="italic"
+              style={{ color: 'var(--gold)' }}
+              data-edit="hero.titleHighlight"
+            >
               {t(hero.titleHighlight)}
             </span>
           </h1>
@@ -87,7 +81,10 @@ export function Hero({ hero }: { hero: HeroContent }) {
             {t(hero.subtitle)}
           </p>
 
-          <div style={{ animationDelay: '0.7s' }} className="hero-rise mt-10 flex flex-col gap-3 sm:flex-row">
+          <div
+            style={{ animationDelay: '0.7s' }}
+            className="hero-rise mt-10 flex flex-col gap-3 sm:flex-row"
+          >
             <Magnetic>
               <Link
                 href={hero.primaryCta.href}
@@ -96,7 +93,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
                 data-edit="hero.primaryCta.label"
               >
                 {t(hero.primaryCta.label)}
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </Link>
             </Magnetic>
             <Link
@@ -106,7 +103,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
               data-edit="hero.secondaryCta.label"
             >
               {t(hero.secondaryCta.label)}
-              <ArrowUpRight className="h-4 w-4 opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <ArrowUpRight className="h-4 w-4 opacity-70 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>

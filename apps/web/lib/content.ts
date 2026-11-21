@@ -1,3 +1,4 @@
+import { applyContentPolicy } from './content-policy';
 import { cache } from 'react';
 import type { SiteContent } from '@nexuva/types';
 import { SITE_CONTENT_TAG } from './cache-tags';
@@ -33,8 +34,10 @@ export const REVALIDATE_SECONDS = 300;
  */
 export const getSiteContent = cache(async (): Promise<SiteContent> => {
   const fixture = process.env['NEXUVA_CONTENT_FIXTURE'];
-  if (fixture) return readFixture(fixture);
-  return fetchSiteContent();
+  // Unverified claims and the panel's old contact details are replaced
+  // before any page sees the content (lib/content-policy.ts).
+  if (fixture) return applyContentPolicy(await readFixture(fixture));
+  return applyContentPolicy(await fetchSiteContent());
 });
 
 /**

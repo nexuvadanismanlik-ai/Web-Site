@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useReducedMotionSafe } from './motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { type RefObject } from 'react';
 
 /**
@@ -42,7 +43,7 @@ export function ScrollRail({
   orientation?: 'vertical' | 'horizontal';
   className?: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const vertical = orientation === 'vertical';
 
   // Starts when the section's top reaches four-fifths of the way down the
@@ -78,11 +79,7 @@ export function ScrollRail({
         style={{
           background: 'var(--gold)',
           transformOrigin: vertical ? 'top' : 'left',
-          ...(reduced
-            ? { transform: 'none' }
-            : vertical
-              ? { scaleY: scale }
-              : { scaleX: scale }),
+          ...(reduced ? { transform: 'none' } : vertical ? { scaleY: scale } : { scaleX: scale }),
         }}
       />
       {/* The leading edge. A single lit point is what makes the rail read as

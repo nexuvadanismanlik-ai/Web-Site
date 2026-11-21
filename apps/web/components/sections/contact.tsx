@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
+import { confirmedAddress, confirmedPhone, telHref } from '../../lib/verified-facts';
 import { CheckCircle2, Loader2, Mail, Phone, MapPin, Send } from 'lucide-react';
 import type { ContactContent, IntegrationsContent, UiText } from '@nexuva/types';
 import { t, getUi } from '../../lib/i18n';
@@ -91,7 +91,7 @@ export function Contact({
           {
             icon: Phone,
             label: phone,
-            href: `tel:${phone.replace(/\s/g, '')}`,
+            href: telHref(),
             path: 'contact.phone',
           },
         ]

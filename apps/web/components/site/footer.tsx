@@ -1,5 +1,5 @@
 import { isProfileUrl } from '../../lib/seo';
-import { confirmedAddress, confirmedPhone } from '../../lib/verified-facts';
+import { COMPANY, confirmedAddress, confirmedPhone, telHref } from '../../lib/verified-facts';
 import Link from 'next/link';
 import type { SiteContent } from '@nexuva/types';
 import { t } from '../../lib/i18n';
@@ -183,7 +183,7 @@ export function Footer({ content }: { content: SiteContent }) {
                 <li className="flex items-start gap-3">
                   <Icon name="phone" className="text-brand-dyn mt-0.5 h-4 w-4" />
                   <a
-                    href={`tel:${phone.replace(/\s/g, '')}`}
+                    href={telHref()}
                     data-edit="brand.phone"
                     className="hover:text-fg"
                   >
@@ -197,6 +197,10 @@ export function Footer({ content }: { content: SiteContent }) {
                   <span data-edit="brand.address">{address}</span>
                 </li>
               )}
+              <li className="flex items-start gap-3">
+                <Icon name="calendar" className="text-brand-dyn mt-0.5 h-4 w-4" />
+                <span>{COMPANY.since}</span>
+              </li>
             </ul>
           </div>
         </div>

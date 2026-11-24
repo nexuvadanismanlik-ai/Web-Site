@@ -6,6 +6,7 @@ import { EmailService } from '../../email/email.service';
 import { MailSettingsService } from '../../email/mail-settings.service';
 import {
   MailTemplateService,
+  DEFAULT_TEMPLATES,
   fillTemplate,
   renderEmailHtml,
 } from '../../email/mail-template.service';
@@ -197,8 +198,15 @@ export class ContactService {
     };
 
     // ── The team ────────────────────────────────────────────────────────────
+    // Both go out together: they are independent, and running them one after
+    // the other doubled the time the visitor spent waiting.
+    const ack = this.sendTemplate(tenantId, 'lead_received', [dto.email.trim()], values);
     if (settings.notifyTo.length > 0) {
-      await this.sendTemplate(tenantId, 'lead_notify', settings.notifyTo, values);
+      await Promise.allSettled([
+        this.sendTemplate(tenantId, 'lead_notify', settings.notifyTo, values),
+        ack,
+      ]);
+      return;
     } else {
       this.logger.warn(
         'Yeni talep bildirimi gönderilmedi: bildirim adresi tanımlı değil (Panel → Mail).',
@@ -206,7 +214,7 @@ export class ContactService {
     }
 
     // ── The person who wrote in ─────────────────────────────────────────────
-    await this.sendTemplate(tenantId, 'lead_received', [dto.email.trim()], values);
+    await ack;
   }
 
   /** Renders one template through the shared shell and sends it. */
@@ -216,8 +224,16 @@ export class ContactService {
     to: string[],
     values: Record<string, string>,
   ): Promise<void> {
-    const template = await this.templates.findByKey(tenantId, key).catch(() => null);
-    if (!template || !template.enabled) return;
+    const stored = await this.templates.findByKey(tenantId, key).catch(() => null);
+    if (!stored || !stored.enabled) return;
+    // A template saved through a client that mangled Turkish letters comes
+    // back with "?" inside words ("al?nd?"). Mail with a subject like that
+    // looks broken to the customer, so the shipped wording is used instead.
+    const fallback = DEFAULT_TEMPLATES.find((t) => t.key === key);
+    const template =
+      fallback && (looksMangled(stored.subject) || looksMangled(stored.body))
+        ? { ...stored, subject: fallback.subject, body: fallback.body }
+        : stored;
 
     const brandRow = await this.prisma.websiteSection.findUnique({
       where: { tenantId_key: { tenantId, key: 'brand' } },
@@ -337,4 +353,9 @@ export class ContactService {
       data: { deletedAt: new Date() },
     });
   }
+}
+
+/** A "?" or replacement character sitting inside a word is lost text, not punctuation. */
+function looksMangled(text: string): boolean {
+  return text.includes('\uFFFD') || /[A-Za-zÇĞİÖŞÜçğıöşü]\?[A-Za-zÇĞİÖŞÜçğıöşü]/.test(text);
 }

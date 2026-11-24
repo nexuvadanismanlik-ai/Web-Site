@@ -139,14 +139,19 @@ export class ContactService {
     // and a failure to announce it must not turn into a failure to receive it.
     void this.leads.onLeadCreated(created.id, tenantId, dto.name.trim());
 
-    // Announced, not awaited: the enquiry is already safely stored, and the
-    // visitor should not wait on an outbound mail call — or see an error if it
-    // fails. Failures are logged, never propagated.
-    void this.announce(dto, tenantId, created.id).catch((error: unknown) => {
-      this.logger.error(
-        `Contact notification failed for message ${created.id}: ${String(error)}`,
-      );
-    });
+    // Announced before answering, with a ceiling. On a serverless host the
+    // function can be frozen the moment the response is sent, so a mail call
+    // left running behind it may never finish. The wait is capped so a slow
+    // mail provider cannot keep the visitor looking at "sending", and a
+    // failure is logged, never propagated: the enquiry is already stored.
+    await Promise.race([
+      this.announce(dto, tenantId, created.id).catch((error: unknown) => {
+        this.logger.error(
+          `Contact notification failed for message ${created.id}: ${String(error)}`,
+        );
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 8000)),
+    ]);
 
     // The public caller gets an acknowledgement only — never the stored row.
     // The envelope's `success` is added by TransformInterceptor.

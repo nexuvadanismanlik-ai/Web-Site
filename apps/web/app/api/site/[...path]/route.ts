@@ -59,7 +59,10 @@ async function relay(request: Request, segments: string[]): Promise<Response> {
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    return new Response(await upstream.text(), {
+    // 204 (what the analytics endpoints answer) may not carry a body at all;
+    // constructing a Response that has one throws.
+    const bodyless = upstream.status === 204 || upstream.status === 205 || upstream.status === 304;
+    return new Response(bodyless ? null : await upstream.text(), {
       status: upstream.status,
       headers: { 'content-type': upstream.headers.get('content-type') ?? 'application/json' },
     });

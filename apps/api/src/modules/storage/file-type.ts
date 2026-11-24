@@ -69,7 +69,9 @@ export function isSafeSvg(buffer: Buffer): boolean {
   return !UNSAFE_SVG.some((pattern) => pattern.test(text));
 }
 
-export type FileCheck = { ok: true; mime: AllowedMime } | { ok: false; reason: string };
+export type FileCheck =
+  | { ok: true; mime: AllowedMime; reason?: undefined }
+  | { ok: false; reason: string };
 
 /**
  * Accepts a file only when its declared type is allowed, its bytes agree, and

@@ -308,7 +308,7 @@ export class StorageService {
     );
     const bytes = object.Body ? Buffer.from(await object.Body.transformToByteArray()) : Buffer.alloc(0);
     const check = checkUploadedFile(params.mimeType, bytes);
-    if (!check.ok) {
+    if (check.ok === false) {
       await this.r2Delete(params.key).catch(() => undefined);
       throw new BadRequestException(check.reason);
     }

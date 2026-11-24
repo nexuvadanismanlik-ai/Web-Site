@@ -24,7 +24,7 @@ export function SiteSchema({ content, origin }: { content: SiteContent; origin: 
 
   const brand = content.brand;
   const services = content.services ?? [];
-  const sameAs = (brand?.social ?? []).map((item) => item.href).filter(isProfileUrl);
+  const sameAs = (brand?.social ?? []).map((item) => item.href).filter((href) => isProfileUrl(href) && !/wa\.me/.test(href));
   const phone = COMPANY.phoneE164;
   const home = absoluteUrl('/');
   const orgId = `${home}#organization`;
@@ -39,6 +39,9 @@ export function SiteSchema({ content, origin }: { content: SiteContent; origin: 
         '@type': 'Organization',
         '@id': orgId,
         name: brand?.siteName ?? 'Nexuva',
+        // The names people actually type, so the entity is matched to all of
+        // them rather than to whichever similarly named company ranks first.
+        alternateName: ['Nexuva', 'Nexuva Danışmanlık', 'Nexuva Danışmanlık Beylikdüzü İstanbul', 'Nexuva LogiOps'],
         url: home,
         ...(description ? { description } : {}),
         ...(brand?.logoUrl ? { logo: brand.logoUrl, image: brand.logoUrl } : {}),

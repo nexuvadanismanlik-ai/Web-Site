@@ -14,7 +14,12 @@ export interface Photo {
 
 /** A sized, auto-format address for a photo. */
 export function photoUrl(photo: Photo, width: number): string {
-  return `${photo.src}?auto=format&fit=crop&q=72&w=${width}`;
+  // Served through the site's own origin (a rewrite in next.config.mjs). A
+  // visitor whose network cannot reach images.unsplash.com — or who arrives
+  // from a context that blocks third-party images — still gets the picture,
+  // because to their browser it is the same host as the page.
+  const id = photo.src.replace('https://images.unsplash.com/', '');
+  return `/_img/${id}?auto=format&fit=crop&q=72&w=${width}`;
 }
 
 /** A srcset for responsive images. */

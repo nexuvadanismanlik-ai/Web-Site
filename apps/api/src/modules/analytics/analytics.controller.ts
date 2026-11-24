@@ -47,7 +47,18 @@ export class CollectViewDto {
 export class CollectEventDto {
   static readonly lenientValidation = true;
 
-  @IsIn(['cta_click', 'form_start', 'form_submit'])
+  @IsIn([
+    'cta_click',
+    'form_start',
+    'form_submit',
+    'link_click',
+    'phone_click',
+    'whatsapp_click',
+    'email_click',
+    'social_click',
+    'nav_click',
+    'outbound_click',
+  ])
   name!: string;
 
   @IsString() @MaxLength(200) path!: string;
@@ -87,9 +98,9 @@ export class AnalyticsController {
         tenantId,
         path: dto.path,
         ...(dto.referrer ? { referrer: dto.referrer } : {}),
-        ip: req.ip ?? '',
+        ip: visitorIp(req),
         userAgent: readHeader(req, 'user-agent'),
-        country: readHeader(req, 'cf-ipcountry'),
+        country: readHeader(req, 'x-nexuva-country') || readHeader(req, 'cf-ipcountry'),
         ...(dto.durationSeconds !== undefined ? { durationSeconds: dto.durationSeconds } : {}),
         ...(dto.scrollDepth !== undefined ? { scrollDepth: dto.scrollDepth } : {}),
         utm: {
@@ -122,7 +133,7 @@ export class AnalyticsController {
         name: dto.name,
         path: dto.path,
         ...(dto.label ? { label: dto.label } : {}),
-        ip: req.ip ?? '',
+        ip: visitorIp(req),
         userAgent: readHeader(req, 'user-agent'),
       });
     } catch {
@@ -182,4 +193,18 @@ export class AnalyticsController {
 function readHeader(req: FastifyRequest, name: string): string {
   const value = req.headers[name];
   return (Array.isArray(value) ? value[0] : value) ?? '';
+}
+
+/**
+ * The visitor's own address.
+ *
+ * The website relays browser traffic through its own server, so the address
+ * this API sees is that server's, and every visitor would collapse into one.
+ * The relay passes the real one in a header of its own (the platform
+ * overwrites x-forwarded-for on the way). It only feeds a daily-salted hash
+ * used to count distinct visitors, so there is nothing to gain by forging it.
+ */
+function visitorIp(req: FastifyRequest): string {
+  const relayed = readHeader(req, 'x-nexuva-visitor-ip').split(',')[0]?.trim();
+  return relayed || (req.ip ?? '');
 }

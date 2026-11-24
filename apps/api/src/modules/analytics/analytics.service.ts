@@ -129,7 +129,7 @@ export class AnalyticsService {
     const period = { gte: from, lte: to };
     const days = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 86_400_000));
 
-    const [today_, week, month, selected, periodViews, topPages, sources, devices, events, avgDuration] =
+    const [today_, week, month, selected, periodViews, topPages, sources, devices, events, avgDuration, clicks] =
       await Promise.all([
         // The three tiles are fixed reference points on purpose: "bugün" has to
         // mean today whatever range is being read below it.
@@ -165,6 +165,18 @@ export class AnalyticsService {
         this.prisma.pageView.aggregate({
           where: { ...base, createdAt: period, durationSeconds: { not: null } },
           _avg: { durationSeconds: true },
+        }),
+        // Which buttons and links get pressed, by what they say.
+        this.prisma.analyticsEvent.groupBy({
+          by: ['name', 'label'],
+          where: {
+            ...base,
+            createdAt: period,
+            name: { notIn: ['form_start', 'form_submit'] },
+          },
+          _count: { _all: true },
+          orderBy: { _count: { name: 'desc' } },
+          take: 40,
         }),
       ]);
 
@@ -216,6 +228,10 @@ export class AnalyticsService {
           : null,
       formSubmits,
       ctaClicks,
+      topClicks: clicks
+        .map((row) => ({ kind: row.name, label: row.label, clicks: row._count._all }))
+        .sort((a, b) => b.clicks - a.clicks)
+        .slice(0, 15),
       averageSeconds: Math.round(avgDuration._avg.durationSeconds ?? 0),
       topPages: topPages.map((row) => ({ path: row.path, views: row._count._all })),
       sources: sources.map((row) => ({ source: row.source, views: row._count._all })),

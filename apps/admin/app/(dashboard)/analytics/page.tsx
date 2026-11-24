@@ -46,6 +46,18 @@ const SOURCE_LABELS: Record<string, string> = {
   tiktok: 'TikTok',
 };
 
+/** What each kind of tracked click is called on the screen. */
+const CLICK_LABELS: Record<string, string> = {
+  cta_click: 'Buton',
+  phone_click: 'Telefon',
+  whatsapp_click: 'WhatsApp',
+  email_click: 'E-posta',
+  social_click: 'Sosyal medya',
+  nav_click: 'Menü',
+  link_click: 'Bağlantı',
+  outbound_click: 'Dış bağlantı',
+};
+
 /** Countries the tracker sees often enough to be worth naming. */
 const COUNTRY_LABELS: Record<string, string> = {
   TR: 'Türkiye',
@@ -278,6 +290,14 @@ export default async function AnalyticsPage({
           rows={data.sources.map((row) => ({
             label: SOURCE_LABELS[row.source] ?? row.source,
             value: row.views,
+          }))}
+        />
+        <Bars
+          title="En çok tıklananlar"
+          icon={<MousePointerClick className="h-4 w-4" />}
+          rows={(data.topClicks ?? []).map((row) => ({
+            label: `${CLICK_LABELS[row.kind] ?? row.kind}: ${row.label || '—'}`,
+            value: row.clicks,
           }))}
         />
         <Bars

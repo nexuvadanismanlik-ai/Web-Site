@@ -296,6 +296,7 @@ export interface AnalyticsSummary {
   conversionRate: number | null;
   formSubmits: number;
   ctaClicks: number;
+  topClicks?: { kind: string; label: string; clicks: number }[];
   averageSeconds: number;
   topPages: { path: string; views: number }[];
   sources: { source: string; views: number }[];

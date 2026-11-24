@@ -44,7 +44,7 @@ import { siteLinks } from '../../lib/links';
  * panel — see the `logiops` section.
  */
 
-const TITLE = 'LogiOps | Dış Ticaret ve Lojistik Operasyon Yönetim Platformu';
+const TITLE = 'LogiOps by Nexuva | Dış Ticaret ve Lojistik Operasyon Yönetim Platformu';
 const DESCRIPTION =
   'LogiOps; operasyon, AWB, BL, CMR, doküman, mail, saha ve finans süreçlerini tek ' +
   'operasyon dosyasında birleştiren dış ticaret operasyon platformudur.';

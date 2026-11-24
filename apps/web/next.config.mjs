@@ -68,7 +68,20 @@ const config = {
     ],
   },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      {
+        source: '/_img/:id',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, s-maxage=31536000, immutable' }],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      // Photographs, relayed from their CDN through this origin.
+      { source: '/_img/:id', destination: 'https://images.unsplash.com/:id' },
+      // Browser calls to the API, relayed by app/api/site; nothing to rewrite.
+    ];
   },
   async redirects() {
     return [

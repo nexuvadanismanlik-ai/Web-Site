@@ -148,7 +148,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head>
         {/* The hero photograph comes from Unsplash's CDN; open the
             connection before the image is requested. */}
-        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
       </head>
       <body style={brandStyle}>
         <Header

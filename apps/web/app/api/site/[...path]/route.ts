@@ -40,7 +40,14 @@ async function relay(request: Request, segments: string[]): Promise<Response> {
   // The API rate-limits per visitor; without these every request would look
   // like it came from this server.
   const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) headers['x-forwarded-for'] = forwarded;
+  if (forwarded) {
+    headers['x-forwarded-for'] = forwarded;
+    // The platform rewrites x-forwarded-for on the next hop, so the real
+    // address also travels under a name of its own.
+    headers['x-nexuva-visitor-ip'] = forwarded.split(',')[0]?.trim() ?? '';
+  }
+  const country = request.headers.get('x-vercel-ip-country');
+  if (country) headers['x-nexuva-country'] = country;
   const agent = request.headers.get('user-agent');
   if (agent) headers['user-agent'] = agent;
 

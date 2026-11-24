@@ -148,25 +148,52 @@ export function Analytics() {
       if (!from) return;
 
       const marked = from.closest('[data-cta]');
-      const link = from.closest('a,button');
+      const link = from.closest('a,button') as HTMLAnchorElement | HTMLButtonElement | null;
       const element = marked ?? link;
       if (!element) return;
 
-      // Unmarked elements still count when they carry the primary button
-      // styling, so a new CTA reports itself before anybody remembers to
-      // label it.
-      const isCta =
-        marked !== null ||
-        (link?.className ?? '').includes('btn-primary') ||
-        (link?.className ?? '').includes('brand-gradient-bg');
-      if (!isCta) return;
+      const text = (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 80);
+      const aria = element.getAttribute('aria-label') ?? '';
+      const label = marked?.getAttribute('data-cta') || aria || text;
 
-      const label =
-        marked?.getAttribute('data-cta') ||
-        (element.textContent ?? '').trim().slice(0, 120);
-      if (!label) return;
+      // What kind of thing was pressed decides how it is counted. Everything a
+      // visitor can press is recorded, not only the buttons somebody remembered
+      // to mark, so a report of "what gets clicked" is not missing the phone
+      // number or the social icons.
+      const href = link instanceof HTMLAnchorElement ? link.getAttribute('href') ?? '' : '';
+      let name = 'cta_click';
+      let detail = label;
+      if (href.startsWith('tel:')) {
+        name = 'phone_click';
+        detail = label || href.slice(4);
+      } else if (href.startsWith('mailto:')) {
+        name = 'email_click';
+        detail = label || href.slice(7);
+      } else if (/wa\.me|whatsapp\.com/.test(href)) {
+        name = 'whatsapp_click';
+        detail = label || 'WhatsApp';
+      } else if (/instagram\.com|linkedin\.com|facebook\.com|twitter\.com|x\.com/.test(href)) {
+        name = 'social_click';
+        detail = aria || href.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || label;
+      } else if (marked === null) {
+        const cls = link?.className ?? '';
+        const primary = cls.includes('btn-primary') || cls.includes('brand-gradient-bg');
+        if (primary) {
+          name = 'cta_click';
+        } else if (link?.closest('header, nav')) {
+          name = 'nav_click';
+        } else if (href && /^https?:\/\//.test(href) && !href.includes(location.host)) {
+          name = 'outbound_click';
+          detail = href.replace(/^https?:\/\/(www\.)?/, '').slice(0, 80);
+        } else if (href) {
+          name = 'link_click';
+        } else {
+          return;
+        }
+      }
+      if (!detail) return;
 
-      send('/analytics/event', { name: 'cta_click', path: pathname, label });
+      send('/analytics/event', { name, path: pathname, label: detail.slice(0, 120) });
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });

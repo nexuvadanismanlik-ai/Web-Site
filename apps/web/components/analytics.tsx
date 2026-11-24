@@ -3,7 +3,8 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-const API_BASE = (process.env['NEXT_PUBLIC_API_URL'] ?? '').replace(/\/+$/, '');
+/** Relayed through the site's own origin (app/api/site); no CORS needed. */
+const API_BASE = '/api/site';
 
 /**
  * First-party traffic measurement.
@@ -91,10 +92,10 @@ export function Analytics() {
       // sendBeacon survives the page being closed, which is exactly when the
       // duration is worth sending. fetch would be cancelled mid-flight.
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(`${API_BASE}${path}`, new Blob([payload], { type: 'application/json' }));
+        navigator.sendBeacon(`${API_BASE}${path}/`, new Blob([payload], { type: 'application/json' }));
         return;
       }
-      void fetch(`${API_BASE}${path}`, {
+      void fetch(`${API_BASE}${path}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
@@ -185,7 +186,7 @@ export function Analytics() {
 /** Records a completed contact form. Called by the form itself on success. */
 export function trackFormSubmit(path: string): void {
   if (!API_BASE) return;
-  void fetch(`${API_BASE}/analytics/event`, {
+  void fetch(`${API_BASE}/analytics/event/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'form_submit', path, label: 'contact' }),

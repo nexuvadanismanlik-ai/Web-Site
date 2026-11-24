@@ -49,7 +49,7 @@ export default async function KvkkPage() {
             <h2 className="display-3 text-fg">1. Veri sorumlusu</h2>
             <p>
               6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) uyarınca kişisel verileriniz,
-              veri sorumlusu sıfatıyla [Veri sorumlusunun ticari unvanı] ([adres]) tarafından
+              veri sorumlusu sıfatıyla [Veri sorumlusunun ticari unvanı] (Beylikdüzü, İstanbul) tarafından
               aşağıda açıklanan kapsamda işlenmektedir.
             </p>
 

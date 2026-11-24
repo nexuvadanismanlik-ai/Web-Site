@@ -242,7 +242,14 @@ export function ConvergeDiagram({
  * is explicit that this is a direction and not a schedule — and a row of dates
  * is a promise whatever the caption says.
  */
-export function GrowthLadder({ stages }: { stages: { label: string; today?: boolean }[] }) {
+export function GrowthLadder({
+  stages,
+  onDark = false,
+}: {
+  stages: { label: string; today?: boolean }[];
+  /** Set when the ladder sits on the dark vision band, where theme text colours vanish. */
+  onDark?: boolean;
+}) {
   return (
     <div className="space-y-2.5">
       {stages.map((stage, index) => (
@@ -257,14 +264,28 @@ export function GrowthLadder({ stages }: { stages: { label: string; today?: bool
               maxWidth: '100%',
               border: stage.today
                 ? '1px solid var(--gold)'
-                : '1px solid rgb(var(--c-overlay) / 0.1)',
+                : onDark
+                  ? '1px solid rgba(255,255,255,0.16)'
+                  : '1px solid rgb(var(--c-overlay) / 0.1)',
               background: stage.today
-                ? 'color-mix(in srgb, var(--gold) 7%, transparent)'
-                : 'rgb(var(--c-overlay) / 0.02)',
+                ? 'color-mix(in srgb, var(--gold) 14%, transparent)'
+                : onDark
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'rgb(var(--c-overlay) / 0.02)',
             } as CSSProperties
           }
         >
-          <span className={stage.today ? 'text-sm font-semibold text-fg' : 'text-sm text-muted'}>
+          <span
+            className={
+              onDark
+                ? stage.today
+                  ? 'text-sm font-semibold text-white'
+                  : 'text-sm text-white/75'
+                : stage.today
+                  ? 'text-sm font-semibold text-fg'
+                  : 'text-sm text-muted'
+            }
+          >
             {stage.label}
           </span>
           {stage.today && (

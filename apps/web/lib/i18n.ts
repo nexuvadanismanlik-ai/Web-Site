@@ -46,8 +46,9 @@ const FALLBACK = {
     formMessage: 'Mesajınız',
     formSubmit: 'Mesajı Gönder',
     formSending: 'Gönderiliyor...',
-    formSuccess: 'Teşekkürler! Mesajınız alındı, en kısa sürede dönüş yapacağız.',
-    formError: 'Bir hata oluştu. Lütfen tekrar deneyin.',
+    formSuccess: 'Başvurunuz alınmıştır. Size en yakın zamanda döneceğiz.',
+    formError:
+      'Mesajınız şu an gönderilemedi. Lütfen biraz sonra tekrar deneyin veya doğrudan e-posta ya da WhatsApp ile yazın.',
     formInvalid: 'Lütfen alanları kontrol edip tekrar deneyin.',
     formRateLimit:
       'Kısa sürede çok fazla mesaj gönderildi. Lütfen biraz sonra tekrar deneyin veya doğrudan e-posta yazın.',

@@ -35,7 +35,7 @@ export function ImageBand({
             : 'bg-[linear-gradient(270deg,rgba(8,12,20,0.85)_0%,rgba(8,12,20,0.45)_55%,rgba(8,12,20,0.1)_100%)]'
         }`}
       />
-      <div className="container-x flex min-h-[420px] items-center py-20 sm:min-h-[520px]">
+      <div className="container-x flex min-h-[300px] items-center py-12 sm:min-h-[380px]">
         <div className={`max-w-xl ${align === 'right' ? 'ml-auto text-right' : ''}`}>
           <h2 className="font-heading text-3xl leading-tight sm:text-5xl">{title}</h2>
           {text ? <p className="mt-5 text-lg leading-relaxed text-white/80">{text}</p> : null}

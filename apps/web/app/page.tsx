@@ -16,7 +16,6 @@ import { About } from '../components/sections/about';
 import { References } from '../components/sections/references';
 import { Testimonials } from '../components/sections/testimonials';
 import { Process } from '../components/sections/process';
-import { Cta } from '../components/sections/cta';
 import { Contact } from '../components/sections/contact';
 import { ImageBand } from '../components/sections/image-band';
 import { PHOTOS } from '../lib/imagery';
@@ -63,14 +62,7 @@ export default async function HomePage() {
       <References meta={content.referencesMeta} references={content.references} />
       <Testimonials meta={content.testimonialsMeta} testimonials={content.testimonials} />
       <Process meta={content.processMeta} steps={content.process} />
-      <ImageBand
-        photo={PHOTOS.dashboard}
-        align="right"
-        title="Ölçülmeyen iş büyütülemez."
-        text="Her çalışma, neyin ölçüleceğine birlikte karar vererek başlar."
-      />
       <Faq items={HOME_FAQ} pageUrl={absoluteUrl('/') || undefined} />
-      <Cta cta={content.cta} />
       <Contact
         contact={publicContact(content.contact)}
         services={content.services.map((s) => t(s.title))}

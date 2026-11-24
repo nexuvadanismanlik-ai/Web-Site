@@ -8,6 +8,7 @@ import { Header } from '../components/site/header';
 import { Footer } from '../components/site/footer';
 import { EditOverlay } from '../components/edit-overlay';
 import { Analytics } from '../components/analytics';
+import { WhatsAppButton } from '../components/site/whatsapp-button';
 import { Integrations } from '../components/integrations';
 import { SiteSchema } from '../components/site-schema';
 import './globals.css';
@@ -164,6 +165,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             answer questions about it. Built from the CMS so it cannot drift
             from the page. */}
         <SiteSchema content={content} origin={siteOrigin()} />
+        <WhatsAppButton />
         <Analytics />
         <Integrations config={content.integrations} />
       </body>

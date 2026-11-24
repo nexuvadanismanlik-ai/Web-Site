@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Icon } from '../../../components/icon';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getSiteContent } from '../../../lib/content';
@@ -130,14 +131,13 @@ export default async function ServicePage({ params }: { params: Params }) {
               {scope.length > 0 && (
                 <>
                   <h2 className="display-3 text-fg pt-6">Neleri kapsar?</h2>
-                  <ul className="space-y-3">
+                  <ul className="grid gap-3 sm:grid-cols-2">
                     {scope.map((item) => (
-                      <li key={item} className="text-muted flex items-start gap-3 text-base">
-                        <span
-                          aria-hidden
-                          className="mt-3 h-px w-3 shrink-0"
-                          style={{ background: 'var(--gold)' }}
-                        />
+                      <li
+                        key={item}
+                        className="border-overlay/10 bg-card text-fg flex items-start gap-3 rounded-[var(--r-md)] border p-4 text-sm transition-transform duration-200 hover:-translate-y-0.5"
+                      >
+                        <Icon name="check" className="text-brand-dyn mt-0.5 h-4 w-4 shrink-0" />
                         {item}
                       </li>
                     ))}

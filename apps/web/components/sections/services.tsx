@@ -29,7 +29,7 @@ export function Services({
         {!hideHeading && <SectionHeading meta={meta} basePath="servicesMeta" />}
 
         <Stagger
-          className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${hideHeading ? '' : 'mt-16'}`}
+          className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${hideHeading ? '' : 'mt-10'}`}
           gap={0.08}
         >
           {list.map((svc, i) => (
@@ -116,7 +116,7 @@ export function Services({
         </Stagger>
 
         {!showAll && (
-          <Reveal className="mt-12 text-center" delay={0.1}>
+          <Reveal className="mt-8 text-center" delay={0.1}>
             <Link href={'/services'} className="btn-ghost">
               {allServicesLabel}
               <Icon name="arrow-right" className="h-4 w-4" />

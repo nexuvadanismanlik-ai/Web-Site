@@ -1,4 +1,3 @@
-import { isProfileUrl } from '../../lib/seo';
 import { COMPANY, confirmedAddress, confirmedPhone, telHref } from '../../lib/verified-facts';
 import Link from 'next/link';
 import type { SiteContent } from '@nexuva/types';
@@ -83,9 +82,7 @@ export function Footer({ content }: { content: SiteContent }) {
             )}
 
             <div className="mt-6 flex gap-3">
-              {brand.social
-                .filter((s) => isProfileUrl(s.href))
-                .map((s) => (
+              {brand.social.map((s) => (
                   <a
                     key={s.label}
                     href={s.href}
@@ -96,7 +93,7 @@ export function Footer({ content }: { content: SiteContent }) {
                   >
                     <Icon name={s.icon} className="h-4 w-4" />
                   </a>
-                ))}
+              ))}
             </div>
           </div>
 
@@ -212,7 +209,14 @@ export function Footer({ content }: { content: SiteContent }) {
           {/* There used to be a green dot here reading "Sistemler çalışıyor".
               It measured nothing — it was a claim printed unconditionally,
               including while the site was down. The tagline is at least true. */}
-          <p data-edit="brand.tagline">{t(brand.tagline)}</p>
+          <nav aria-label="Yasal" className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+            <Link href="/kvkk" className="hover:text-fg transition-colors">
+              KVKK Aydınlatma Metni
+            </Link>
+            <Link href="/gizlilik" className="hover:text-fg transition-colors">
+              Gizlilik ve Çerez Politikası
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

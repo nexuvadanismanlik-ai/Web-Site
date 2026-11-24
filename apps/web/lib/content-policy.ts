@@ -1,6 +1,6 @@
 import type { SiteContent } from '@nexuva/types';
 import { BRAND_DEFINITION } from './brand-identity';
-import { COMPANY } from './verified-facts';
+import { COMPANY, SOCIAL } from './verified-facts';
 
 /**
  * What the site will not repeat from the panel, whatever the panel holds.
@@ -49,7 +49,7 @@ export function applyContentPolicy(content: SiteContent): SiteContent {
 
   return {
     ...content,
-    brand: { ...content.brand, phone: COMPANY.phone, address: ADDRESS },
+    brand: { ...content.brand, phone: COMPANY.phone, address: ADDRESS, social: SOCIAL },
     contact: { ...content.contact, phone: COMPANY.phone, address: ADDRESS },
     footer: { ...content.footer, about: DEFINITION },
     hero: { ...content.hero, metrics: [] },

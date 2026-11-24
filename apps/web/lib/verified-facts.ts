@@ -42,3 +42,25 @@ export function publicContact<T extends { phone: string; address: { tr?: string;
 ): T {
   return { ...contact, phone: COMPANY.phone, address: { tr: COMPANY.address, en: 'Beylikdüzü, Istanbul' } };
 }
+
+/**
+ * Public profiles. The panel's own list is not trusted (it held placeholder
+ * addresses), so the site shows exactly these. WhatsApp is built from the
+ * confirmed phone number. LinkedIn is added the moment its address is set.
+ */
+export const LINKEDIN_URL = encodeURI('https://www.linkedin.com/in/nexuvadanışmanlık/');
+
+export const SOCIAL: { label: string; icon: string; href: string }[] = [
+  { label: 'Instagram', icon: 'instagram', href: 'https://www.instagram.com/nexuva.tr/' },
+  { label: 'WhatsApp', icon: 'whatsapp', href: whatsappHref() },
+  ...(LINKEDIN_URL ? [{ label: 'LinkedIn', icon: 'linkedin', href: LINKEDIN_URL }] : []),
+];
+
+/** The message a visitor's WhatsApp opens with — they only have to press send. */
+export const WHATSAPP_MESSAGE = 'Merhabalar bilgi almak istiyorum';
+
+export function whatsappHref(): string {
+  return `https://wa.me/${COMPANY.phoneE164.replace('+', '')}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
+}
+
+export const WHATSAPP_HREF = whatsappHref();

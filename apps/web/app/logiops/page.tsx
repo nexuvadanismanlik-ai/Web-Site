@@ -12,7 +12,6 @@ import { Faq } from '../../components/faq';
 import { LOGIOPS_FAQ } from '../../components/logiops/faq-data';
 import { Reveal, Stagger, StaggerItem } from '../../components/motion';
 import {
-  ConvergeDiagram,
   FlowDiagram,
   GrowthLadder,
   OperationFileOrbit,
@@ -567,6 +566,7 @@ export default async function LogiOpsPage() {
                 </p>
                 <div className="mt-8">
                   <GrowthLadder
+                    onDark
                     stages={[
                       { label: 'Freight forwarder operasyonu', today: true },
                       { label: 'Entegrasyonlar' },
@@ -588,10 +588,9 @@ export default async function LogiOpsPage() {
                 Veriniz büyüdükçe LogiOps daha akıllı hâle gelecek.
               </h3>
               <p className="mt-4 max-w-[62ch] text-sm leading-relaxed text-white/60">
-                Yapay zekâ ürünün ilk satış argümanı değil, sonuncusu. Önce operasyon altyapısı,
-                sonra veri, sonra entegrasyon, sonra dijital operasyon ağı — ve ancak bunların
-                üzerine yapay zekâ. Yeterli operasyonel veriye ulaşıldığında belge oluşturma,
-                eksik bilgi tespiti ve süreç otomasyonu gibi alanlarda kullanılması hedefleniyor.
+                Yapay zekâ önce altyapı ve veri, sonra gelir. Yeterli operasyonel veri
+                biriktiğinde belge oluşturma ve eksik bilgi tespiti gibi alanlarda kullanılması
+                hedefleniyor.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 {['Operasyon altyapısı', 'Veri', 'Entegrasyon', 'Operasyon ağı', 'Yapay zekâ'].map(
@@ -614,69 +613,27 @@ export default async function LogiOpsPage() {
         </div>
       </section>
 
-      {/* ── 16 · Partner network ───────────────────────────────────────── */}
-      <section className="section border-t border-overlay/8">
-        <div className="container-x">
-          <Reveal>
-            <Heading
-              eyebrow="Uzun vadeli vizyon"
-              title="Aynı altyapıda buluşan taraflar."
-              lede="Hedeflenen ekosistemde lojistik firmaları, gümrük müşavirleri, ithalatçılar, ihracatçılar, taşıyıcılar ve antrepolar aynı operasyon yapısı üzerinde çalışabilir."
-            />
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div className="mt-12">
-              <ConvergeDiagram
-                sources={['Havayolları', 'Armatörler', 'Antrepolar', 'Taşıyıcılar']}
-                target="LogiOps"
-                outcome="İlgili operasyon dosyası · Timeline"
-              />
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
       {/* ── 24 · Who it is for ─────────────────────────────────────────── */}
       <section className="section border-t border-overlay/8">
         <div className="container-x">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-            <Reveal>
-              <Heading eyebrow="Kimler için" title="Bugün kimlerle çalışıyoruz?" />
-              <ul className="mt-8 space-y-3">
-                {[
-                  'Freight forwarder firmaları',
-                  'Lojistik firmaları',
-                  'İthalat ve ihracat operasyonu yürüten firmalar',
-                  'Operasyon, saha ve muhasebe ekipleri',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-muted">
-                    <span
-                      aria-hidden
-                      className="h-px w-3 shrink-0"
-                      style={{ background: 'var(--gold)' }}
-                    />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <Heading eyebrow="Uzun vadede" title="Hedeflenen kullanıcı ekosistemi" />
-              <ul className="mt-8 space-y-3">
-                {[
-                  'Gümrük müşavirleri',
-                  'İthalatçılar ve ihracatçılar',
-                  'Havayolları ve armatörler',
-                  'Antrepolar ve taşıyıcılar',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-faint">
-                    <span aria-hidden className="h-px w-3 shrink-0 bg-overlay/25" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          </div>
+          <Reveal>
+            <Heading eyebrow="Kimler için" title="Bugün kimlerle çalışıyoruz?" />
+            <ul className="mt-8 flex flex-wrap gap-3">
+              {[
+                'Freight forwarder firmaları',
+                'Lojistik firmaları',
+                'İthalat ve ihracat firmaları',
+                'Operasyon, saha ve muhasebe ekipleri',
+              ].map((item) => (
+                <li
+                  key={item}
+                  className="rounded-full border border-overlay/12 bg-overlay/[0.03] px-4 py-2 text-sm text-fg"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
       </section>
 

@@ -31,7 +31,7 @@ export function Hero({ hero }: { hero: HeroContent }) {
   return (
     <section
       data-dark-hero
-      className="on-photo relative isolate flex min-h-[100svh] items-end overflow-hidden bg-[#0d1420] pb-16 pt-36 text-white sm:pb-24"
+      className="on-photo relative isolate flex min-h-[88svh] items-end overflow-hidden bg-[#0d1420] pb-16 pt-36 text-white sm:pb-24"
     >
       {/* One full-bleed photograph, settling into place on load. That slow
           settle is the page's single orchestrated moment. */}

@@ -3,7 +3,8 @@
  * the form posts to the Nexuva backend (Render Web Service), which owns
  * persistence. Configure NEXT_PUBLIC_API_URL at build time.
  */
-const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
+/** The site relays to the API on its own origin (app/api/site), so no CORS. */
+const API_BASE = '/api/site';
 
 export interface ContactInput {
   name: string;
@@ -43,6 +44,22 @@ export interface ContactResult {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * One quiet retry for a transient failure. A cold function or a brief upstream
+ * hiccup is the usual cause and clears within a second or two; the visitor
+ * sees "sending" for that long instead of an error.
+ */
+async function postWithRetry(url: string, init: RequestInit): Promise<Response> {
+  try {
+    const res = await fetch(url, init);
+    if (res.status < 500) return res;
+  } catch {
+    /* fall through to the retry */
+  }
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  return fetch(url, init);
+}
+
 export async function submitContact(input: ContactInput): Promise<ContactResult> {
   const name = (input.name ?? '').trim();
   const email = (input.email ?? '').trim();
@@ -55,7 +72,7 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
   try {
     // The controller is @Controller('website/contact'). Posting to /contact
     // returned 404 on every submission and silently lost the lead.
-    const res = await fetch(`${API_BASE}/website/contact`, {
+    const res = await postWithRetry(`${API_BASE}/website/contact/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
